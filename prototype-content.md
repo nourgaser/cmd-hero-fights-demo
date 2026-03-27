@@ -27,9 +27,9 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Bastion Stance](/content/Game/Cards/Commander%20X/Bastion%20Stance.md)
 - [Battle Focus](/content/Game/Cards/Commander%20X/Battle%20Focus.md)
 - [Shield Toss](/content/Game/Cards/Commander%20X/Shield%20Toss.md)
-- [Reactive Bulwark](/content/Game/Cards/Commander%20X/Reactive%20Bulwark.md)
 
 <!-- Low priority / do later -->
+- [Reactive Bulwark](/content/Game/Cards/Commander%20X/Reactive%20Bulwark.md)
 - [Warcry](/content/Game/Cards/Commander%20X/Warcry.md)
 - [Veteran Edge](/content/Game/Cards/Commander%20X/Veteran%20Edge.md)
 - [Shatter Plating](/content/Game/Cards/Commander%20X/Shatter%20Plating.md)
