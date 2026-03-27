@@ -1,6 +1,7 @@
 import { z } from "zod";
 
 import { EntityIdSchema } from "./action";
+import { type EntityFootprint, footprintCells } from "./footprint";
 import { PositionSchema, type Position, positionKey } from "./position";
 
 // Encoded position key format for occupancy maps: "row:column".
@@ -18,6 +19,9 @@ export const OccupantSchema = z.object({
   kind: OccupantKindSchema,
 });
 export type Occupant = z.infer<typeof OccupantSchema>;
+
+export const BattlefieldSideSchema = z.enum(["north", "south"]);
+export type BattlefieldSide = z.infer<typeof BattlefieldSideSchema>;
 
 export const BattlefieldDimensionsSchema = z.object({
   rows: z.number().int().positive(),
@@ -54,6 +58,26 @@ export function isInsideBattlefield(
     position.row < dimensions.rows &&
     position.column < dimensions.columns
   );
+}
+
+export function rowsPerSide(dimensions: BattlefieldDimensions): number {
+  if (dimensions.rows % 2 !== 0) {
+    throw new Error("Battlefield rows must be even to split into two sides.");
+  }
+  return dimensions.rows / 2;
+}
+
+export function isPositionOnSide(
+  position: Position,
+  dimensions: BattlefieldDimensions,
+  side: BattlefieldSide,
+): boolean {
+  if (!isInsideBattlefield(position, dimensions)) {
+    return false;
+  }
+
+  const half = rowsPerSide(dimensions);
+  return side === "north" ? position.row < half : position.row >= half;
 }
 
 export function getOccupantAt(
@@ -104,6 +128,50 @@ export function canOccupyPosition(
     isInsideBattlefield(position, occupancy.dimensions) &&
     getOccupantAt(occupancy, position) === undefined
   );
+}
+
+export function footprintFits(
+  occupancy: BattlefieldOccupancy,
+  anchor: Position,
+  footprint: EntityFootprint,
+): boolean {
+  const cells = footprintCells(anchor, footprint);
+  return cells.every((cell) => canOccupyPosition(occupancy, cell));
+}
+
+export function footprintIsOnSide(
+  occupancy: BattlefieldOccupancy,
+  anchor: Position,
+  footprint: EntityFootprint,
+  side: BattlefieldSide,
+): boolean {
+  const cells = footprintCells(anchor, footprint);
+  return cells.every((cell) => isPositionOnSide(cell, occupancy.dimensions, side));
+}
+
+export function setOccupantFootprint(
+  occupancy: BattlefieldOccupancy,
+  anchor: Position,
+  footprint: EntityFootprint,
+  occupant: Occupant,
+): BattlefieldOccupancy {
+  let next = occupancy;
+  for (const cell of footprintCells(anchor, footprint)) {
+    next = setOccupantAt(next, cell, occupant);
+  }
+  return next;
+}
+
+export function clearOccupantFootprint(
+  occupancy: BattlefieldOccupancy,
+  anchor: Position,
+  footprint: EntityFootprint,
+): BattlefieldOccupancy {
+  let next = occupancy;
+  for (const cell of footprintCells(anchor, footprint)) {
+    next = clearOccupantAt(next, cell);
+  }
+  return next;
 }
 
 export function allOccupiedPositions(occupancy: BattlefieldOccupancy): Position[] {

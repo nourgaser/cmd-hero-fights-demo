@@ -1,5 +1,7 @@
 import { z } from "zod";
 
+import { EntityFootprintSchema } from "./footprint";
+
 export const HeroIdSchema = z.string().min(1);
 export type HeroId = z.infer<typeof HeroIdSchema>;
 
@@ -40,6 +42,7 @@ export type HeroBasicAttack = z.infer<typeof HeroBasicAttackSchema>;
 export const HeroDefinitionSchema = z.object({
   id: HeroIdSchema,
   name: z.string().min(1),
+  footprint: EntityFootprintSchema,
   combat: HeroCombatStatsSchema,
   basicAttack: HeroBasicAttackSchema,
   passiveText: z.string().min(1),

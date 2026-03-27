@@ -4,5 +4,6 @@ export * from "./battlefield-occupancy";
 export * from "./card";
 export * from "./effect";
 export * from "./event";
+export * from "./footprint";
 export * from "./hero";
 export * from "./position";

@@ -1,9 +1,11 @@
 import { z } from "zod";
 
 import { CardIdSchema } from "./card";
-import { BattlefieldOccupancySchema } from "./battlefield-occupancy";
+import { BattlefieldOccupancySchema, BattlefieldSideSchema } from "./battlefield-occupancy";
 import { EntityIdSchema, HandCardIdSchema } from "./action";
+import { EntityFootprintSchema } from "./footprint";
 import { HeroIdSchema } from "./hero";
+import { PositionSchema } from "./position";
 
 export const BattleIdSchema = z.string().min(1);
 export type BattleId = z.infer<typeof BattleIdSchema>;
@@ -15,8 +17,12 @@ export const HandCardSchema = z.object({
 export type HandCard = z.infer<typeof HandCardSchema>;
 
 export const HeroEntityStateSchema = z.object({
+  kind: z.literal("hero"),
   entityId: EntityIdSchema,
   heroDefinitionId: HeroIdSchema,
+  battlefieldSide: BattlefieldSideSchema,
+  anchorPosition: PositionSchema,
+  footprint: EntityFootprintSchema,
   currentHealth: z.number().nonnegative(),
   armor: z.number().int().nonnegative(),
   magicResist: z.number().int().nonnegative(),
@@ -39,6 +45,9 @@ export const SummonedEntityStateSchema = z.object({
   entityId: EntityIdSchema,
   ownerHeroEntityId: EntityIdSchema,
   kind: SummonedEntityKindSchema,
+  battlefieldSide: BattlefieldSideSchema,
+  anchorPosition: PositionSchema,
+  footprint: EntityFootprintSchema,
   definitionCardId: CardIdSchema,
   currentHealth: z.number().nonnegative(),
   armor: z.number().int().nonnegative(),
@@ -53,7 +62,7 @@ export const SummonedEntityStateSchema = z.object({
 export type SummonedEntityState = z.infer<typeof SummonedEntityStateSchema>;
 
 export const BattlefieldEntityStateSchema = z.discriminatedUnion("kind", [
-  HeroEntityStateSchema.extend({ kind: z.literal("hero") }),
+  HeroEntityStateSchema,
   SummonedEntityStateSchema,
 ]);
 export type BattlefieldEntityState = z.infer<typeof BattlefieldEntityStateSchema>;
