@@ -36,7 +36,7 @@ Then open the web UI in your browser.
 - `game/content/` — Runtime game definitions (heroes, abilities, cards, effects)
 - `game/app/` — Web UI for gameplay and playtesting
 - `game/shared/` — Shared types and utilities
-- `content/` — Reference design documentation (read-only)
+- `content/` — Reference design documentation (read-only), see [<https://github.com/nourgaser/cmd_hero_fights_data>](<https://github.com/nourgaser/cmd_hero_fights_data>)
 
 ## Design Principles
 
