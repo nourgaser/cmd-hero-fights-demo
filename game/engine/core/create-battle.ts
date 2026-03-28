@@ -175,7 +175,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     createHeroEntityState(
       {
         ...heroASetup,
-        openingDeckCardIds: shuffleCardIds(heroASetup.openingDeckCardIds, rng),
+        openingDeckCardIds: shuffleCardIds(heroASetup.openingDeckCardIds.sort((a, b) => a.localeCompare(b)), rng),
       },
       heroASide,
     ),
@@ -185,7 +185,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     createHeroEntityState(
       {
         ...heroBSetup,
-        openingDeckCardIds: shuffleCardIds(heroBSetup.openingDeckCardIds, rng),
+        openingDeckCardIds: shuffleCardIds(heroBSetup.openingDeckCardIds.sort((a, b) => a.localeCompare(b)), rng),
       },
       heroBSide,
     ),
