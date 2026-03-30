@@ -30,7 +30,7 @@ This checklist is the implementation gate for MVP work.
 
 - [x] Shared models, one file at a time with review
 - [x] Engine deterministic core
-- [ ] Battlefield helpers
+- [x] Battlefield helpers
 - [ ] Action resolution pipeline
 - [ ] Effect implementations needed by included cards
 - [ ] Runtime content for included cards

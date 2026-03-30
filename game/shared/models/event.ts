@@ -61,6 +61,14 @@ export const ArmorGainedEventSchema = z.object({
 });
 export type ArmorGainedEvent = z.infer<typeof ArmorGainedEventSchema>;
 
+export const MagicResistGainedEventSchema = z.object({
+  kind: z.literal("magicResistGained"),
+  sequence: EventSequenceSchema,
+  targetEntityId: EntityIdSchema,
+  amount: z.number().int().positive(),
+});
+export type MagicResistGainedEvent = z.infer<typeof MagicResistGainedEventSchema>;
+
 export const TurnEndedEventSchema = z.object({
   kind: z.literal("turnEnded"),
   sequence: EventSequenceSchema,
@@ -85,6 +93,7 @@ export const BattleEventSchema = z.discriminatedUnion("kind", [
   DamageAppliedEventSchema,
   HealAppliedEventSchema,
   ArmorGainedEventSchema,
+  MagicResistGainedEventSchema,
   TurnEndedEventSchema,
   LuckBalanceChangedEventSchema,
 ]);

@@ -48,6 +48,7 @@ function createHeroEntityState(
     battlefieldSide,
     anchorPosition: setup.startAnchorPosition,
     footprint: setup.hero.footprint,
+    maxHealth: setup.hero.combat.maxHealth,
     currentHealth: setup.hero.combat.maxHealth,
     armor: setup.hero.combat.armor,
     magicResist: setup.hero.combat.magicResist,
