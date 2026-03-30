@@ -19,7 +19,12 @@ import {
   resolvePressLuckAction,
   type ResolvePressLuckResult,
 } from "./resolve-press-luck";
+import {
+  resolveBasicAttackAction,
+  type ResolveBasicAttackResult,
+} from "./resolve-basic-attack";
 import { type SummonedEntityBlueprint } from "./effects/execute-card-effect.ts";
+import { type HeroDefinition } from "../../shared/models";
 
 export type ResolveActionResult =
   | {
@@ -40,6 +45,7 @@ export function resolveAction(options: {
   nextSequence: number;
   battleRng: BattleRng;
   cardDefinitionsById: Record<string, CardDefinition>;
+  heroDefinitionsById: Record<string, HeroDefinition>;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;
@@ -57,6 +63,7 @@ export function resolveAction(options: {
     nextSequence,
     battleRng,
     cardDefinitionsById,
+    heroDefinitionsById,
     createSummonedEntityId,
     resolveSummonFootprint,
     resolveSummonedEntityBlueprint,
@@ -107,7 +114,21 @@ export function resolveAction(options: {
 
       return result;
     }
-    case "basicAttack":
+    case "basicAttack": {
+      const result: ResolveBasicAttackResult = resolveBasicAttackAction({
+        state,
+        action,
+        nextSequence,
+        battleRng,
+        heroDefinitionsById,
+      });
+
+      if (!result.ok) {
+        return result;
+      }
+
+      return result;
+    }
     case "useEntityActive":
       return {
         ok: false,
