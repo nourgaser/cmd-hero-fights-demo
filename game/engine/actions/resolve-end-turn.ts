@@ -97,6 +97,30 @@ export function resolveEndTurnAction(options: {
     ],
   };
 
+  const refreshedSummonedEntries = Object.fromEntries(
+    Object.entries(state.entitiesById).map(([entityId, entity]) => {
+      if (entity.kind === "hero") {
+        return [entityId, entity];
+      }
+
+      if (entity.ownerHeroEntityId !== nextHero.entityId) {
+        return [entityId, entity];
+      }
+
+      if (entity.kind === "totem") {
+        return [entityId, entity];
+      }
+
+      return [
+        entityId,
+        {
+          ...entity,
+          remainingMoves: entity.maxMovesPerTurn,
+        },
+      ];
+    }),
+  );
+
   let sequence = nextSequence;
   const events: BattleEvent[] = [];
 
@@ -115,7 +139,7 @@ export function resolveEndTurnAction(options: {
       activeHeroEntityId: nextHero.entityId,
     },
     entitiesById: {
-      ...state.entitiesById,
+      ...refreshedSummonedEntries,
       [nextHero.entityId]: refreshedNextHero,
     },
   };

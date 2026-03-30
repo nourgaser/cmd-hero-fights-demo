@@ -23,6 +23,11 @@ import {
   resolveBasicAttackAction,
   type ResolveBasicAttackResult,
 } from "./resolve-basic-attack";
+import {
+  resolveUseEntityActiveAction,
+  type EntityActiveProfile,
+  type ResolveUseEntityActiveResult,
+} from "./resolve-use-entity-active";
 import { type SummonedEntityBlueprint } from "./effects/execute-card-effect.ts";
 import { type HeroDefinition } from "../../shared/models";
 
@@ -56,6 +61,10 @@ export function resolveAction(options: {
     entityDefinitionId: string,
     kind: SummonedEntityKind,
   ) => SummonedEntityBlueprint | undefined;
+  resolveEntityActiveProfile?: (context: {
+    sourceDefinitionCardId: string;
+    sourceKind: "weapon" | "totem" | "companion";
+  }) => EntityActiveProfile | undefined;
 }): ResolveActionResult {
   const {
     state,
@@ -67,6 +76,7 @@ export function resolveAction(options: {
     createSummonedEntityId,
     resolveSummonFootprint,
     resolveSummonedEntityBlueprint,
+    resolveEntityActiveProfile,
   } = options;
 
   switch (action.kind) {
@@ -129,12 +139,21 @@ export function resolveAction(options: {
 
       return result;
     }
-    case "useEntityActive":
-      return {
-        ok: false,
+    case "useEntityActive": {
+      const result: ResolveUseEntityActiveResult = resolveUseEntityActiveAction({
         state,
-        reason: `${action.kind} is not implemented yet in resolveAction.`,
-      };
+        action,
+        nextSequence,
+        battleRng,
+        resolveEntityActiveProfile,
+      });
+
+      if (!result.ok) {
+        return result;
+      }
+
+      return result;
+    }
     default:
       return {
         ok: false,

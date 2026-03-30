@@ -36,6 +36,7 @@ export function handleSummonEffect(
   });
 
   const footprint = blueprint.footprint ?? SingleCellFootprint;
+  const maxMovesPerTurn = blueprint.maxMovesPerTurn ?? blueprint.remainingMoves;
 
   return {
     ok: true,
@@ -60,6 +61,7 @@ export function handleSummonEffect(
           criticalChance: blueprint.criticalChance,
           criticalMultiplier: blueprint.criticalMultiplier,
           dodgeChance: blueprint.dodgeChance,
+          maxMovesPerTurn,
           remainingMoves: blueprint.remainingMoves,
         },
       },
