@@ -57,6 +57,7 @@ function createHeroEntityState(
     criticalChance: setup.hero.combat.criticalChance,
     criticalMultiplier: setup.hero.combat.criticalMultiplier,
     dodgeChance: setup.hero.combat.dodgeChance,
+    maxMovePoints: setup.openingMovePoints,
     movePoints: setup.openingMovePoints,
     deckCardIds: [...setup.openingDeckCardIds],
     handCards: [],

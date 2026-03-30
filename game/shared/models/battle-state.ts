@@ -32,6 +32,7 @@ export const HeroEntityStateSchema = z.object({
   criticalChance: z.number().min(0).max(1),
   criticalMultiplier: z.number().min(1),
   dodgeChance: z.number().min(0).max(1),
+  maxMovePoints: z.number().int().nonnegative(),
   movePoints: z.number().int().nonnegative(),
   deckCardIds: z.array(CardIdSchema),
   handCards: z.array(HandCardSchema),
