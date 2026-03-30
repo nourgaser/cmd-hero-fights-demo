@@ -15,6 +15,10 @@ import {
   resolveEndTurnAction,
   type ResolveEndTurnResult,
 } from "./resolve-end-turn";
+import {
+  resolvePressLuckAction,
+  type ResolvePressLuckResult,
+} from "./resolve-press-luck";
 import { type SummonedEntityBlueprint } from "./effects/execute-card-effect.ts";
 
 export type ResolveActionResult =
@@ -90,7 +94,19 @@ export function resolveAction(options: {
 
       return result;
     }
-    case "pressLuck":
+    case "pressLuck": {
+      const result: ResolvePressLuckResult = resolvePressLuckAction({
+        state,
+        action,
+        nextSequence,
+      });
+
+      if (!result.ok) {
+        return result;
+      }
+
+      return result;
+    }
     case "basicAttack":
     case "useEntityActive":
       return {

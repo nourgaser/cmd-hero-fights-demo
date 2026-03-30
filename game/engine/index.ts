@@ -1,5 +1,6 @@
 export * from "./actions/resolve-play-card";
 export * from "./actions/resolve-end-turn";
+export * from "./actions/resolve-press-luck";
 export * from "./actions/resolve-action";
 export * from "./actions/validate-play-card";
 export * from "./actions/effects/execute-card-effect.ts";
