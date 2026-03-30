@@ -9,10 +9,11 @@ import {
 } from "./context";
 import { handleDealDamageEffect, handleHealEffect } from "./handlers/combat";
 import {
+  handleDrawCardsEffect,
   handleModifyAttackDamageWhileSourcePresentEffect,
   handleRefundMoveCostEffect,
 } from "./handlers/economy";
-import { handleGainArmorEffect, handleGainMagicResistEffect } from "./handlers/stats";
+import { handleGainArmorEffect, handleGainMagicResistEffect, handleGainAttackDamageEffect } from "./handlers/stats";
 import { handleSummonEffect } from "./handlers/summon";
 
 type EffectHandler = (context: EffectExecutionContext) => ExecuteCardEffectResult;
@@ -21,6 +22,8 @@ const effectHandlers: Record<EffectPayloadKind, EffectHandler> = {
   summonEntity: handleSummonEffect,
   gainArmor: handleGainArmorEffect,
   gainMagicResist: handleGainMagicResistEffect,
+  gainAttackDamage: handleGainAttackDamageEffect,
+  drawCards: handleDrawCardsEffect,
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,
   refundMoveCost: handleRefundMoveCostEffect,

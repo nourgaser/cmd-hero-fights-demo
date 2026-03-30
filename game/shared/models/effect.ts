@@ -61,6 +61,8 @@ export const EffectPayloadKindSchema = z.enum([
   "heal",
   "gainArmor",
   "gainMagicResist",
+  "gainAttackDamage",
+  "drawCards",
   "modifyAttackDamageWhileSourcePresent",
   "summonEntity",
   "refundMoveCost",
@@ -76,6 +78,7 @@ export const DealDamageEffectPayloadSchema = z
     damageType: DamageTypeSchema,
     attackDamageScaling: z.number().nonnegative().default(0),
     abilityPowerScaling: z.number().nonnegative().default(0),
+    armorScaling: z.number().nonnegative().default(0),
     canBeDodged: z.boolean().default(true),
   })
   .refine((payload) => payload.maximum >= payload.minimum, {
@@ -107,6 +110,18 @@ export const GainMagicResistEffectPayloadSchema = z.object({
   amount: z.number().int().positive(),
 });
 
+export const GainAttackDamageEffectPayloadSchema = z.object({
+  kind: z.literal("gainAttackDamage"),
+  target: EffectTargetSelectorSchema,
+  amount: z.number().int().positive(),
+});
+
+export const DrawCardsEffectPayloadSchema = z.object({
+  kind: z.literal("drawCards"),
+  target: EffectTargetSelectorSchema,
+  amount: z.number().int().positive(),
+});
+
 export const ModifyAttackDamageWhileSourcePresentEffectPayloadSchema = z.object({
   kind: z.literal("modifyAttackDamageWhileSourcePresent"),
   target: EffectTargetSelectorSchema,
@@ -131,6 +146,8 @@ export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   HealEffectPayloadSchema,
   GainArmorEffectPayloadSchema,
   GainMagicResistEffectPayloadSchema,
+  GainAttackDamageEffectPayloadSchema,
+  DrawCardsEffectPayloadSchema,
   ModifyAttackDamageWhileSourcePresentEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,

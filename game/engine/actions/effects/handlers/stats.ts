@@ -101,3 +101,52 @@ export function handleGainMagicResistEffect(
     lastDamageWasDodged,
   };
 }
+
+export function handleGainAttackDamageEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  const { state, effect, action, actorHero, sequence, lastDamageWasDodged } = context;
+
+  if (effect.payload.kind !== "gainAttackDamage") {
+    return { ok: false, reason: "handleGainAttackDamageEffect received non-gainAttackDamage payload." };
+  }
+
+  const targetId = targetEntityIdFromSelector({
+    selector: effect.payload.target,
+    action,
+    actorHero,
+    state,
+  });
+  if (!targetId) {
+    return { ok: false, reason: "gainAttackDamage requires a valid effect target." };
+  }
+
+  const target = state.entitiesById[targetId];
+  if (!target) {
+    return { ok: false, reason: "gainAttackDamage target was not found." };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      entitiesById: {
+        ...state.entitiesById,
+        [targetId]: {
+          ...target,
+          attackDamage: target.attackDamage + effect.payload.amount,
+        },
+      },
+    },
+    events: [
+      {
+        kind: "attackDamageGained",
+        sequence,
+        targetEntityId: targetId,
+        amount: effect.payload.amount,
+      },
+    ],
+    nextSequence: sequence + 1,
+    lastDamageWasDodged,
+  };
+}

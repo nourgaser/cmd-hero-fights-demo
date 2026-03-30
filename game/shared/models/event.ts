@@ -24,6 +24,15 @@ export const CardPlayedEventSchema = z.object({
 });
 export type CardPlayedEvent = z.infer<typeof CardPlayedEventSchema>;
 
+export const CardDrawnEventSchema = z.object({
+  kind: z.literal("cardDrawn"),
+  sequence: EventSequenceSchema,
+  heroEntityId: EntityIdSchema,
+  handCardId: HandCardIdSchema,
+  cardDefinitionId: CardIdSchema,
+});
+export type CardDrawnEvent = z.infer<typeof CardDrawnEventSchema>;
+
 export const EntitySummonedEventSchema = z.object({
   kind: z.literal("entitySummoned"),
   sequence: EventSequenceSchema,
@@ -69,6 +78,14 @@ export const MagicResistGainedEventSchema = z.object({
 });
 export type MagicResistGainedEvent = z.infer<typeof MagicResistGainedEventSchema>;
 
+export const AttackDamageGainedEventSchema = z.object({
+  kind: z.literal("attackDamageGained"),
+  sequence: EventSequenceSchema,
+  targetEntityId: EntityIdSchema,
+  amount: z.number().int().positive(),
+});
+export type AttackDamageGainedEvent = z.infer<typeof AttackDamageGainedEventSchema>;
+
 export const TurnEndedEventSchema = z.object({
   kind: z.literal("turnEnded"),
   sequence: EventSequenceSchema,
@@ -89,11 +106,13 @@ export type LuckBalanceChangedEvent = z.infer<typeof LuckBalanceChangedEventSche
 export const BattleEventSchema = z.discriminatedUnion("kind", [
   ActionResolvedEventSchema,
   CardPlayedEventSchema,
+  CardDrawnEventSchema,
   EntitySummonedEventSchema,
   DamageAppliedEventSchema,
   HealAppliedEventSchema,
   ArmorGainedEventSchema,
   MagicResistGainedEventSchema,
+  AttackDamageGainedEventSchema,
   TurnEndedEventSchema,
   LuckBalanceChangedEventSchema,
 ]);
