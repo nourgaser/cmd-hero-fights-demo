@@ -63,7 +63,7 @@ export function resolveAction(options: {
   ) => SummonedEntityBlueprint | undefined;
   resolveEntityActiveProfile?: (context: {
     sourceDefinitionCardId: string;
-    sourceKind: "weapon" | "totem" | "companion";
+    sourceKind: "weapon" | "companion";
   }) => EntityActiveProfile | undefined;
 }): ResolveActionResult {
   const {
