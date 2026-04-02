@@ -1,4 +1,5 @@
 import {
+  type BattleEvent,
   type EffectTargetSelector,
   type EntityId,
   type HeroEntityState,
@@ -11,8 +12,9 @@ export function targetEntityIdFromSelector(options: {
   action: PlayCardAction;
   actorHero: HeroEntityState;
   state: BattleState;
+  triggerEvent?: BattleEvent;
 }): EntityId | undefined {
-  const { selector, action, actorHero, state } = options;
+  const { selector, action, actorHero, state, triggerEvent } = options;
 
   switch (selector) {
     case "none":
@@ -40,6 +42,9 @@ export function targetEntityIdFromSelector(options: {
         return undefined;
       }
       return state.entitiesById[selected] ? selected : undefined;
+    }
+    case "triggeringTarget": {
+      return triggerEvent && "targetEntityId" in triggerEvent ? triggerEvent.targetEntityId : undefined;
     }
     default:
       return undefined;

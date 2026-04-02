@@ -16,8 +16,10 @@ export function handleHealEffect(
     actorHero,
     sequence,
     battleRng,
+    triggerEvent,
     lastDamageWasDodged,
     lastSummonedEntityId,
+    effectSourceEntityId,
   } = context;
 
   if (effect.payload.kind !== "heal") {
@@ -29,6 +31,7 @@ export function handleHealEffect(
     action,
     actorHero,
     state,
+    triggerEvent,
   });
   if (!targetId) {
     return { ok: false, reason: "heal requires a valid effect target." };
@@ -68,7 +71,7 @@ export function handleHealEffect(
       {
         kind: "healApplied",
         sequence,
-        sourceEntityId: actorHero.entityId,
+        sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
         targetEntityId: targetId,
         amount: applied,
       },
@@ -82,7 +85,17 @@ export function handleHealEffect(
 export function handleDealDamageEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, battleRng, lastSummonedEntityId } = context;
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    battleRng,
+    triggerEvent,
+    lastSummonedEntityId,
+    effectSourceEntityId,
+  } = context;
 
   if (effect.payload.kind !== "dealDamage") {
     return { ok: false, reason: "handleDealDamageEffect received non-dealDamage payload." };
@@ -93,6 +106,7 @@ export function handleDealDamageEffect(
     action,
     actorHero,
     state,
+    triggerEvent,
   });
   if (!targetId) {
     return { ok: false, reason: "dealDamage requires a valid effect target." };
@@ -156,7 +170,7 @@ export function handleDealDamageEffect(
       {
         kind: "damageApplied",
         sequence,
-        sourceEntityId: actorHero.entityId,
+        sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
         targetEntityId: targetId,
         amount: appliedDamage,
         damageType: effect.payload.damageType,

@@ -141,8 +141,10 @@ export function resolvePlayCardAction(options: {
       actorHero: actorResolution.actorHero,
       sequence,
       battleRng,
+      triggerEvent: undefined,
       lastDamageWasDodged,
       lastSummonedEntityId,
+      effectSourceEntityId: actorHero.entityId,
       createSummonedEntityId,
       resolveSummonedEntityBlueprint,
     });

@@ -6,6 +6,7 @@ export const EffectTargetSelectorSchema = z.enum([
   "sourceOwnerHero",
   "selectedEnemy",
   "selectedAny",
+  "triggeringTarget",
 ]);
 export type EffectTargetSelector = z.infer<typeof EffectTargetSelectorSchema>;
 

@@ -125,8 +125,10 @@ export function resolveTriggeredListeners(options: {
           actorHero: actorResolution.actorHero,
           sequence,
           battleRng,
+          triggerEvent: event,
           lastDamageWasDodged,
           lastSummonedEntityId,
+          effectSourceEntityId: listener.sourceEntityId ?? listener.ownerHeroEntityId,
           createSummonedEntityId,
           resolveSummonedEntityBlueprint,
         });

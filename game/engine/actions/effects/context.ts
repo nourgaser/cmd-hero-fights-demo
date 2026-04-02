@@ -46,8 +46,10 @@ export type EffectExecutionContext = {
   actorHero: HeroEntityState;
   sequence: number;
   battleRng: BattleRng;
+  triggerEvent: BattleEvent | undefined;
   lastDamageWasDodged: boolean | undefined;
   lastSummonedEntityId: string | undefined;
+  effectSourceEntityId: string | undefined;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;

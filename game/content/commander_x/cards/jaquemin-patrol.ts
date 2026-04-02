@@ -12,7 +12,7 @@ export const JAQUEMIN_PATROL_CARD = {
   tags: ["chivalry"],
   summaryText: {
     mode: "static",
-    text: "Summon Jaquemin the Patrol.",
+    text: "Summon Jaquemin the Patrol. Whenever you attack, it follows the same target.",
   },
   effects: [
     {
@@ -26,6 +26,41 @@ export const JAQUEMIN_PATROL_CARD = {
       displayText: {
         mode: "static",
         text: "Summon Jaquemin the Patrol.",
+      },
+    },
+    {
+      id: "effect.jaquemin.follow-up-attack",
+      payload: {
+        kind: "addListener",
+        listenerId: "listener.jaquemin.follow-up",
+        eventKind: "damageApplied",
+        sourceBinding: "lastSummonedEntity",
+        conditions: [{ kind: "damageSourceIsListenerOwnerHero" }],
+        lifetime: "persistent",
+        effects: [
+          {
+            id: "effect.jaquemin.follow-up-attack.damage",
+            payload: {
+              kind: "dealDamage",
+              target: "triggeringTarget",
+              minimum: 1,
+              maximum: 2,
+              damageType: "physical",
+              attackDamageScaling: 0.25,
+              abilityPowerScaling: 0,
+              armorScaling: 0,
+              canBeDodged: true,
+            },
+            displayText: {
+              mode: "static",
+              text: "Jaquemin follows your attack with its own attack.",
+            },
+          },
+        ],
+      },
+      displayText: {
+        mode: "static",
+        text: "Register Jaquemin's follow-up attack.",
       },
     },
   ],
