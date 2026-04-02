@@ -1,0 +1,79 @@
+import {
+  CARD_DEFINITIONS_BY_ID,
+  HERO_DEFINITIONS_BY_ID,
+  resolveEntityActiveProfile,
+  resolveHeroInitialListeners,
+  resolveSummonFootprint,
+  resolveSummonedEntityBlueprint,
+} from "./content";
+import {
+  createBattle as createBattleCore,
+  type CreateBattleInput,
+  type CreatedBattle,
+} from "./engine/core/create-battle";
+import {
+  resolveAction as resolveActionCore,
+  type ResolveActionResult,
+} from "./engine/actions/resolve-action";
+import type { BattleAction, BattleState, EntityFootprint, SummonedEntityKind } from "./shared/models";
+import type { BattleRng } from "./engine/core/rng";
+
+export type GameCreateBattleInput = CreateBattleInput;
+
+export type GameResolveActionInput = {
+  state: BattleState;
+  action: BattleAction;
+  nextSequence: number;
+  battleRng: BattleRng;
+  createSummonedEntityId: (context: {
+    ownerHeroEntityId: string;
+    entityDefinitionId: string;
+    sequence: number;
+  }) => string;
+};
+
+export type GameApi = {
+  cardsById: typeof CARD_DEFINITIONS_BY_ID;
+  heroesById: typeof HERO_DEFINITIONS_BY_ID;
+  createBattle(input: GameCreateBattleInput): CreatedBattle;
+  resolveAction(input: GameResolveActionInput): ResolveActionResult;
+};
+
+export function createGameApi(): GameApi {
+  return {
+    cardsById: CARD_DEFINITIONS_BY_ID,
+    heroesById: HERO_DEFINITIONS_BY_ID,
+    createBattle(input) {
+      return createBattleCore({
+        ...input,
+        resolveHeroInitialListeners(context) {
+          return resolveHeroInitialListeners({
+            heroDefinitionId: context.hero.id,
+            heroEntityId: context.heroEntityId,
+          });
+        },
+      });
+    },
+    resolveAction(input) {
+      return resolveActionCore({
+        ...input,
+        cardDefinitionsById: CARD_DEFINITIONS_BY_ID,
+        heroDefinitionsById: HERO_DEFINITIONS_BY_ID,
+        resolveSummonFootprint,
+        resolveSummonedEntityBlueprint,
+        resolveEntityActiveProfile,
+      });
+    },
+  };
+}
+
+export {
+  CARD_DEFINITIONS_BY_ID,
+  HERO_DEFINITIONS_BY_ID,
+  resolveSummonFootprint,
+  resolveSummonedEntityBlueprint,
+  resolveEntityActiveProfile,
+  resolveHeroInitialListeners,
+};
+
+export type { CreatedBattle, ResolveActionResult };
