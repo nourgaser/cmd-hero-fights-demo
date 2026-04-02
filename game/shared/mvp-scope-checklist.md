@@ -35,3 +35,18 @@ This checklist is the implementation gate for MVP work.
 - [x] Effect implementations needed by included cards
 - [x] Runtime content for included cards
 - [ ] Minimal app integration
+
+## Minimal App Integration Plan
+
+- [ ] Frontend stack bootstrap (Vite + React + TypeScript)
+- [ ] Icon stack bootstrap (`@iconify-json/game-icons`, optional renderer package during app phase)
+- [ ] App imports only public game API entry (`game/index.ts`)
+- [ ] Split-screen layout (Player A / Player B)
+- [ ] Battle bootstrap UI (seed + start/reset)
+- [ ] Battlefield occupancy view with procedural visuals
+- [ ] Card/entity icon mapping via `game-icons:*` ids and visual metadata policy
+- [ ] Hand and card play controls (with targeting)
+- [ ] Non-card action controls (basic attack, entity active, press luck, end turn)
+- [ ] Event feed and invalid-action feedback
+- [ ] MVP scope guard: expose only non-low-priority prototype content
+- [ ] Mark "Minimal app integration" complete

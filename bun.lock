@@ -5,6 +5,7 @@
     "": {
       "name": "cmd-hero-fights-demo",
       "dependencies": {
+        "@iconify-json/game-icons": "^1.2.3",
         "immer": "^11.1.4",
         "seedrandom": "^3.0.5",
         "ts-pattern": "^5.9.0",
@@ -20,6 +21,10 @@
     },
   },
   "packages": {
+    "@iconify-json/game-icons": ["@iconify-json/game-icons@1.2.3", "", { "dependencies": { "@iconify/types": "*" } }, "sha512-JnrHQjNI/2nJxlnEAPlU4ta6S44XTX7RJnBUyBV27GbVhJhfwpY9kqzkTqmPs4nyAJaGUjZwOcnBUQ9Dc21nlA=="],
+
+    "@iconify/types": ["@iconify/types@2.0.0", "", {}, "sha512-+wluvCrRhXrhyOmRDJ3q8mux9JkKy5SJ/v8ol2tu4FVjyYvtEzkc/3pK15ET6RKg4b4w4BmTk1+gsCUhf21Ykg=="],
+
     "@types/bun": ["@types/bun@1.3.11", "", { "dependencies": { "bun-types": "1.3.11" } }, "sha512-5vPne5QvtpjGpsGYXiFyycfpDF2ECyPcTSsFBMa0fraoxiQyMJ3SmuQIGhzPg2WJuWxVBoxWJ2kClYTcw/4fAg=="],
 
     "@types/node": ["@types/node@25.5.0", "", { "dependencies": { "undici-types": "~7.18.0" } }, "sha512-jp2P3tQMSxWugkCUKLRPVUpGaL5MVFwF8RDuSRztfwgN1wmqJeMSbKlnEtQqU8UrhTmzEmZdu2I6v2dpp7XIxw=="],

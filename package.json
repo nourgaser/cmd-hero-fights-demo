@@ -10,6 +10,7 @@
     "typescript": "^5"
   },
   "dependencies": {
+    "@iconify-json/game-icons": "^1.2.3",
     "immer": "^11.1.4",
     "seedrandom": "^3.0.5",
     "ts-pattern": "^5.9.0",

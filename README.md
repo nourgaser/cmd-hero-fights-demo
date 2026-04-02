@@ -13,6 +13,7 @@ CMD Hero Fights is a tactical card-based game where players deploy heroes, abili
 - **TypeScript** — Type-safe game engine and content
 - **Bun** — Fast all-in-one JavaScript runtime
 - **Seedrandom** — Deterministic randomness for reproducible games
+- **Game Icons via Iconify JSON** (`@iconify-json/game-icons`) — Free/open icon set data for procedural UI iconography
 
 ## Quick Start
 
@@ -46,3 +47,5 @@ Then open the web UI in your browser.
 - **UI-agnostic** — Engine is independent of UI layer
 
 See [AGENTS.md](AGENTS.md) and [system-design.md](system-design.md) for architecture details.
+
+Icon workflow reference: [game/shared/icon-workflow.md](game/shared/icon-workflow.md).
