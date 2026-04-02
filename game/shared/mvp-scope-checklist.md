@@ -45,7 +45,7 @@ This checklist is the implementation gate for MVP work.
 - [x] Battle bootstrap UI (seed + start/reset)
 - [x] Battlefield occupancy view with procedural visuals
 - [x] Card/entity icon mapping via `game-icons:*` ids and visual metadata policy
-- [ ] Hand and card play controls (with targeting)
+- [x] Hand and card play controls (with targeting)
 - [x] Non-card action controls (basic attack, entity active, press luck, end turn)
 - [ ] Event feed and invalid-action feedback
 - [ ] MVP scope guard: expose only non-low-priority prototype content

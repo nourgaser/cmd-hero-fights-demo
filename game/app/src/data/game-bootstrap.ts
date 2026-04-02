@@ -62,7 +62,7 @@ export const STARTER_DECKS = {
 // Main editable create-battle payload used by app bootstrap preview.
 export const DEFAULT_GAME_BOOTSTRAP_CONFIG: GameBootstrapConfig = {
   battleId: 'demo-battle-001',
-  seed: 'ui-seed-001',
+  seed: 'ui-seed-003',
   battlefieldRows: 6,
   battlefieldColumns: 5,
   openingHandSize: 4,

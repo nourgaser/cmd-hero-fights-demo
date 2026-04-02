@@ -7,11 +7,23 @@ type BattlefieldGridProps = {
   selfId: string
   enemyId: string
   shouldFlipRows: boolean
+  highlightedTargetEntityIds?: string[]
+  selectedTargetEntityId?: string | null
+  onSelectTargetEntityId?: (entityId: string) => void
 }
 
 export function BattlefieldGrid(props: BattlefieldGridProps) {
-  const { preview, selfId, enemyId, shouldFlipRows } = props
+  const {
+    preview,
+    selfId,
+    enemyId,
+    shouldFlipRows,
+    highlightedTargetEntityIds = [],
+    selectedTargetEntityId,
+    onSelectTargetEntityId,
+  } = props
   const halfRows = Math.floor(preview.battlefield.rows / 2)
+  const highlightedSet = new Set(highlightedTargetEntityIds)
 
   const displayCells = preview.battlefield.cells
     .map((cell) => {
@@ -123,6 +135,9 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
 
           {occupierBlocks.map((occupier) => {
             const sideClass = occupier.minRow < halfRows ? 'north' : 'south'
+            const isHighlightedTarget = highlightedSet.has(occupier.entityId)
+            const isSelectedTarget = selectedTargetEntityId === occupier.entityId
+            const isSelectableTarget = !!onSelectTargetEntityId && isHighlightedTarget
             const ownerClass =
               occupier.ownerHeroEntityId === selfId
                 ? 'owner-self'
@@ -135,13 +150,27 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             return (
               <div
                 key={`occupier:${occupier.entityId}`}
-                className={`battle-slot occupied ${sideClass} ${ownerClass}`.trim()}
+                className={`battle-slot occupied ${sideClass} ${ownerClass} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedTarget ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
                 role="gridcell"
-                aria-label={ariaLabel}
+                aria-label={isSelectableTarget ? `${ariaLabel}. Selectable target.` : ariaLabel}
                 style={{
                   gridRow: `${occupier.minRow + 1} / span ${occupier.rowSpan}`,
                   gridColumn: `${occupier.minColumn + 1} / span ${occupier.columnSpan}`,
                 }}
+                onClick={
+                  isSelectableTarget ? () => onSelectTargetEntityId(occupier.entityId) : undefined
+                }
+                onKeyDown={
+                  isSelectableTarget
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onSelectTargetEntityId(occupier.entityId)
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={isSelectableTarget ? 0 : undefined}
               >
                 <span className="hint-wrap" tabIndex={0}>
                   <Icon icon={meta.id} className="occupier-icon" aria-hidden="true" />
