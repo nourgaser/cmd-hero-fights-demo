@@ -335,6 +335,66 @@ h2.luck-title > * {
   transform: translateY(50%) scale(1);
 }
 
+.action-controls {
+  position: absolute;
+  left: 10px;
+  top: 50%;
+  transform: translateY(-50%);
+  z-index: 30;
+}
+
+.action-buttons {
+  display: grid;
+  grid-template-columns: repeat(2, 1fr);
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  padding: 0;
+}
+
+.action-button {
+  width: 44px;
+  height: 44px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--code-bg) 75%, #ffffff 25%);
+  color: var(--text-h);
+  cursor: pointer;
+  font-size: 0;
+  display: grid;
+  place-items: center;
+  position: relative;
+  transition: background-color 120ms ease, border-color 120ms ease;
+}
+
+.action-button:hover,
+.action-button:focus-visible {
+  background: color-mix(in srgb, var(--code-bg) 85%, #ffffff 15%);
+  border-color: var(--text-h);
+}
+
+.action-icon {
+  width: 20px;
+  height: 20px;
+  font-size: 20px;
+}
+
+.action-hover-card {
+  left: auto;
+  right: calc(100% + 12px);
+  bottom: 50%;
+  transform: translateY(50%) scale(0.98);
+  min-width: 200px;
+  text-align: left;
+}
+
+.action-button:hover .action-hover-card,
+.action-button:focus-visible .action-hover-card,
+.action-button:focus-within .action-hover-card {
+  opacity: 1;
+  transform: translateY(50%) scale(1);
+}
+
 .preview {
   margin: 0;
   padding: 12px;
@@ -360,5 +420,13 @@ h2.luck-title > * {
 
   .deck-hover-card {
     min-width: 210px;
+  }
+
+  .action-controls {
+    left: 2px;
+  }
+
+  .action-hover-card {
+    min-width: 180px;
   }
 }

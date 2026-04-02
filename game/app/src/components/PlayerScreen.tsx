@@ -4,6 +4,7 @@ import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
 import { LuckBar } from './LuckBar.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
+import { ActionControls } from './ActionControls.tsx'
 
 type PlayerScreenProps = {
   title: string
@@ -11,6 +12,10 @@ type PlayerScreenProps = {
   enemyId: string
   selfSideKey: 'a' | 'b'
   preview: AppBattlePreview
+  onBasicAttack: () => void
+  onUseEntityActive: () => void
+  onPressLuck: () => void
+  onEndTurn: () => void
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -20,6 +25,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
     enemyId,
     selfSideKey,
     preview,
+    onBasicAttack,
+    onUseEntityActive,
+    onPressLuck,
+    onEndTurn,
   } = props
 
   const self = preview.heroHandCounts.find((hero) => hero.heroEntityId === selfId)
@@ -73,6 +82,14 @@ export function PlayerScreen(props: PlayerScreenProps) {
             selfId={selfId}
             enemyId={enemyId}
             shouldFlipRows={shouldFlipRows}
+          />
+
+          <ActionControls
+            selfId={selfId}
+            onBasicAttack={onBasicAttack}
+            onUseEntityActive={onUseEntityActive}
+            onPressLuck={onPressLuck}
+            onEndTurn={onEndTurn}
           />
 
           <aside

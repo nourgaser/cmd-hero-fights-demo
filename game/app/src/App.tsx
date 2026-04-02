@@ -29,6 +29,15 @@ function App() {
 
   const [heroAId, heroBId] = preview.heroEntityIds
 
+  // Placeholder action handlers (more work needed for actual targeting/entity selection)
+  const createActionHandler = (heroId: string, actionType: string) => {
+    return () => {
+      console.log(`Action: ${actionType} by ${heroId}`)
+      // TODO: Implement actual action dispatch
+      // For now, just log to avoid errors
+    }
+  }
+
   return (
     <main className="dual-screens">
       <PlayerScreen
@@ -37,6 +46,10 @@ function App() {
         enemyId={heroBId}
         selfSideKey="a"
         preview={preview}
+        onBasicAttack={createActionHandler(heroAId, 'basicAttack')}
+        onUseEntityActive={createActionHandler(heroAId, 'useEntityActive')}
+        onPressLuck={createActionHandler(heroAId, 'pressLuck')}
+        onEndTurn={createActionHandler(heroAId, 'endTurn')}
       />
       <PlayerScreen
         title="CMD Hero Fights"
@@ -44,6 +57,10 @@ function App() {
         enemyId={heroAId}
         selfSideKey="b"
         preview={preview}
+        onBasicAttack={createActionHandler(heroBId, 'basicAttack')}
+        onUseEntityActive={createActionHandler(heroBId, 'useEntityActive')}
+        onPressLuck={createActionHandler(heroBId, 'pressLuck')}
+        onEndTurn={createActionHandler(heroBId, 'endTurn')}
       />
     </main>
   )
