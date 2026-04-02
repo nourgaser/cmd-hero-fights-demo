@@ -1,4 +1,9 @@
 import { createGameApi } from '../../index.ts'
+import {
+  DEFAULT_GAME_BOOTSTRAP_CONFIG,
+  type GameBootstrapConfig,
+  type HeroBootstrapConfig,
+} from './data/game-bootstrap.ts'
 
 export type AppBattlePreview = {
   battleId: string
@@ -8,40 +13,55 @@ export type AppBattlePreview = {
   heroHandCounts: Array<{ heroEntityId: string; handSize: number; deckSize: number }>
 }
 
-export function createInitialBattlePreview(seed: string): AppBattlePreview {
-  const gameApi = createGameApi()
-  const heroIds = Object.keys(gameApi.heroesById)
+function resolveHeroSetup(
+  gameApi: ReturnType<typeof createGameApi>,
+  setup: HeroBootstrapConfig,
+) {
+  const heroesById =
+    gameApi.heroesById as Record<
+      string,
+      (typeof gameApi.heroesById)[keyof typeof gameApi.heroesById]
+    >
+  const cardsById =
+    gameApi.cardsById as Record<string, (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]>
 
-  if (heroIds.length === 0) {
-    throw new Error('No heroes available in game API.')
+  const heroDefinition = heroesById[setup.heroDefinitionId]
+  if (!heroDefinition) {
+    throw new Error(`Unknown heroDefinitionId '${setup.heroDefinitionId}' in bootstrap config.`)
   }
 
-  const primaryHeroId = heroIds[0] as keyof typeof gameApi.heroesById
-  const heroDefinition = gameApi.heroesById[primaryHeroId]
-  const openingDeckCardIds = Object.keys(gameApi.cardsById)
+  for (const cardId of setup.openingDeckCardIds) {
+    if (!cardsById[cardId]) {
+      throw new Error(`Unknown deck card id '${cardId}' for hero '${setup.heroEntityId}'.`)
+    }
+  }
+
+  return {
+    heroEntityId: setup.heroEntityId,
+    hero: heroDefinition,
+    openingMovePoints: setup.openingMovePoints,
+    openingDeckCardIds: [...setup.openingDeckCardIds],
+    startAnchorPosition: setup.startAnchorPosition,
+  }
+}
+
+export function createInitialBattlePreview(
+  config: GameBootstrapConfig = DEFAULT_GAME_BOOTSTRAP_CONFIG,
+): AppBattlePreview {
+  const gameApi = createGameApi()
+
+  const [heroA, heroB] = config.heroes
+  if (!heroA || !heroB) {
+    throw new Error('Bootstrap config must include exactly two hero setups.')
+  }
 
   const createdBattle = gameApi.createBattle({
-    battleId: 'demo-battle-001',
-    seed,
-    battlefieldRows: 8,
-    battlefieldColumns: 7,
-    openingHandSize: 4,
-    heroes: [
-      {
-        heroEntityId: 'hero-a',
-        hero: heroDefinition,
-        openingMovePoints: 3,
-        openingDeckCardIds,
-        startAnchorPosition: { row: 1, column: 2 },
-      },
-      {
-        heroEntityId: 'hero-b',
-        hero: heroDefinition,
-        openingMovePoints: 3,
-        openingDeckCardIds,
-        startAnchorPosition: { row: 6, column: 2 },
-      },
-    ],
+    battleId: config.battleId,
+    seed: config.seed,
+    battlefieldRows: config.battlefieldRows,
+    battlefieldColumns: config.battlefieldColumns,
+    openingHandSize: config.openingHandSize,
+    heroes: [resolveHeroSetup(gameApi, heroA), resolveHeroSetup(gameApi, heroB)],
   })
 
   const heroHandCounts = createdBattle.state.heroEntityIds.map((heroEntityId) => {

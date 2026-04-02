@@ -1,9 +1,10 @@
 import { Icon } from '@iconify/react/offline'
 import './App.css'
 import { createInitialBattlePreview } from './game-client.ts'
+import { DEFAULT_GAME_BOOTSTRAP_CONFIG } from './data/game-bootstrap.ts'
 
 function App() {
-  const preview = createInitialBattlePreview('ui-seed-001')
+  const preview = createInitialBattlePreview(DEFAULT_GAME_BOOTSTRAP_CONFIG)
 
   return (
     <main className="app-shell">
@@ -34,7 +35,7 @@ function App() {
 
       <section className="card">
         <h2>Public API Bootstrap</h2>
-        <p>App battle preview created through public API import from game/index.ts only.</p>
+        <p>App battle preview is built from editable static data under src/data.</p>
 
         <pre className="preview">{JSON.stringify(preview, null, 2)}</pre>
       </section>
