@@ -43,10 +43,8 @@
 #root {
   width: 1126px;
   max-width: 100%;
-  margin: 32px auto;
+  margin: auto;
   text-align: center;
-  border: 1px solid color-mix(in srgb, var(--border) 80%, #ffffff 20%);
-  border-radius: 22px;
   background: var(--panel);
   box-shadow: var(--shadow);
   min-height: 100svh;
