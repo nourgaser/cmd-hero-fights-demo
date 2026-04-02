@@ -98,29 +98,46 @@
   opacity: 1;
   transform: translateX(-50%) scale(1);
 }
-.battle-center {
-  border: 1px solid var(--border);
-  border-radius: 10px;
-  padding: 10px;
-  background: color-mix(in srgb, var(--panel) 85%, var(--code-bg) 15%);
+
+.luck-strip {
+  display: grid;
+  justify-items: center;
+  gap: 2px;
+  padding: 2px 0 0;
+}
+
+.luck-title {
+  font-family: var(--display);
+  font-weight: bold;
+  font-size: clamp(32px, 1vw, 92px);
+  line-height: 0.9;
+  margin: 0;
+  letter-spacing: 0;
+  display: inline-flex;
+  align-items: center;
 }
 
 .help-chip {
-  margin-left: 8px;
-  width: 20px;
-  height: 20px;
+  margin-left: 10px;
+  width: 26px;
+  height: 26px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--code-bg) 70%, #ffffff 30%);
   vertical-align: middle;
 }
 
-.battle-center p {
+.help-chip svg {
+  width: 18px;
+  height: 18px;
+}
+
+.luck-strip p {
   margin: 0;
 }
 
 .luck-wrap {
-  margin-top: 6px;
+  margin-top: 0;
 }
 
 .luck-bar {

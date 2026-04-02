@@ -47,8 +47,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
         <p>{SIDE_VISUALS[selfSideKey].name}</p>
       </header>
 
-        <section className="battle-center card">
-          <h2>
+        <section className="luck-strip" aria-label="Luck track">
+          <h2 className="luck-title">
             {LUCK_VISUALS.label}
             <span className="help-chip hint-wrap" tabIndex={0}>
               <Icon icon="game-icons:info" aria-hidden="true" />
