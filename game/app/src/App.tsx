@@ -1,5 +1,5 @@
 import './App.css'
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import {
   createInitialBattleSession,
@@ -45,6 +45,42 @@ function loadBootstrapConfig() {
   }
 }
 
+function updateHoverCardPlacement(wrap: HTMLElement) {
+  const hoverCard = wrap.querySelector<HTMLElement>('.hover-card')
+  if (!hoverCard) {
+    return
+  }
+
+  const rect = wrap.getBoundingClientRect()
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const maxTooltipWidth = Math.max(180, Math.min(340, viewportWidth - 24))
+  const tooltipWidth = Math.min(Math.max(hoverCard.scrollWidth, hoverCard.offsetWidth, 180), maxTooltipWidth)
+  const tooltipHeight = Math.min(Math.max(hoverCard.scrollHeight, hoverCard.offsetHeight, 84), viewportHeight - 24)
+
+  const spaceAbove = rect.top
+  const spaceBelow = viewportHeight - rect.bottom
+  const placeBottom = spaceAbove < tooltipHeight + 24 && spaceBelow > spaceAbove
+
+  let align: 'left' | 'center' | 'right' = 'center'
+  const spaceLeft = rect.left
+  const spaceRight = viewportWidth - rect.right
+
+  if (spaceLeft < tooltipWidth * 0.5 + 20 && spaceRight > spaceLeft) {
+    align = 'left'
+  } else if (spaceRight < tooltipWidth * 0.5 + 20 && spaceLeft > spaceRight) {
+    align = 'right'
+  } else if (rect.left + rect.width * 0.5 < viewportWidth * 0.35) {
+    align = 'left'
+  } else if (rect.right - rect.width * 0.5 > viewportWidth * 0.65) {
+    align = 'right'
+  }
+
+  wrap.dataset.hoverPlacement = placeBottom ? 'bottom' : 'top'
+  wrap.dataset.hoverAlign = align
+  wrap.style.setProperty('--hover-tooltip-max-width', `${maxTooltipWidth}px`)
+}
+
 function App() {
   const [bootstrapConfig, setBootstrapConfig] = useState(() => loadBootstrapConfig())
   const [startupError] = useState(() => {
@@ -63,6 +99,44 @@ function App() {
     }
   })
   const [resetEpoch, setResetEpoch] = useState(0)
+
+  useEffect(() => {
+    const updateActiveHoverCards = () => {
+      document.querySelectorAll<HTMLElement>('.hint-wrap').forEach((wrap) => {
+        if (wrap.matches(':hover, :focus-within')) {
+          updateHoverCardPlacement(wrap)
+        }
+      })
+    }
+
+    const handlePointerOver = (event: PointerEvent) => {
+      const wrap = (event.target as HTMLElement | null)?.closest('.hint-wrap') as HTMLElement | null
+      if (wrap) {
+        updateHoverCardPlacement(wrap)
+      }
+    }
+
+    const handleFocusIn = (event: FocusEvent) => {
+      const wrap = (event.target as HTMLElement | null)?.closest('.hint-wrap') as HTMLElement | null
+      if (wrap) {
+        updateHoverCardPlacement(wrap)
+      }
+    }
+
+    window.addEventListener('pointerover', handlePointerOver, true)
+    window.addEventListener('focusin', handleFocusIn)
+    window.addEventListener('resize', updateActiveHoverCards)
+    window.addEventListener('scroll', updateActiveHoverCards, true)
+
+    updateActiveHoverCards()
+
+    return () => {
+      window.removeEventListener('pointerover', handlePointerOver, true)
+      window.removeEventListener('focusin', handleFocusIn)
+      window.removeEventListener('resize', updateActiveHoverCards)
+      window.removeEventListener('scroll', updateActiveHoverCards, true)
+    }
+  }, [])
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {

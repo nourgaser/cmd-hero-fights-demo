@@ -174,6 +174,8 @@
 }
 
 .hint-wrap {
+  --hover-offset-x: -50%;
+  --hover-offset-y: -4px;
   position: relative;
   display: inline-flex;
   align-items: center;
@@ -184,9 +186,9 @@
   position: absolute;
   left: 50%;
   bottom: calc(100% + 8px);
-  transform: translateX(-50%) scale(0.98);
+  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(0.98);
   min-width: 170px;
-  max-width: 250px;
+  max-width: var(--hover-tooltip-max-width, 250px);
   pointer-events: none;
   opacity: 0;
   transition: opacity 120ms ease, transform 120ms ease;
@@ -197,7 +199,7 @@
   color: #1f1b16;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   text-align: center;
-  z-index: 25;
+  z-index: 50;
 }
 
 .hover-card strong {
@@ -224,7 +226,32 @@
 .hint-wrap:focus-visible .hover-card,
 .hint-wrap:focus-within .hover-card {
   opacity: 1;
-  transform: translateX(-50%) scale(1);
+  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(1);
+}
+
+.hint-wrap[data-hover-placement='bottom'] {
+  --hover-offset-y: 4px;
+}
+
+.hint-wrap[data-hover-placement='bottom'] .hover-card {
+  top: calc(100% + 8px);
+  bottom: auto;
+}
+
+.hint-wrap[data-hover-align='left'] {
+  --hover-offset-x: 0%;
+}
+
+.hint-wrap[data-hover-align='left'] .hover-card {
+  left: 0;
+}
+
+.hint-wrap[data-hover-align='right'] {
+  --hover-offset-x: -100%;
+}
+
+.hint-wrap[data-hover-align='right'] .hover-card {
+  left: 100%;
 }
 
 .luck-strip {
@@ -470,27 +497,6 @@ h2.luck-title > * {
 
 .battle-action-hover-card span {
   line-height: 1.25;
-}
-
-.action-overlay-left .battle-action-hover-card {
-  left: calc(100% + 12px);
-  right: auto;
-  bottom: 50%;
-  transform: translateY(50%) scale(0.98);
-}
-
-.action-overlay-right .battle-action-hover-card {
-  left: auto;
-  right: calc(100% + 12px);
-  bottom: 50%;
-  transform: translateY(50%) scale(0.98);
-}
-
-.battle-action-stack:hover .battle-action-hover-card,
-.battle-action-stack:focus-visible .battle-action-hover-card,
-.battle-action-stack:focus-within .battle-action-hover-card {
-  opacity: 1;
-  transform: translateY(50%) scale(1);
 }
 
 .battle-grid {
@@ -839,19 +845,8 @@ h2.luck-title > * {
 }
 
 .deck-hover-card {
-  left: auto;
-  right: calc(100% + 12px);
-  bottom: 50%;
-  transform: translateY(50%) scale(0.98);
   min-width: 240px;
   text-align: left;
-}
-
-.deck-overlay:hover .deck-hover-card,
-.deck-overlay:focus-visible .deck-hover-card,
-.deck-overlay:focus-within .deck-hover-card {
-  opacity: 1;
-  transform: translateY(50%) scale(1);
 }
 
 .action-controls {
@@ -899,19 +894,8 @@ h2.luck-title > * {
 }
 
 .action-hover-card {
-  left: auto;
-  right: calc(100% + 12px);
-  bottom: 50%;
-  transform: translateY(50%) scale(0.98);
   min-width: 220px;
   text-align: left;
-}
-
-.action-button:hover .action-hover-card,
-.action-button:focus-visible .action-hover-card,
-.action-button:focus-within .action-hover-card {
-  opacity: 1;
-  transform: translateY(50%) scale(1);
 }
 
 .hand-bar {
@@ -977,11 +961,11 @@ h2.luck-title > * {
 .hand-cards {
   list-style: none;
   margin: 0;
-  padding: 4px 4px 8px;
+  padding: 4px 4px 16px;
   display: flex;
   gap: 8px;
   overflow-x: auto;
-  overflow-y: hidden;
+  overflow-y: visible;
   max-width: 100%;
   min-width: 0;
   scrollbar-gutter: stable;
@@ -1017,13 +1001,15 @@ h2.luck-title > * {
 
 .hand-cards > li {
   flex: 0 0 auto;
+  position: relative;
+  overflow: visible;
 }
 
 .hand-scroll-wrap {
   position: relative;
   width: 100%;
   min-width: 0;
-  overflow: hidden;
+  overflow: visible;
 }
 
 .hand-scroll-indicator {
@@ -1055,6 +1041,13 @@ h2.luck-title > * {
   padding: 8px;
   position: relative;
   cursor: pointer;
+  z-index: 1;
+  overflow: visible;
+  transition:
+    transform 120ms ease,
+    box-shadow 120ms ease,
+    border-color 120ms ease,
+    background 120ms ease;
 }
 
 .hand-card:disabled {
@@ -1070,16 +1063,24 @@ h2.luck-title > * {
 .hand-card:hover,
 .hand-card:focus-visible,
 .hand-card.focused {
-  border-color: #c0963b;
-  transform: translateY(-2px);
+  border-color: color-mix(in srgb, #b77f19 78%, #ffffff 22%);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #fff5d5 92%, #ffffff 8%), color-mix(in srgb, #e8c96f 80%, #ffffff 20%));
+  transform: translateY(-8px) scale(1.02);
+  z-index: 4;
+  box-shadow:
+    0 18px 32px rgba(0, 0, 0, 0.22),
+    0 0 0 1px color-mix(in srgb, #6f4c11 26%, transparent),
+    0 0 0 3px color-mix(in srgb, #f3d27b 28%, transparent),
+    0 0 24px color-mix(in srgb, #d9ad2e 22%, transparent);
 }
 
 .hand-card.action-slot.basic {
-  background: linear-gradient(180deg, #e9e9ea 85%, #d7d7d9 25%);
+  background: linear-gradient(180deg, #f0ecef 85%, #dbcfd9 25%);
 }
 
 .hand-card.action-slot.luck {
-  background: linear-gradient(180deg, #e7f3d9 85%, #cfe3b8 25%);
+  background: linear-gradient(180deg, #edf5df 85%, #d5e2bb 25%);
 }
 
 .hand-card-icon {
@@ -1109,14 +1110,14 @@ h2.luck-title > * {
 .hand-card-cost {
   position: absolute;
   top: 6px;
-  left: 6px;
-  min-width: 18px;
-  height: 18px;
+  right: 6px;
+  min-width: 20px;
+  height: 20px;
   border-radius: 999px;
   border: 1px solid #241d14;
   background: #f0cb58;
   color: #241d14;
-  font-size: 11px;
+  font-size: 10px;
   font-weight: 700;
   display: grid;
   place-items: center;
@@ -1146,32 +1147,42 @@ h2.luck-title > * {
 }
 
 .hand-card-hover {
-  inset: 6px;
-  min-width: 0;
-  max-width: none;
+  left: 50%;
+  bottom: calc(100% + 10px);
+  min-width: 220px;
+  max-width: var(--hover-tooltip-max-width, 280px);
   text-align: left;
-  transform: none;
-  padding: 8px;
+  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(0.98);
+  padding: 10px 12px;
   display: grid;
-  gap: 3px;
+  gap: 5px;
   align-content: start;
   justify-items: start;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, #8b6720 26%, transparent);
+  background:
+    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.45), transparent 35%),
+    linear-gradient(180deg, rgba(255, 248, 222, 0.98), rgba(236, 209, 126, 0.96));
+  box-shadow:
+    0 10px 22px rgba(0, 0, 0, 0.18),
+    0 0 0 1px rgba(255, 255, 255, 0.18),
+    inset 0 1px 1px rgba(255, 255, 255, 0.55);
 }
 
 .hand-card:hover .hand-card-hover,
 .hand-card:focus-visible .hand-card-hover {
   opacity: 1;
-  transform: none;
+  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(1);
 }
 
 .hand-card-hover strong {
   margin-bottom: 2px;
-  font-size: 12px;
+  font-size: 13px;
 }
 
 .hand-card-hover span {
-  font-size: 10px;
-  line-height: 1.15;
+  font-size: 11px;
+  line-height: 1.2;
 }
 
 .hand-focus-panel {

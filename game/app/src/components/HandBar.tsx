@@ -124,7 +124,7 @@ export function HandBar(props: HandBarProps) {
             <li key={card.handCardId}>
               <button
                 type="button"
-                className={`hand-card ${isFocused ? 'focused' : ''} ${!card.isPlayable ? 'unplayable' : ''}`.trim()}
+                className={`hand-card hint-wrap ${isFocused ? 'focused' : ''} ${!card.isPlayable ? 'unplayable' : ''}`.trim()}
                 onClick={() => {
                   if (canConfirmCard) {
                     onConfirmFocusedCard()
