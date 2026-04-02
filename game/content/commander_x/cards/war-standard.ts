@@ -12,7 +12,7 @@ export const WAR_STANDARD_CARD = {
   tags: ["buff"],
   summaryText: {
     mode: "static",
-    text: "Summon War Standard.",
+    text: "Summon War Standard. Your hero has +1 AD while it remains.",
   },
   effects: [
     {
@@ -26,6 +26,47 @@ export const WAR_STANDARD_CARD = {
       displayText: {
         mode: "static",
         text: "Summon War Standard.",
+      },
+    },
+    {
+      id: "effect.war-standard.buff-apply",
+      payload: {
+        kind: "gainAttackDamage",
+        target: "sourceOwnerHero",
+        amount: 1,
+      },
+      displayText: {
+        mode: "static",
+        text: "Gain +1 attack damage while War Standard is present.",
+      },
+    },
+    {
+      id: "effect.war-standard.buff-cleanup-listener",
+      payload: {
+        kind: "addListener",
+        listenerId: "listener.war-standard.cleanup",
+        eventKind: "entityRemoved",
+        sourceBinding: "lastSummonedEntity",
+        conditions: [{ kind: "removedEntityIsListenerSource" }],
+        lifetime: "once",
+        effects: [
+          {
+            id: "effect.war-standard.buff-remove",
+            payload: {
+              kind: "loseAttackDamage",
+              target: "sourceOwnerHero",
+              amount: 1,
+            },
+            displayText: {
+              mode: "static",
+              text: "Lose War Standard bonus when it leaves the battlefield.",
+            },
+          },
+        ],
+      },
+      displayText: {
+        mode: "static",
+        text: "Register cleanup when War Standard is removed.",
       },
     },
   ],

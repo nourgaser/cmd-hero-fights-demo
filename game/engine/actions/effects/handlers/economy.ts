@@ -6,15 +6,24 @@ import {
 export function handleRefundMoveCostEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, actorHero, sequence, lastDamageWasDodged } = context;
+  const {
+    state,
+    effect,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
 
   if (effect.payload.kind !== "refundMoveCost") {
     return { ok: false, reason: "handleRefundMoveCostEffect received non-refundMoveCost payload." };
   }
 
+  const payload = effect.payload;
+
   const shouldRefund =
-    effect.payload.condition === "always" ||
-    (effect.payload.condition === "ifNotDodged" && lastDamageWasDodged === false);
+    payload.condition === "always" ||
+    (payload.condition === "ifNotDodged" && lastDamageWasDodged === false);
 
   if (!shouldRefund) {
     return {
@@ -23,6 +32,7 @@ export function handleRefundMoveCostEffect(
       events: [],
       nextSequence: sequence,
       lastDamageWasDodged,
+      lastSummonedEntityId,
     };
   }
 
@@ -42,20 +52,21 @@ export function handleRefundMoveCostEffect(
         ...state.entitiesById,
         [actorHero.entityId]: {
           ...latestActor,
-          movePoints: latestActor.movePoints + effect.payload.amount,
+          movePoints: latestActor.movePoints + payload.amount,
         },
       },
     },
     events: [],
     nextSequence: sequence,
     lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }
 
 export function handleModifyAttackDamageWhileSourcePresentEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, sequence, lastDamageWasDodged } = context;
+  const { state, sequence, lastDamageWasDodged, lastSummonedEntityId } = context;
 
   return {
     ok: true,
@@ -63,6 +74,7 @@ export function handleModifyAttackDamageWhileSourcePresentEffect(
     events: [],
     nextSequence: sequence,
     lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }
 
@@ -71,7 +83,15 @@ const HARD_HAND_SIZE_LIMIT = 7;
 export function handleDrawCardsEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, lastDamageWasDodged } = context;
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
 
   if (effect.payload.kind !== "drawCards") {
     return { ok: false, reason: "handleDrawCardsEffect received non-drawCards payload." };
@@ -130,5 +150,94 @@ export function handleDrawCardsEffect(
     events,
     nextSequence: sequence + events.length,
     lastDamageWasDodged,
+    lastSummonedEntityId,
+  };
+}
+
+export function handleAddListenerEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  const {
+    state,
+    effect,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
+
+  if (effect.payload.kind !== "addListener") {
+    return { ok: false, reason: "handleAddListenerEffect received non-addListener payload." };
+  }
+
+  const sourceEntityId =
+    effect.payload.sourceBinding === "actorHero"
+      ? actorHero.entityId
+      : effect.payload.sourceBinding === "lastSummonedEntity"
+        ? lastSummonedEntityId
+        : undefined;
+
+  if (effect.payload.sourceBinding === "lastSummonedEntity" && !sourceEntityId) {
+    return {
+      ok: false,
+      reason: "addListener with lastSummonedEntity source binding requires a prior summon.",
+    };
+  }
+
+  const resolvedListenerId = `${effect.payload.listenerId}:${sequence}`;
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      activeListeners: [
+        ...state.activeListeners,
+        {
+          listenerId: resolvedListenerId,
+          eventKind: effect.payload.eventKind,
+          ownerHeroEntityId: actorHero.entityId,
+          sourceEntityId,
+          conditions: effect.payload.conditions,
+          lifetime: effect.payload.lifetime,
+          effects: effect.payload.effects,
+        },
+      ],
+    },
+    events: [],
+    nextSequence: sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  };
+}
+
+export function handleRemoveListenerEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  const {
+    state,
+    effect,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
+
+  const payload = effect.payload;
+
+  if (payload.kind !== "removeListener") {
+    return { ok: false, reason: "handleRemoveListenerEffect received non-removeListener payload." };
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      activeListeners: state.activeListeners.filter(
+        (listener) => listener.listenerId !== payload.listenerId,
+      ),
+    },
+    events: [],
+    nextSequence: sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }

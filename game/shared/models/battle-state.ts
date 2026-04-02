@@ -6,6 +6,7 @@ import { EntityIdSchema, HandCardIdSchema } from "./action";
 import { EntityFootprintSchema } from "./footprint";
 import { HeroIdSchema } from "./hero";
 import { PositionSchema } from "./position";
+import { ListenerDefinitionSchema } from "./effects/index.ts";
 
 export const BattleIdSchema = z.string().min(1);
 export type BattleId = z.infer<typeof BattleIdSchema>;
@@ -92,5 +93,6 @@ export const BattleStateSchema = z.object({
   turn: TurnStateSchema,
   entitiesById: z.record(EntityIdSchema, BattlefieldEntityStateSchema),
   battlefieldOccupancy: BattlefieldOccupancySchema,
+  activeListeners: z.array(ListenerDefinitionSchema),
 });
 export type BattleState = z.infer<typeof BattleStateSchema>;

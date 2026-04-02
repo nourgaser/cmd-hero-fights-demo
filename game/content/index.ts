@@ -5,7 +5,9 @@ import {
   COMMANDER_X_HERO_ID,
   COMMANDER_X_SUMMONED_BLUEPRINTS,
   COMMANDER_X_SUMMON_FOOTPRINTS,
+  createCommanderXInitialListeners,
 } from "./commander_x";
+import type { ListenerDefinition } from "../shared/models";
 
 export const HERO_DEFINITIONS_BY_ID = {
   [COMMANDER_X_HERO_ID]: COMMANDER_X_HERO,
@@ -31,4 +33,15 @@ export function resolveEntityActiveProfile(options: {
 
 export function resolveSummonFootprint(entityDefinitionId: string) {
   return COMMANDER_X_SUMMON_FOOTPRINTS[entityDefinitionId];
+}
+
+export function resolveHeroInitialListeners(options: {
+  heroDefinitionId: string;
+  heroEntityId: string;
+}): ListenerDefinition[] {
+  if (options.heroDefinitionId === COMMANDER_X_HERO_ID) {
+    return createCommanderXInitialListeners(options.heroEntityId);
+  }
+
+  return [];
 }

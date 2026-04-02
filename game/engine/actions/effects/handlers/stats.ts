@@ -7,11 +7,21 @@ import { targetEntityIdFromSelector } from "../targeting";
 export function handleGainArmorEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, lastDamageWasDodged } = context;
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
 
-  if (effect.payload.kind !== "gainArmor") {
-    return { ok: false, reason: "handleGainArmorEffect received non-gainArmor payload." };
+  if (effect.payload.kind !== "gainArmor" && effect.payload.kind !== "loseArmor") {
+    return { ok: false, reason: "handleGainArmorEffect received unsupported payload." };
   }
+
+  const signedAmount = effect.payload.kind === "gainArmor" ? effect.payload.amount : -effect.payload.amount;
 
   const targetId = targetEntityIdFromSelector({
     selector: effect.payload.target,
@@ -36,31 +46,46 @@ export function handleGainArmorEffect(
         ...state.entitiesById,
         [targetId]: {
           ...target,
-          armor: target.armor + effect.payload.amount,
+          armor: Math.max(0, target.armor + signedAmount),
         },
       },
     },
     events: [
       {
-        kind: "armorGained",
+        kind: signedAmount >= 0 ? "armorGained" : "armorLost",
         sequence,
         targetEntityId: targetId,
-        amount: effect.payload.amount,
+        amount: Math.abs(signedAmount),
       },
     ],
     nextSequence: sequence + 1,
     lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }
 
 export function handleGainMagicResistEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, lastDamageWasDodged } = context;
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
 
-  if (effect.payload.kind !== "gainMagicResist") {
-    return { ok: false, reason: "handleGainMagicResistEffect received non-gainMagicResist payload." };
+  if (
+    effect.payload.kind !== "gainMagicResist" &&
+    effect.payload.kind !== "loseMagicResist"
+  ) {
+    return { ok: false, reason: "handleGainMagicResistEffect received unsupported payload." };
   }
+
+  const signedAmount =
+    effect.payload.kind === "gainMagicResist" ? effect.payload.amount : -effect.payload.amount;
 
   const targetId = targetEntityIdFromSelector({
     selector: effect.payload.target,
@@ -85,31 +110,46 @@ export function handleGainMagicResistEffect(
         ...state.entitiesById,
         [targetId]: {
           ...target,
-          magicResist: target.magicResist + effect.payload.amount,
+          magicResist: Math.max(0, target.magicResist + signedAmount),
         },
       },
     },
     events: [
       {
-        kind: "magicResistGained",
+        kind: signedAmount >= 0 ? "magicResistGained" : "magicResistLost",
         sequence,
         targetEntityId: targetId,
-        amount: effect.payload.amount,
+        amount: Math.abs(signedAmount),
       },
     ],
     nextSequence: sequence + 1,
     lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }
 
 export function handleGainAttackDamageEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, lastDamageWasDodged } = context;
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
 
-  if (effect.payload.kind !== "gainAttackDamage") {
-    return { ok: false, reason: "handleGainAttackDamageEffect received non-gainAttackDamage payload." };
+  if (
+    effect.payload.kind !== "gainAttackDamage" &&
+    effect.payload.kind !== "loseAttackDamage"
+  ) {
+    return { ok: false, reason: "handleGainAttackDamageEffect received unsupported payload." };
   }
+
+  const signedAmount =
+    effect.payload.kind === "gainAttackDamage" ? effect.payload.amount : -effect.payload.amount;
 
   const targetId = targetEntityIdFromSelector({
     selector: effect.payload.target,
@@ -134,19 +174,20 @@ export function handleGainAttackDamageEffect(
         ...state.entitiesById,
         [targetId]: {
           ...target,
-          attackDamage: target.attackDamage + effect.payload.amount,
+          attackDamage: Math.max(0, target.attackDamage + signedAmount),
         },
       },
     },
     events: [
       {
-        kind: "attackDamageGained",
+        kind: signedAmount >= 0 ? "attackDamageGained" : "attackDamageLost",
         sequence,
         targetEntityId: targetId,
-        amount: effect.payload.amount,
+        amount: Math.abs(signedAmount),
       },
     ],
     nextSequence: sequence + 1,
     lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }

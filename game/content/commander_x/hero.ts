@@ -1,4 +1,4 @@
-import type { HeroDefinition } from "../../shared/models";
+import type { HeroDefinition, ListenerDefinition } from "../../shared/models";
 import { COMMANDER_X_HERO_ID } from "./constants";
 
 export const COMMANDER_X_HERO = {
@@ -29,3 +29,33 @@ export const COMMANDER_X_HERO = {
   },
   passiveText: "Your attacks restore 1 HP (if not dodged).",
 } satisfies HeroDefinition;
+
+export function createCommanderXInitialListeners(heroEntityId: string): ListenerDefinition[] {
+  return [
+    {
+      listenerId: `${heroEntityId}:passive:heal-on-attack`,
+      eventKind: "damageApplied",
+      ownerHeroEntityId: heroEntityId,
+      conditions: [
+        { kind: "damageNotDodged" },
+        { kind: "damageSourceIsListenerOwnerHero" },
+      ],
+      lifetime: "persistent",
+      effects: [
+        {
+          id: "effect.commander-x.passive.heal-on-attack",
+          payload: {
+            kind: "heal",
+            target: "sourceOwnerHero",
+            minimum: 1,
+            maximum: 1,
+          },
+          displayText: {
+            mode: "static",
+            text: "Restore 1 HP.",
+          },
+        },
+      ],
+    },
+  ];
+}

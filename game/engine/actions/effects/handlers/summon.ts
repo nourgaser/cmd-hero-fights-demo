@@ -87,5 +87,6 @@ export function handleSummonEffect(
     ],
     nextSequence: sequence + 1,
     lastDamageWasDodged,
+    lastSummonedEntityId: summonedEntityId,
   };
 }

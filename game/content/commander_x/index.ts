@@ -1,4 +1,4 @@
-export { COMMANDER_X_HERO } from "./hero";
+export { COMMANDER_X_HERO, createCommanderXInitialListeners } from "./hero";
 export { COMMANDER_X_HERO_ID } from "./constants";
 export {
   COMMANDER_X_CARDS,

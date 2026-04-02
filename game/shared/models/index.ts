@@ -2,7 +2,7 @@ export * from "./action";
 export * from "./battle-state";
 export * from "./battlefield-occupancy";
 export * from "./card";
-export * from "./effect";
+export * from "./effects/index.ts";
 export * from "./event";
 export * from "./footprint";
 export * from "./hero";

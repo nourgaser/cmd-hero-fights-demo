@@ -27,5 +27,33 @@ export const BATTLE_FOCUS_CARD = {
         text: "Next attack deals +2 damage.",
       },
     },
+    {
+      id: "effect.battle-focus.consume-on-next-attack",
+      payload: {
+        kind: "addListener",
+        listenerId: "listener.battle-focus.consume",
+        eventKind: "damageApplied",
+        conditions: [{ kind: "damageSourceIsListenerOwnerHero" }],
+        lifetime: "once",
+        effects: [
+          {
+            id: "effect.battle-focus.remove-attack-bonus",
+            payload: {
+              kind: "loseAttackDamage",
+              target: "sourceOwnerHero",
+              amount: 2,
+            },
+            displayText: {
+              mode: "static",
+              text: "Remove Battle Focus bonus after your next attack.",
+            },
+          },
+        ],
+      },
+      displayText: {
+        mode: "static",
+        text: "Consume this bonus after your next attack.",
+      },
+    },
   ],
 } satisfies CardDefinition;

@@ -6,6 +6,7 @@ import {
   type EntityId,
   type HeroDefinition,
   type HeroEntityState,
+  type ListenerDefinition,
   type Position,
   createEmptyBattlefieldOccupancy,
   footprintFits,
@@ -30,6 +31,10 @@ export type CreateBattleInput = {
   battlefieldColumns: number;
   openingHandSize: number;
   heroes: [CreateBattleHeroSetup, CreateBattleHeroSetup];
+  resolveHeroInitialListeners?: (context: {
+    hero: HeroDefinition;
+    heroEntityId: string;
+  }) => ListenerDefinition[];
 };
 
 export type CreatedBattle = {
@@ -194,6 +199,17 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     input.openingHandSize,
   );
 
+  const initialListeners = [
+    ...(input.resolveHeroInitialListeners?.({
+      hero: heroASetup.hero,
+      heroEntityId: heroASetup.heroEntityId,
+    }) ?? []),
+    ...(input.resolveHeroInitialListeners?.({
+      hero: heroBSetup.hero,
+      heroEntityId: heroBSetup.heroEntityId,
+    }) ?? []),
+  ];
+
   const state: BattleState = {
     battleId: input.battleId,
     seed: input.seed,
@@ -211,6 +227,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
       [heroBState.entityId]: heroBState,
     },
     battlefieldOccupancy: occupancy,
+    activeListeners: initialListeners,
   };
 
   return {

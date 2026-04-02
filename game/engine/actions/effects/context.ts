@@ -32,6 +32,7 @@ export type ExecuteCardEffectResult =
       events: BattleEvent[];
       nextSequence: number;
       lastDamageWasDodged: boolean | undefined;
+      lastSummonedEntityId: string | undefined;
     }
   | {
       ok: false;
@@ -46,6 +47,7 @@ export type EffectExecutionContext = {
   sequence: number;
   battleRng: BattleRng;
   lastDamageWasDodged: boolean | undefined;
+  lastSummonedEntityId: string | undefined;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;

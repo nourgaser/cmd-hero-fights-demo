@@ -93,6 +93,7 @@ export function resolvePlayCardAction(options: {
   let sequence = nextSequence;
   const events: BattleEvent[] = [];
   let lastDamageWasDodged: boolean | undefined;
+  let lastSummonedEntityId: string | undefined;
 
   // Stage 2: apply card cost and move card from hand to discard.
   const actorAfterCost = {
@@ -141,6 +142,7 @@ export function resolvePlayCardAction(options: {
       sequence,
       battleRng,
       lastDamageWasDodged,
+      lastSummonedEntityId,
       createSummonedEntityId,
       resolveSummonedEntityBlueprint,
     });
@@ -157,6 +159,7 @@ export function resolvePlayCardAction(options: {
     events.push(...execution.events);
     sequence = execution.nextSequence;
     lastDamageWasDodged = execution.lastDamageWasDodged;
+    lastSummonedEntityId = execution.lastSummonedEntityId;
   }
 
   // Stage 4: emit action resolved event.

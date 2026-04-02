@@ -1,5 +1,4 @@
 import {
-  type EffectPayloadKind,
   type BattleState,
 } from "../../../shared/models";
 import {
@@ -9,8 +8,10 @@ import {
 } from "./context";
 import { handleDealDamageEffect, handleHealEffect } from "./handlers/combat";
 import {
+  handleAddListenerEffect,
   handleDrawCardsEffect,
   handleModifyAttackDamageWhileSourcePresentEffect,
+  handleRemoveListenerEffect,
   handleRefundMoveCostEffect,
 } from "./handlers/economy";
 import { handleGainArmorEffect, handleGainMagicResistEffect, handleGainAttackDamageEffect } from "./handlers/stats";
@@ -18,23 +19,31 @@ import { handleSummonEffect } from "./handlers/summon";
 
 type EffectHandler = (context: EffectExecutionContext) => ExecuteCardEffectResult;
 
-const effectHandlers: Record<EffectPayloadKind, EffectHandler> = {
+const effectHandlers = {
   summonEntity: handleSummonEffect,
   gainArmor: handleGainArmorEffect,
+  loseArmor: handleGainArmorEffect,
   gainMagicResist: handleGainMagicResistEffect,
+  loseMagicResist: handleGainMagicResistEffect,
   gainAttackDamage: handleGainAttackDamageEffect,
+  loseAttackDamage: handleGainAttackDamageEffect,
   drawCards: handleDrawCardsEffect,
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,
   refundMoveCost: handleRefundMoveCostEffect,
   modifyAttackDamageWhileSourcePresent: handleModifyAttackDamageWhileSourcePresentEffect,
-};
+  addListener: handleAddListenerEffect,
+  removeListener: handleRemoveListenerEffect,
+} satisfies Record<string, EffectHandler>;
 
 export { type SummonedEntityBlueprint };
 export { type ExecuteCardEffectResult };
 
 export function executeCardEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
-  const handler = effectHandlers[context.effect.payload.kind];
+  const handler = effectHandlers[context.effect.payload.kind as keyof typeof effectHandlers];
+  if (!handler) {
+    return { ok: false, reason: `Unsupported effect kind: ${String(context.effect.payload.kind)}` };
+  }
   return handler(context);
 }
 

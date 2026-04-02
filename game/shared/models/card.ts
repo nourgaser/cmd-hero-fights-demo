@@ -1,6 +1,6 @@
 import { z } from "zod";
 
-import { EffectDefinitionSchema, EffectDisplayTextSchema } from "./effect";
+import { EffectDefinitionSchema, EffectDisplayTextSchema } from "./effects/index";
 import { HeroIdSchema } from "./hero";
 
 export const CardIdSchema = z.string().min(1);

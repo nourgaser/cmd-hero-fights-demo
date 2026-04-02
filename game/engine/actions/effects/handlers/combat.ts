@@ -9,7 +9,16 @@ import { targetEntityIdFromSelector } from "../targeting";
 export function handleHealEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, battleRng, lastDamageWasDodged } = context;
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    battleRng,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  } = context;
 
   if (effect.payload.kind !== "heal") {
     return { ok: false, reason: "handleHealEffect received non-heal payload." };
@@ -66,13 +75,14 @@ export function handleHealEffect(
     ],
     nextSequence: sequence + 1,
     lastDamageWasDodged,
+    lastSummonedEntityId,
   };
 }
 
 export function handleDealDamageEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, battleRng } = context;
+  const { state, effect, action, actorHero, sequence, battleRng, lastSummonedEntityId } = context;
 
   if (effect.payload.kind !== "dealDamage") {
     return { ok: false, reason: "handleDealDamageEffect received non-dealDamage payload." };
@@ -155,5 +165,6 @@ export function handleDealDamageEffect(
     ],
     nextSequence: sequence + 1,
     lastDamageWasDodged: wasDodged,
+    lastSummonedEntityId,
   };
 }

@@ -30,6 +30,8 @@ import {
 } from "./resolve-use-entity-active";
 import { type SummonedEntityBlueprint } from "./effects/execute-card-effect.ts";
 import { type HeroDefinition } from "../../shared/models";
+import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
+import { resolveTriggeredListeners } from "./resolve-listeners";
 
 export type ResolveActionResult =
   | {
@@ -79,6 +81,8 @@ export function resolveAction(options: {
     resolveEntityActiveProfile,
   } = options;
 
+  let baseResult: ResolveActionResult;
+
   switch (action.kind) {
     case "playCard": {
       const result: ResolvePlayCardResult = resolvePlayCardAction({
@@ -95,8 +99,8 @@ export function resolveAction(options: {
       if (!result.ok) {
         return result;
       }
-
-      return result;
+      baseResult = result;
+      break;
     }
     case "endTurn": {
       const result: ResolveEndTurnResult = resolveEndTurnAction({
@@ -108,8 +112,8 @@ export function resolveAction(options: {
       if (!result.ok) {
         return result;
       }
-
-      return result;
+      baseResult = result;
+      break;
     }
     case "pressLuck": {
       const result: ResolvePressLuckResult = resolvePressLuckAction({
@@ -121,8 +125,8 @@ export function resolveAction(options: {
       if (!result.ok) {
         return result;
       }
-
-      return result;
+      baseResult = result;
+      break;
     }
     case "basicAttack": {
       const result: ResolveBasicAttackResult = resolveBasicAttackAction({
@@ -136,8 +140,8 @@ export function resolveAction(options: {
       if (!result.ok) {
         return result;
       }
-
-      return result;
+      baseResult = result;
+      break;
     }
     case "useEntityActive": {
       const result: ResolveUseEntityActiveResult = resolveUseEntityActiveAction({
@@ -151,8 +155,8 @@ export function resolveAction(options: {
       if (!result.ok) {
         return result;
       }
-
-      return result;
+      baseResult = result;
+      break;
     }
     default:
       return {
@@ -161,4 +165,35 @@ export function resolveAction(options: {
         reason: "Unsupported action kind.",
       };
   }
+
+  const cleanup = removeDefeatedSummonedEntities({
+    state: baseResult.state,
+    nextSequence: baseResult.nextSequence,
+  });
+
+  const eventsAfterCleanup = [...baseResult.events, ...cleanup.events];
+
+  const listenerResolution = resolveTriggeredListeners({
+    state: cleanup.state,
+    seedActionEvents: eventsAfterCleanup,
+    nextSequence: cleanup.nextSequence,
+    battleRng,
+    createSummonedEntityId,
+    resolveSummonedEntityBlueprint,
+  });
+
+  if (!listenerResolution.ok) {
+    return {
+      ok: false,
+      state,
+      reason: listenerResolution.reason,
+    };
+  }
+
+  return {
+    ok: true,
+    state: listenerResolution.state,
+    events: [...eventsAfterCleanup, ...listenerResolution.events],
+    nextSequence: listenerResolution.nextSequence,
+  };
 }
