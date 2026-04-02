@@ -41,10 +41,10 @@ This checklist is the implementation gate for MVP work.
 - [x] Frontend stack bootstrap (Vite + React + TypeScript)
 - [x] Icon stack bootstrap (`@iconify-json/game-icons`, optional renderer package during app phase)
 - [x] App imports only public game API entry (`game/index.ts`)
-- [ ] Split-screen layout (Player A / Player B)
-- [ ] Battle bootstrap UI (seed + start/reset)
-- [ ] Battlefield occupancy view with procedural visuals
-- [ ] Card/entity icon mapping via `game-icons:*` ids and visual metadata policy
+- [x] Split-screen layout (Player A / Player B)
+- [x] Battle bootstrap UI (seed + start/reset)
+- [x] Battlefield occupancy view with procedural visuals
+- [x] Card/entity icon mapping via `game-icons:*` ids and visual metadata policy
 - [ ] Hand and card play controls (with targeting)
 - [ ] Non-card action controls (basic attack, entity active, press luck, end turn)
 - [ ] Event feed and invalid-action feedback

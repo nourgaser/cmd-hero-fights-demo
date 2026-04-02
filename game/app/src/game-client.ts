@@ -10,7 +10,27 @@ export type AppBattlePreview = {
   seed: string
   heroEntityIds: [string, string]
   activeHeroEntityId: string
-  heroHandCounts: Array<{ heroEntityId: string; handSize: number; deckSize: number }>
+  luck: {
+    anchorHeroEntityId: string
+    balance: number
+  }
+  heroHandCounts: Array<{
+    heroEntityId: string
+    handSize: number
+    deckSize: number
+    battlefieldSide: 'north' | 'south'
+  }>
+  battlefield: {
+    rows: number
+    columns: number
+    cells: Array<{
+      row: number
+      column: number
+      occupantKind: 'hero' | 'weapon' | 'totem' | 'companion' | null
+      ownerHeroEntityId: string | null
+      entityId: string | null
+    }>
+  }
 }
 
 function resolveHeroSetup(
@@ -75,14 +95,42 @@ export function createInitialBattlePreview(
       heroEntityId,
       handSize: entity.handCards.length,
       deckSize: entity.deckCardIds.length,
+        battlefieldSide: entity.battlefieldSide,
     }
   })
+
+  const { rows, columns } = createdBattle.state.battlefieldOccupancy.dimensions
+  const cells: AppBattlePreview['battlefield']['cells'] = []
+
+  for (let row = 0; row < rows; row += 1) {
+    for (let column = 0; column < columns; column += 1) {
+      const key = `${row}:${column}`
+      const occupant = createdBattle.state.battlefieldOccupancy.occupiedByPosition[key]
+
+      cells.push({
+        row,
+        column,
+        occupantKind: occupant?.kind ?? null,
+        ownerHeroEntityId: occupant?.ownerHeroEntityId ?? null,
+        entityId: occupant?.entityId ?? null,
+      })
+    }
+  }
 
   return {
     battleId: createdBattle.state.battleId,
     seed: createdBattle.state.seed,
     heroEntityIds: createdBattle.state.heroEntityIds,
     activeHeroEntityId: createdBattle.state.turn.activeHeroEntityId,
+    luck: {
+      anchorHeroEntityId: createdBattle.state.luck.anchorHeroEntityId,
+      balance: createdBattle.state.luck.balance,
+    },
     heroHandCounts,
+    battlefield: {
+      rows,
+      columns,
+      cells,
+    },
   }
 }
