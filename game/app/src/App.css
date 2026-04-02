@@ -1,17 +1,17 @@
 .dual-screens {
   display: grid;
-  gap: 16px;
+  gap: 48px;
   grid-template-columns: 1fr 1fr;
-  padding: 22px;
+  padding: 32px;
 }
 
 .screen {
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 14px;
+  padding: 20px;
   background: color-mix(in srgb, var(--panel) 90%, #ffffff 10%);
   display: grid;
-  gap: 12px;
+  gap: 18px;
 }
 
 .screen-head {
@@ -33,7 +33,7 @@
 .card {
   border: 1px solid var(--border);
   border-radius: 12px;
-  padding: 12px;
+  padding: 14px;
   text-align: left;
   background: color-mix(in srgb, var(--panel) 88%, var(--code-bg) 12%);
 }
@@ -102,8 +102,8 @@
 .luck-strip {
   display: grid;
   justify-items: center;
-  gap: 2px;
-  padding: 2px 0 0;
+  gap: 4px;
+  padding: 4px 0 0;
 }
 
 h2.luck-title {
@@ -208,9 +208,12 @@ h2.luck-title > * {
 }
 
 .battle-grid {
-  margin-top: 8px;
+  margin-top: 12px;
   display: grid;
-  gap: 6px;
+  gap: 8px;
+  padding: 16px;
+  border-radius: 8px;
+  background: color-mix(in srgb, var(--background) 96%, var(--code-bg) 4%);
 }
 
 .battle-slot {
@@ -218,7 +221,7 @@ h2.luck-title > * {
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
-  padding: 4px;
+  padding: 6px;
   text-align: center;
   box-sizing: border-box;
 }
@@ -244,20 +247,20 @@ h2.luck-title > * {
 }
 
 .occupier-icon {
-  font-size: clamp(22px, 2.8vw, 36px);
+  font-size: clamp(24px, 3vw, 40px);
 }
 
 .cell-empty {
-  width: 14px;
-  height: 14px;
+  width: 16px;
+  height: 16px;
   border-radius: 999px;
   border: 1px dashed color-mix(in srgb, var(--text) 45%, transparent);
 }
 
 .deck-overlay {
   position: absolute;
-  right: 10px;
-  top: 50%;
+  right: 12px;
+  top: 65%;
   transform: translateY(-50%);
   z-index: 30;
 }
@@ -337,24 +340,24 @@ h2.luck-title > * {
 
 .action-controls {
   position: absolute;
-  left: 10px;
-  top: 50%;
-  transform: translateY(-50%);
+  left: 12px;
+  top: 20%;
+  transform: none;
   z-index: 30;
 }
 
 .action-buttons {
   display: grid;
-  grid-template-columns: repeat(2, 1fr);
-  gap: 8px;
+  grid-template-columns: 1fr;
+  gap: 12px;
   list-style: none;
   margin: 0;
   padding: 0;
 }
 
 .action-button {
-  width: 44px;
-  height: 44px;
+  width: 48px;
+  height: 48px;
   border-radius: 8px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--code-bg) 75%, #ffffff 25%);
@@ -374,9 +377,9 @@ h2.luck-title > * {
 }
 
 .action-icon {
-  width: 20px;
-  height: 20px;
-  font-size: 20px;
+  width: 22px;
+  height: 22px;
+  font-size: 22px;
 }
 
 .action-hover-card {
@@ -384,7 +387,7 @@ h2.luck-title > * {
   right: calc(100% + 12px);
   bottom: 50%;
   transform: translateY(50%) scale(0.98);
-  min-width: 200px;
+  min-width: 220px;
   text-align: left;
 }
 
