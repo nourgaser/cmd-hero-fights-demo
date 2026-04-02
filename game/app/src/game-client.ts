@@ -22,6 +22,25 @@ export type AppBattlePreview = {
     movePoints: number
     maxMovePoints: number
   }>
+  heroDetailsByEntityId: Record<
+    string,
+    {
+      heroEntityId: string
+      heroDefinitionId: string
+      heroName: string
+      passiveText: string
+      basicAttack: {
+        moveCost: number
+        damageType: 'physical' | 'magic' | 'true'
+        minimumDamage: number
+        maximumDamage: number
+        attackDamageScaling: number
+        abilityPowerScaling: number
+        summaryText: string
+        currentRangeText: string
+      }
+    }
+  >
   heroHands: Array<{
     heroEntityId: string
     cards: Array<{
@@ -83,6 +102,56 @@ export type AppBattlePreview = {
         maxMovePoints: number
       }
     >
+  }
+}
+
+function formatPreviewNumber(value: number): string {
+  const rounded = Math.round(value * 100) / 100
+  return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`
+}
+
+function buildHeroBasicAttackSummary(options: {
+  heroName: string
+  attack: {
+    minimumDamage: number
+    maximumDamage: number
+    attackDamageScaling: number
+    abilityPowerScaling: number
+    damageType: 'physical' | 'magic' | 'true'
+  }
+  currentAttackDamage: number
+  currentAbilityPower: number
+}): {
+  summaryText: string
+  currentRangeText: string
+} {
+  const { heroName, attack, currentAttackDamage, currentAbilityPower } = options
+  const scalingParts = [
+    attack.attackDamageScaling > 0
+      ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% of current attack damage`
+      : null,
+    attack.abilityPowerScaling > 0
+      ? `${formatPreviewNumber(attack.abilityPowerScaling * 100)}% of current ability power`
+      : null,
+  ].filter((part): part is string => !!part)
+
+  const summaryText =
+    scalingParts.length > 0
+      ? `Base ${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)} ${attack.damageType} damage + ${scalingParts.join(' + ')}.`
+      : `Base ${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)} ${attack.damageType} damage.`
+
+  const minimum =
+    attack.minimumDamage +
+    currentAttackDamage * attack.attackDamageScaling +
+    currentAbilityPower * attack.abilityPowerScaling
+  const maximum =
+    attack.maximumDamage +
+    currentAttackDamage * attack.attackDamageScaling +
+    currentAbilityPower * attack.abilityPowerScaling
+
+  return {
+    summaryText: `${heroName} basic attack. ${summaryText}`,
+    currentRangeText: `Current window: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)} ${attack.damageType} damage before dodge and resistance.`,
   }
 }
 
@@ -201,6 +270,44 @@ function buildPreviewFromState(options: {
     }
   })
 
+  const heroDetailsByEntityId: AppBattlePreview['heroDetailsByEntityId'] = {}
+  for (const heroEntityId of state.heroEntityIds) {
+    const entity = state.entitiesById[heroEntityId]
+
+    if (!entity || entity.kind !== 'hero') {
+      throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
+    }
+
+    const heroDef = heroesById[entity.heroDefinitionId]
+    if (!heroDef) {
+      throw new Error(`Missing hero definition '${entity.heroDefinitionId}' while building preview.`)
+    }
+
+    const basicAttack = buildHeroBasicAttackSummary({
+      heroName: heroDef.name,
+      attack: heroDef.basicAttack,
+      currentAttackDamage: entity.attackDamage,
+      currentAbilityPower: entity.abilityPower,
+    })
+
+    heroDetailsByEntityId[heroEntityId] = {
+      heroEntityId,
+      heroDefinitionId: entity.heroDefinitionId,
+      heroName: heroDef.name,
+      passiveText: heroDef.passiveText,
+      basicAttack: {
+        moveCost: heroDef.basicAttack.moveCost,
+        damageType: heroDef.basicAttack.damageType,
+        minimumDamage: heroDef.basicAttack.minimumDamage,
+        maximumDamage: heroDef.basicAttack.maximumDamage,
+        attackDamageScaling: heroDef.basicAttack.attackDamageScaling,
+        abilityPowerScaling: heroDef.basicAttack.abilityPowerScaling,
+        summaryText: basicAttack.summaryText,
+        currentRangeText: basicAttack.currentRangeText,
+      },
+    }
+  }
+
   const heroActionTargets = state.heroEntityIds.map((heroEntityId) => {
     const entity = state.entitiesById[heroEntityId]
 
@@ -294,6 +401,7 @@ function buildPreviewFromState(options: {
       balance: state.luck.balance,
     },
     heroHandCounts,
+    heroDetailsByEntityId,
     heroHands,
     heroActionTargets,
     battlefield: {

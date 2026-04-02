@@ -121,8 +121,8 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
         role="grid"
         aria-label="Battlefield cells"
         style={{
-          gridTemplateColumns: `repeat(${preview.battlefield.columns}, minmax(0, 1fr))`,
-            gridTemplateRows: `repeat(${preview.battlefield.rows}, 58px)`,
+          gridTemplateColumns: `repeat(${preview.battlefield.columns}, minmax(var(--battle-cell-size, 112px), 1fr))`,
+          gridTemplateRows: `repeat(${preview.battlefield.rows}, var(--battle-cell-size, 112px))`,
         }}
       >
           {emptySlots.map((slot) => {
@@ -143,7 +143,9 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 role="gridcell"
                 aria-label={
                   isSelectablePlacement
-                    ? `Empty selectable placement cell at row ${rowLabel}, column ${colLabel}`
+                    ? isSelectedPlacement
+                      ? `Selected placement cell at row ${rowLabel}, column ${colLabel}. Activate again to confirm.`
+                      : `Empty selectable placement cell at row ${rowLabel}, column ${colLabel}`
                     : `Empty cell at row ${rowLabel}, column ${colLabel}`
                 }
                 style={{
@@ -167,7 +169,13 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 }
                 tabIndex={isSelectablePlacement ? 0 : undefined}
               >
-                <span className="cell-empty" aria-hidden="true" />
+                {isSelectedPlacement ? (
+                  <span className="placement-check-icon" aria-hidden="true">
+                    <Icon icon="game-icons:check-mark" />
+                  </span>
+                ) : (
+                  <span className="cell-empty" aria-hidden="true" />
+                )}
               </div>
             )
           })}
@@ -186,10 +194,12 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                   : ''
             const meta = ENTITY_ICON_META[occupier.kind]
             const entityStats = preview.battlefield.entitiesById[occupier.entityId]
+            const heroDetails = preview.heroDetailsByEntityId[occupier.entityId] ?? null
             const ariaLabel = `${meta.label ?? occupier.kind} occupying ${occupier.rowSpan} by ${occupier.columnSpan} cells from row ${occupier.minRow + 1}, column ${occupier.minColumn + 1}`
             const healthPercent = entityStats
               ? Math.max(0, Math.min(100, (entityStats.currentHealth / Math.max(1, entityStats.maxHealth)) * 100))
               : 0
+            const healthHue = Math.round((healthPercent / 100) * 120)
 
             return (
               <div
@@ -224,22 +234,59 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 }
                 tabIndex={isSelectableTarget || isSelectableEntity ? 0 : undefined}
               >
+                {isSelectedTarget && isSelectableTarget ? (
+                  <span className="target-check-icon" aria-hidden="true">
+                    <Icon icon="game-icons:check-mark" />
+                  </span>
+                ) : null}
+
                 <span className="hint-wrap" tabIndex={0}>
                   <Icon icon={meta.id} className="occupier-icon" aria-hidden="true" />
                   <span className="sr-only">{ariaLabel}</span>
                   <span className="hover-card battlefield-hover-card" role="tooltip">
-                    <strong>{entityStats?.displayName ?? meta.label ?? occupier.kind}</strong>
-                    <span>{meta.description ?? 'Unit on battlefield.'}</span>
-                    {entityStats ? (
+                    <div className="battlefield-hover-header">
+                      <strong>{entityStats?.displayName ?? meta.label ?? occupier.kind}</strong>
+                      <span className="battlefield-hover-kicker">
+                        {heroDetails ? 'Hero' : meta.label ?? occupier.kind}
+                      </span>
+                    </div>
+                    {heroDetails ? (
                       <>
-                        <span className="hover-group-title">Vitals</span>
-                        <span>HP: {entityStats.currentHealth} / {entityStats.maxHealth}</span>
-                        <span>Moves: {entityStats.movePoints} / {entityStats.maxMovePoints}</span>
-                        <span className="hover-group-title">Combat</span>
-                        <span>AD: {entityStats.attackDamage} | AP: {entityStats.abilityPower}</span>
-                        <span>Armor: {entityStats.armor} | MR: {entityStats.magicResist}</span>
-                        <span>Crit: {Math.round(entityStats.criticalChance * 100)}% | Dodge: {Math.round(entityStats.dodgeChance * 100)}%</span>
+                        <div className="battlefield-hover-section">
+                          <span className="hover-group-title">Passive</span>
+                          <span>{heroDetails.passiveText}</span>
+                        </div>
+                        <div className="battlefield-hover-section">
+                          <span className="hover-group-title">Basic Attack</span>
+                          <span>{heroDetails.basicAttack.summaryText}</span>
+                          <span>{heroDetails.basicAttack.currentRangeText}</span>
+                          <span className="battlefield-hover-note">
+                            Costs {heroDetails.basicAttack.moveCost} moves. Damage type: {heroDetails.basicAttack.damageType}.
+                          </span>
+                        </div>
                       </>
+                    ) : (
+                      <div className="battlefield-hover-section">
+                        <span>{meta.description ?? 'Unit on battlefield.'}</span>
+                      </div>
+                    )}
+                    {entityStats ? (
+                      <div className="battlefield-hover-section">
+                        <span className="hover-group-title">Vitals</span>
+                        <div className="battlefield-hover-grid">
+                          <span className="battlefield-hover-stat"><strong>HP</strong><em>{entityStats.currentHealth} / {entityStats.maxHealth}</em></span>
+                          <span className="battlefield-hover-stat"><strong>Moves</strong><em>{entityStats.movePoints} / {entityStats.maxMovePoints}</em></span>
+                        </div>
+                        <span className="hover-group-title">Combat</span>
+                        <div className="battlefield-hover-grid">
+                          <span className="battlefield-hover-stat"><strong>AD</strong><em>{entityStats.attackDamage}</em></span>
+                          <span className="battlefield-hover-stat"><strong>AP</strong><em>{entityStats.abilityPower}</em></span>
+                          <span className="battlefield-hover-stat"><strong>Armor</strong><em>{entityStats.armor}</em></span>
+                          <span className="battlefield-hover-stat"><strong>MR</strong><em>{entityStats.magicResist}</em></span>
+                          <span className="battlefield-hover-stat"><strong>Crit</strong><em>{Math.round(entityStats.criticalChance * 100)}%</em></span>
+                          <span className="battlefield-hover-stat"><strong>Dodge</strong><em>{Math.round(entityStats.dodgeChance * 100)}%</em></span>
+                        </div>
+                      </div>
                     ) : null}
                   </span>
                 </span>
@@ -249,7 +296,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                     <span className="entity-stats-row" aria-hidden="true">
                       <span className="entity-stat-pill">
                         <Icon icon="game-icons:broadsword" />
-                        {Math.round(entityStats.attackDamage)}
+                        {entityStats.attackDamage}
                       </span>
                       <span className="entity-stat-pill">
                         <Icon icon="game-icons:checked-shield" />
@@ -257,7 +304,16 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       </span>
                     </span>
                     <span className="entity-healthbar" aria-hidden="true">
-                      <span className="entity-healthbar-fill" style={{ width: `${healthPercent}%` }} />
+                      <span
+                        className="entity-healthbar-fill"
+                        style={{
+                          width: `${healthPercent}%`,
+                          background: `linear-gradient(90deg, hsl(${healthHue} 72% 44%), hsl(${healthHue} 78% 56%))`,
+                        }}
+                      />
+                      <span className="entity-healthbar-value">
+                        {entityStats.currentHealth}/{entityStats.maxHealth}
+                      </span>
                     </span>
                   </>
                 ) : null}

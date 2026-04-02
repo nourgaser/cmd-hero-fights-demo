@@ -38,6 +38,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
   } = props
 
   const self = preview.heroHandCounts.find((hero) => hero.heroEntityId === selfId)
+  const selfHeroDetails = preview.heroDetailsByEntityId[selfId] ?? null
   const enemySideKey = selfSideKey === 'a' ? 'b' : 'a'
   const shouldFlipRows = self?.battlefieldSide === 'north'
   const selfHandSize = self?.handSize ?? 0
@@ -56,7 +57,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     row: number
     column: number
   } | null>(null)
-  const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | 'entityActiveTarget' | null>(null)
+  const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null>(null)
   const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
 
   const focusedCard = useMemo(() => {
@@ -69,12 +70,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
   const basicAttackMoveCost = selfActionTargets?.basicAttack.moveCost ?? 0
   const pressLuckMoveCost = selfActionTargets?.pressLuck.moveCost ?? 3
+  const canConfirmPressLuck = isActivePlayer && selfMovePoints >= pressLuckMoveCost
   const entityActiveOptions = selfActionTargets?.entityActive ?? []
   const entityActiveSourceIds = entityActiveOptions.map((entry) => entry.sourceEntityId)
   const selectedEntityActiveOption = selectedEntityActiveSourceId
     ? entityActiveOptions.find((entry) => entry.sourceEntityId === selectedEntityActiveSourceId) ?? null
     : null
   const entityActiveTargetEntityIds = selectedEntityActiveOption?.validTargetEntityIds ?? []
+  const canBeginBasicAttack = isActivePlayer && selfMovePoints >= basicAttackMoveCost
+  const canBeginPressLuck = isActivePlayer && selfMovePoints >= pressLuckMoveCost
   const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
   const highlightedTargetEntityIds =
     pendingActionMode === 'basicAttack'
@@ -100,6 +104,12 @@ export function PlayerScreen(props: PlayerScreenProps) {
       if (!basicAttackTargetEntityIds.includes(targetEntityId)) {
         return
       }
+
+      if (selectedTargetEntityId === targetEntityId) {
+        handleConfirmBasicAttack()
+        return
+      }
+
       setSelectedTargetEntityId(targetEntityId)
       return
     }
@@ -113,6 +123,12 @@ export function PlayerScreen(props: PlayerScreenProps) {
       if (!entityActiveTargetEntityIds.includes(targetEntityId)) {
         return
       }
+
+      if (selectedTargetEntityId === targetEntityId) {
+        handleConfirmEntityActive()
+        return
+      }
+
       setSelectedTargetEntityId(targetEntityId)
       return
     }
@@ -121,11 +137,20 @@ export function PlayerScreen(props: PlayerScreenProps) {
       return
     }
 
+    if (selectedTargetEntityId === targetEntityId) {
+      handleConfirmFocusedCard()
+      return
+    }
+
     setSelectedTargetEntityId(targetEntityId)
   }
 
   const handleSelectBattlefieldEntity = (entityId: string) => {
     if (!isActivePlayer) {
+      return
+    }
+
+    if (pendingActionMode === 'pressLuckConfirm') {
       return
     }
 
@@ -155,6 +180,14 @@ export function PlayerScreen(props: PlayerScreenProps) {
     )
 
     if (!isValid) {
+      return
+    }
+
+    if (
+      selectedPlacementPosition?.row === position.row &&
+      selectedPlacementPosition?.column === position.column
+    ) {
+      handleConfirmFocusedCard()
       return
     }
 
@@ -189,7 +222,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }
 
   const handleBeginBasicAttack = () => {
-    if (!isActivePlayer) {
+    if (!isActivePlayer || selfMovePoints < basicAttackMoveCost) {
       return
     }
 
@@ -198,6 +231,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setPendingActionMode('basicAttack')
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
+  }
+
+  const handleBasicAttackOverlayClick = () => {
+    if (!isActivePlayer) {
+      return
+    }
+
+    if (pendingActionMode === 'basicAttack') {
+      handleConfirmBasicAttack()
+      return
+    }
+
+    handleBeginBasicAttack()
   }
 
   const handleConfirmEntityActive = () => {
@@ -235,13 +281,41 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedPlacementPosition(null)
   }
 
-  const handlePressLuck = () => {
+  const handleBeginPressLuck = () => {
+    if (!isActivePlayer || selfMovePoints < pressLuckMoveCost) {
+      return
+    }
+
+    setFocusedHandCardId(null)
+    setSelectedEntityActiveSourceId(null)
+    setPendingActionMode('pressLuckConfirm')
+    setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
+  }
+
+  const handlePressLuckOverlayClick = () => {
     if (!isActivePlayer) {
       return
     }
 
-    handleClearFocus()
+    if (pendingActionMode === 'pressLuckConfirm') {
+      handleConfirmPressLuck()
+      return
+    }
+
+    handleBeginPressLuck()
+  }
+
+  const handleConfirmPressLuck = () => {
+    if (!canConfirmPressLuck || pendingActionMode !== 'pressLuckConfirm') {
+      return
+    }
+
     onPressLuck()
+    setPendingActionMode(null)
+    setSelectedEntityActiveSourceId(null)
+    setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
   }
 
   const handleClearFocus = () => {
@@ -292,6 +366,37 @@ export function PlayerScreen(props: PlayerScreenProps) {
         </section>
 
         <section className="battle-overlay-layer">
+          <aside className="battle-action-overlay action-overlay-left" aria-label="Basic attack action">
+            <button
+              type="button"
+              className="battle-action-stack basic hint-wrap"
+              onClick={handleBasicAttackOverlayClick}
+              disabled={!canBeginBasicAttack}
+              aria-label={
+                pendingActionMode === 'basicAttack'
+                  ? `Basic attack selected. Confirm by clicking again.`
+                  : `Basic attack. Costs ${basicAttackMoveCost} moves.`
+              }
+            >
+              <Icon icon="game-icons:crossed-swords" className="battle-action-icon" aria-hidden="true" />
+              <span className="battle-action-label">Attack</span>
+              <span className="battle-action-cost">{basicAttackMoveCost}</span>
+              <span className="sr-only">Basic attack</span>
+              {pendingActionMode === 'basicAttack' ? (
+                <span className="battle-action-check" aria-hidden="true">
+                  <Icon icon="game-icons:check-mark" />
+                </span>
+              ) : null}
+              <span className="hover-card battle-action-hover-card" role="tooltip">
+                <strong>Basic Attack</strong>
+                <span>{selfHeroDetails?.basicAttack.summaryText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
+                <span>{selfHeroDetails?.basicAttack.currentRangeText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
+                <span>{selfHeroDetails?.passiveText ?? 'Passive unavailable.'}</span>
+                <span>Click once to arm it, then click the badge again to confirm.</span>
+              </span>
+            </button>
+          </aside>
+
           <BattlefieldGrid
             preview={preview}
             selfId={selfId}
@@ -328,62 +433,47 @@ export function PlayerScreen(props: PlayerScreenProps) {
               <span>You have {selfHandSize} cards in hand.</span>
             </span>
           </aside>
+
+          <aside className="battle-action-overlay action-overlay-right" aria-label="Press luck action">
+            <button
+              type="button"
+              className="battle-action-stack luck hint-wrap"
+              onClick={handlePressLuckOverlayClick}
+              disabled={!canBeginPressLuck}
+              aria-label={
+                pendingActionMode === 'pressLuckConfirm'
+                  ? `Press luck selected. Confirm by clicking again.`
+                  : `Press luck. Costs ${pressLuckMoveCost} moves.`
+              }
+            >
+              <Icon icon="game-icons:shamrock" className="battle-action-icon" aria-hidden="true" />
+              <span className="battle-action-label">Luck</span>
+              <span className="battle-action-cost">{pressLuckMoveCost}</span>
+              <span className="sr-only">Press luck</span>
+              {pendingActionMode === 'pressLuckConfirm' ? (
+                <span className="battle-action-check" aria-hidden="true">
+                  <Icon icon="game-icons:check-mark" />
+                </span>
+              ) : null}
+              <span className="hover-card battle-action-hover-card" role="tooltip">
+                <strong>Press Luck</strong>
+                <span>Spend {pressLuckMoveCost} moves to shift the luck track.</span>
+                <span>Click once to arm it, then click the badge again to confirm.</span>
+              </span>
+            </button>
+          </aside>
         </section>
-
-        {pendingActionMode === 'basicAttack' ? (
-          <section className="card action-intent-panel" aria-label="Basic attack targeting">
-            <p>
-              <strong>Basic Attack:</strong> Select one highlighted enemy target, then confirm.
-            </p>
-            <div className="hand-focus-actions">
-              <button
-                type="button"
-                className="confirm-play"
-                disabled={!selectedTargetEntityId}
-                onClick={handleConfirmBasicAttack}
-              >
-                Confirm Attack
-              </button>
-              <button type="button" className="clear-focus" onClick={handleClearFocus}>
-                Cancel
-              </button>
-            </div>
-          </section>
-        ) : null}
-
-        {pendingActionMode === 'entityActiveTarget' ? (
-          <section className="card action-intent-panel" aria-label="Entity active targeting">
-            <p>
-              <strong>Entity Active:</strong> Select a highlighted enemy target, then confirm.
-            </p>
-            <div className="hand-focus-actions">
-              <button
-                type="button"
-                className="confirm-play"
-                disabled={!selectedTargetEntityId}
-                onClick={handleConfirmEntityActive}
-              >
-                Confirm Active
-              </button>
-              <button type="button" className="clear-focus" onClick={handleClearFocus}>
-                Cancel
-              </button>
-            </div>
-          </section>
-        ) : null}
 
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
           movePoints={selfMovePoints}
           maxMovePoints={selfMaxMovePoints}
-          basicAttackMoveCost={basicAttackMoveCost}
           pressLuckMoveCost={pressLuckMoveCost}
           focusedHandCardId={focusedHandCardId}
+          pendingActionMode={pendingActionMode}
           selectedTargetEntityId={selectedTargetEntityId}
           selectedPlacementPosition={selectedPlacementPosition}
-          onBeginBasicAttack={handleBeginBasicAttack}
-          onPressLuck={handlePressLuck}
           onEndTurn={onEndTurn}
           onFocusCard={handleFocusCard}
           onConfirmFocusedCard={handleConfirmFocusedCard}

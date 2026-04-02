@@ -1,10 +1,13 @@
-import { useMemo, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import { Rnd } from 'react-rnd'
 import 'react-json-view-lite/dist/index.css'
 
 type DebugStatePanelProps = {
   state: Record<string, unknown> | unknown[]
+  seed: string
+  onSeedChange: (seed: string) => void
+  onHardReset: () => void
 }
 
 const DEBUG_PANEL_STORAGE_KEY = 'cmd-hero:debug-panel-state'
@@ -53,12 +56,17 @@ const persistState = (state: DebugPanelPersistedState) => {
 }
 
 export function DebugStatePanel(props: DebugStatePanelProps) {
-  const { state } = props
+  const { state, seed, onSeedChange, onHardReset } = props
   const [persistedState, setPersistedState] = useState<DebugPanelPersistedState>(() => loadPersistedState())
+  const [draftSeed, setDraftSeed] = useState(seed)
 
   const { x, y, width, height, isCollapsed, expandAll } = persistedState
 
   const copiedState = useMemo(() => JSON.stringify(state, null, 2), [state])
+
+  useEffect(() => {
+    setDraftSeed(seed)
+  }, [seed])
 
   const updateState = (updater: (current: DebugPanelPersistedState) => DebugPanelPersistedState) => {
     setPersistedState((current) => {
@@ -74,6 +82,10 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     } catch {
       // No-op in prototype if clipboard is unavailable.
     }
+  }
+
+  const handleSeedApply = () => {
+    onSeedChange(draftSeed.trim())
   }
 
   return (
@@ -112,6 +124,9 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
             <button type="button" onClick={handleCopy}>
               Copy JSON
             </button>
+            <button type="button" onClick={onHardReset}>
+              Hard Reset
+            </button>
             <button
               type="button"
               onClick={() => updateState((current) => ({ ...current, isCollapsed: !current.isCollapsed }))}
@@ -123,6 +138,25 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
 
         {!isCollapsed ? (
           <div className="debug-tree-wrap">
+            <div className="debug-seed-panel">
+              <label className="debug-seed-field">
+                <span>Seed</span>
+                <input
+                  type="text"
+                  value={draftSeed}
+                  onChange={(event) => setDraftSeed(event.target.value)}
+                  onKeyDown={(event) => {
+                    if (event.key === 'Enter') {
+                      event.preventDefault()
+                      handleSeedApply()
+                    }
+                  }}
+                />
+              </label>
+              <button type="button" onClick={handleSeedApply}>
+                Apply Seed
+              </button>
+            </div>
             <JsonView
               data={state}
               style={defaultStyles}

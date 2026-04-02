@@ -10,17 +10,28 @@ type HandBarProps = {
   isActivePlayer: boolean
   movePoints: number
   maxMovePoints: number
-  basicAttackMoveCost: number
   pressLuckMoveCost: number
   focusedHandCardId: string | null
+  pendingActionMode: 'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null
   selectedTargetEntityId: string | null
   selectedPlacementPosition: { row: number; column: number } | null
-  onBeginBasicAttack: () => void
-  onPressLuck: () => void
   onEndTurn: () => void
   onFocusCard: (handCardId: string) => void
   onConfirmFocusedCard: () => void
   onClearFocus: () => void
+}
+
+function getTargetingLabel(targeting: HandBarCard['targeting']) {
+  if (targeting === 'none') {
+    return 'No target'
+  }
+  if (targeting === 'selectedEnemy') {
+    return 'Enemy target'
+  }
+  if (targeting === 'selectedAny') {
+    return 'Any target'
+  }
+  return 'Ally target'
 }
 
 export function HandBar(props: HandBarProps) {
@@ -29,13 +40,11 @@ export function HandBar(props: HandBarProps) {
     isActivePlayer,
     movePoints,
     maxMovePoints,
-    basicAttackMoveCost,
     pressLuckMoveCost,
     focusedHandCardId,
+    pendingActionMode,
     selectedTargetEntityId,
     selectedPlacementPosition,
-    onBeginBasicAttack,
-    onPressLuck,
     onEndTurn,
     onFocusCard,
     onConfirmFocusedCard,
@@ -73,6 +82,7 @@ export function HandBar(props: HandBarProps) {
   const focusedNeedsPlacement = !!focusedCard && focusedCard.validPlacementPositions.length > 0
   const canConfirm =
     !!focusedCard &&
+    focusedCard.isPlayable &&
     (!focusedNeedsTarget || !!selectedTargetEntityId) &&
     (!focusedNeedsPlacement || !!selectedPlacementPosition)
 
@@ -98,32 +108,6 @@ export function HandBar(props: HandBarProps) {
 
       <div className="hand-scroll-wrap">
         <ul className="hand-cards" aria-label="Cards in hand and actions" ref={scrollerRef}>
-          <li>
-            <button
-              type="button"
-              className="hand-card action-slot basic"
-              onClick={onBeginBasicAttack}
-              disabled={!isActivePlayer}
-              aria-label="Basic attack"
-            >
-              <Icon icon="game-icons:crossed-swords" className="hand-card-icon" aria-hidden="true" />
-              <span className="hand-card-name">Basic Attack</span>
-              <span className="hand-card-cost">{basicAttackMoveCost}</span>
-            </button>
-          </li>
-          <li>
-            <button
-              type="button"
-              className="hand-card action-slot luck"
-              onClick={onPressLuck}
-              disabled={!isActivePlayer}
-              aria-label="Press luck"
-            >
-              <Icon icon="game-icons:shamrock" className="hand-card-icon" aria-hidden="true" />
-              <span className="hand-card-name">Press Luck</span>
-              <span className="hand-card-cost">{pressLuckMoveCost}</span>
-            </button>
-          </li>
         {cards.map((card) => {
           const meta = CARD_ICON_META[card.cardDefinitionId] ?? {
             id: 'game-icons:card-pick',
@@ -131,34 +115,40 @@ export function HandBar(props: HandBarProps) {
             description: 'Card',
           }
           const isFocused = card.handCardId === focusedHandCardId
+          const canConfirmCard = isFocused && canConfirm
           const requiresTarget = card.validTargetEntityIds.length > 0
-          const isCardEnabled = isActivePlayer && card.isPlayable
-          const targetingLabel =
-            card.targeting === 'none'
-              ? 'No target'
-              : card.targeting === 'selectedEnemy'
-                ? 'Enemy target'
-                : card.targeting === 'selectedAny'
-                  ? 'Any target'
-                  : 'Ally target'
+          const targetingLabel = getTargetingLabel(card.targeting)
+          const summaryText = card.summaryText?.trim() ? card.summaryText : 'No text available.'
 
           return (
             <li key={card.handCardId}>
               <button
                 type="button"
                 className={`hand-card ${isFocused ? 'focused' : ''} ${!card.isPlayable ? 'unplayable' : ''}`.trim()}
-                onClick={() => onFocusCard(card.handCardId)}
-                disabled={!isCardEnabled}
+                onClick={() => {
+                  if (canConfirmCard) {
+                    onConfirmFocusedCard()
+                    return
+                  }
+
+                  onFocusCard(card.handCardId)
+                }}
+                disabled={!isActivePlayer}
                 aria-pressed={isFocused}
                 aria-label={`${card.cardName}. Cost ${card.moveCost}. ${requiresTarget ? 'Requires target.' : 'No target required.'}`}
               >
                 <Icon icon={meta.id} className="hand-card-icon" aria-hidden="true" />
                 <span className="hand-card-name">{card.cardName}</span>
-                <span className="hand-card-summary">{card.summaryText}</span>
+                <span className="hand-card-summary">{summaryText}</span>
                 <span className="hand-card-cost">{card.moveCost}</span>
+                {canConfirmCard ? (
+                  <span className="hand-card-check" aria-hidden="true">
+                    <Icon icon="game-icons:check-mark" />
+                  </span>
+                ) : null}
                 <span className="hover-card hand-card-hover" role="tooltip">
                   <strong>{card.cardName}</strong>
-                  <span>{card.summaryText}</span>
+                  <span>{summaryText}</span>
                   <span>Type: {card.cardType} | Rarity: {card.rarity}</span>
                   <span>Cost: {card.moveCost} | Targeting: {targetingLabel}</span>
                   <span>{card.isPlayable ? 'Playable now' : 'Not playable now'}</span>
@@ -172,26 +162,72 @@ export function HandBar(props: HandBarProps) {
         {showScrollHint ? <span className="hand-scroll-indicator">{'Scroll ->'}</span> : null}
       </div>
 
-      {focusedCard ? (
+      {pendingActionMode === 'basicAttack' ? (
         <div className="hand-focus-panel" aria-live="polite">
-          <p>
+          <p className="hand-focus-summary">
+            <strong>Basic Attack</strong>
+          </p>
+          <p className="hand-focus-instruction">Pick one highlighted enemy target. Click the selected target again to confirm.</p>
+          <div className="hand-focus-actions">
+            <button type="button" className="clear-focus" onClick={onClearFocus}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : pendingActionMode === 'entityActiveTarget' ? (
+        <div className="hand-focus-panel" aria-live="polite">
+          <p className="hand-focus-summary">
+            <strong>Entity Active</strong>
+          </p>
+          <p className="hand-focus-instruction">Pick one highlighted enemy target. Click the selected target again to confirm.</p>
+          <div className="hand-focus-actions">
+            <button type="button" className="clear-focus" onClick={onClearFocus}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : pendingActionMode === 'pressLuckConfirm' ? (
+        <div className="hand-focus-panel" aria-live="polite">
+          <p className="hand-focus-summary">
+            <strong>Press Luck</strong>
+          </p>
+          <p className="hand-focus-instruction">Spend {pressLuckMoveCost} moves to influence luck. Click the selected luck badge again to confirm.</p>
+          <div className="hand-focus-actions">
+            <button type="button" className="clear-focus" onClick={onClearFocus}>
+              Cancel
+            </button>
+          </div>
+        </div>
+      ) : focusedCard ? (
+        <div className="hand-focus-panel" aria-live="polite">
+          <div className="hand-focus-head">
             <strong>{focusedCard.cardName}</strong>
+            <span className="hand-focus-badges">
+              <span>{focusedCard.cardType}</span>
+              <span>{focusedCard.rarity}</span>
+              <span>Cost {focusedCard.moveCost}</span>
+            </span>
+          </div>
+          <p className="hand-focus-summary">{focusedCard.summaryText?.trim() ? focusedCard.summaryText : 'No text available.'}</p>
+          <p className="hand-focus-meta">Targeting: {getTargetingLabel(focusedCard.targeting)}</p>
+          {!focusedCard.isPlayable ? <p className="hand-focus-instruction">Not playable right now.</p> : null}
+          <p className="hand-focus-instruction">
             {focusedNeedsTarget
-              ? ` requires a target (${focusedCard.validTargetEntityIds.length} valid).`
+              ? `Needs a target (${focusedCard.validTargetEntityIds.length} valid).`
               : focusedNeedsPlacement
-                ? ` requires placement (${focusedCard.validPlacementPositions.length} valid cells).`
-                : ' does not require a target.'}
+                ? `Needs placement (${focusedCard.validPlacementPositions.length} valid cells).`
+                : 'No target required.'}
           </p>
           {focusedNeedsTarget && !selectedTargetEntityId ? (
-            <p>Choose one highlighted battlefield target, then confirm.</p>
+            <p className="hand-focus-instruction">Pick one highlighted battlefield target, then confirm.</p>
           ) : null}
           {focusedNeedsPlacement && !selectedPlacementPosition ? (
-            <p>Choose one highlighted empty cell for placement, then confirm.</p>
+            <p className="hand-focus-instruction">Pick one highlighted empty cell for placement, then confirm.</p>
+          ) : null}
+          {canConfirm ? (
+            <p className="hand-focus-instruction">Click the highlighted card again to confirm.</p>
           ) : null}
           <div className="hand-focus-actions">
-            <button type="button" className="confirm-play" disabled={!canConfirm} onClick={onConfirmFocusedCard}>
-              Confirm Play
-            </button>
             <button type="button" className="clear-focus" onClick={onClearFocus}>
               Cancel
             </button>

@@ -4,6 +4,7 @@ import {
   type BattleState,
   type HeroDefinition,
 } from "../../shared/models";
+import { roundWhole, toAppliedDamage } from "../core/combat";
 import { applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 
@@ -126,8 +127,10 @@ export function resolveBasicAttackAction(options: {
         : attack.damageType === "magic"
           ? target.magicResist
           : 0;
-    appliedDamage = Math.max(0, adjustedRoll - resistance);
+    appliedDamage = toAppliedDamage(adjustedRoll, resistance);
   }
+
+  const targetHealth = roundWhole(target.currentHealth);
 
   let sequence = nextSequence;
   const events: BattleEvent[] = [];
@@ -142,7 +145,7 @@ export function resolveBasicAttackAction(options: {
       },
       [target.entityId]: {
         ...target,
-        currentHealth: Math.max(0, target.currentHealth - appliedDamage),
+        currentHealth: Math.max(0, targetHealth - appliedDamage),
       },
     },
   };

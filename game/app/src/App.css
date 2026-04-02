@@ -1,8 +1,8 @@
 .dual-screens {
   display: grid;
-  gap: 48px;
+  gap: 36px;
   grid-template-columns: 1fr 1fr;
-  padding: 32px;
+  padding: 24px;
 }
 
 .game-toast {
@@ -70,6 +70,43 @@
   min-height: 0;
 }
 
+.debug-seed-panel {
+  display: grid;
+  gap: 8px;
+  margin-bottom: 10px;
+  padding: 10px;
+  border: 1px solid var(--border);
+  border-radius: 10px;
+  background: color-mix(in srgb, var(--panel) 86%, #ffffff 14%);
+}
+
+.debug-seed-field {
+  display: grid;
+  gap: 4px;
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.debug-seed-field input {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 8px;
+  font: inherit;
+  background: color-mix(in srgb, var(--code-bg) 78%, #ffffff 22%);
+  color: inherit;
+}
+
+.debug-seed-panel button {
+  border: 1px solid var(--border);
+  border-radius: 8px;
+  padding: 6px 10px;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--panel) 84%, #ffffff 16%);
+  cursor: pointer;
+}
+
 .debug-tree-wrap .json-view {
   font-family: var(--mono);
   max-width: 100%;
@@ -87,10 +124,14 @@
 .screen {
   border: 1px solid var(--border);
   border-radius: 16px;
-  padding: 20px;
+  padding: 24px;
   background: color-mix(in srgb, var(--panel) 90%, #ffffff 10%);
   display: grid;
-  gap: 18px;
+  gap: 22px;
+  box-shadow:
+    0 16px 34px color-mix(in srgb, #000000 18%, transparent),
+    0 0 24px color-mix(in srgb, var(--self-side-color) 16%, transparent),
+    0 0 18px color-mix(in srgb, var(--enemy-side-color) 14%, transparent);
 }
 
 .screen-head {
@@ -285,6 +326,7 @@ h2.luck-title > * {
 }
 
 .battlefield-card {
+  padding: 12px;
   background:
     radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--self-side-color) 25%, transparent), transparent 45%),
     radial-gradient(circle at 50% 120%, color-mix(in srgb, var(--enemy-side-color) 25%, transparent), transparent 45%);
@@ -294,13 +336,171 @@ h2.luck-title > * {
   position: relative;
 }
 
+.battle-action-overlay {
+  position: absolute;
+  top: 65%;
+  transform: translateY(-50%);
+  z-index: 30;
+}
+
+.battle-action-overlay.action-overlay-right {
+  top: calc(65% + 98px);
+}
+
+.action-overlay-left {
+  left: 12px;
+}
+
+.action-overlay-right {
+  right: 12px;
+}
+
+.battle-action-stack {
+  width: 90px;
+  height: 90px;
+  border-radius: 18px;
+  border: 1px solid color-mix(in srgb, #5b4a2b 42%, transparent);
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #f7f0dd 78%, #ffffff 22%), color-mix(in srgb, #dac7a2 82%, #ffffff 18%));
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.16),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+  display: grid;
+  place-items: center;
+  grid-template-areas:
+    'icon icon'
+    'label label';
+  grid-template-columns: repeat(2, auto);
+  grid-template-rows: auto auto;
+  align-content: center;
+  gap: 2px 6px;
+  position: relative;
+  cursor: pointer;
+  color: #241d14;
+  overflow: hidden;
+}
+
+.battle-action-stack.basic {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #f5ecff 78%, #ffffff 22%), color-mix(in srgb, #d8ccef 82%, #ffffff 18%));
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.16),
+    0 0 0 1px color-mix(in srgb, #6657b9 28%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.battle-action-stack.luck {
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #eef8dc 78%, #ffffff 22%), color-mix(in srgb, #d3e6b9 82%, #ffffff 18%));
+  box-shadow:
+    0 10px 20px rgba(0, 0, 0, 0.16),
+    0 0 0 1px color-mix(in srgb, #6f9e3c 28%, transparent),
+    inset 0 0 0 1px rgba(255, 255, 255, 0.28);
+}
+
+.battle-action-stack:disabled {
+  opacity: 0.56;
+  cursor: not-allowed;
+}
+
+.battle-action-stack:hover,
+.battle-action-stack:focus-visible {
+  transform: translateY(-1px) scale(1.03);
+}
+
+.battle-action-icon {
+  grid-area: icon;
+  font-size: 28px;
+  width: 28px;
+  height: 28px;
+}
+
+.battle-action-label {
+  grid-area: label;
+  align-self: start;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  line-height: 1;
+}
+
+.battle-action-cost {
+  position: absolute;
+  top: 6px;
+  right: 6px;
+  min-width: 22px;
+  height: 22px;
+  border-radius: 999px;
+  border: 2px solid #241d14;
+  background: #f0cb58;
+  color: #241d14;
+  font-weight: 700;
+  font-size: 12px;
+  display: grid;
+  place-items: center;
+}
+
+.battle-action-check {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 24px;
+  height: 24px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #2a1f12 70%, transparent);
+  background: color-mix(in srgb, #f2d47d 90%, #ffffff 10%);
+  color: #241d14;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+}
+
+.battle-action-check svg {
+  width: 14px;
+  height: 14px;
+}
+
+.battle-action-hover-card {
+  min-width: 260px;
+  text-align: left;
+}
+
+.battle-action-hover-card span {
+  line-height: 1.25;
+}
+
+.action-overlay-left .battle-action-hover-card {
+  left: calc(100% + 12px);
+  right: auto;
+  bottom: 50%;
+  transform: translateY(50%) scale(0.98);
+}
+
+.action-overlay-right .battle-action-hover-card {
+  left: auto;
+  right: calc(100% + 12px);
+  bottom: 50%;
+  transform: translateY(50%) scale(0.98);
+}
+
+.battle-action-stack:hover .battle-action-hover-card,
+.battle-action-stack:focus-visible .battle-action-hover-card,
+.battle-action-stack:focus-within .battle-action-hover-card {
+  opacity: 1;
+  transform: translateY(50%) scale(1);
+}
+
 .battle-grid {
   margin-top: 12px;
   display: grid;
-  gap: 8px;
-  padding: 16px;
+  gap: 12px;
+  padding: 14px;
   border-radius: 8px;
   background: color-mix(in srgb, var(--background) 96%, var(--code-bg) 4%);
+  --battle-cell-size: 112px;
 }
 
 .battle-slot {
@@ -308,9 +508,11 @@ h2.luck-title > * {
   border: 1px solid var(--border);
   display: grid;
   place-items: center;
-  padding: 6px;
+  padding: 10px;
   text-align: center;
   box-sizing: border-box;
+  position: relative;
+  overflow: visible;
 }
 
 .battle-slot.north {
@@ -355,6 +557,29 @@ h2.luck-title > * {
     0 0 0 3px color-mix(in srgb, #f0cb58 75%, transparent);
 }
 
+.target-check-icon {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 34px;
+  height: 34px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #3b311f 65%, transparent);
+  background: color-mix(in srgb, #f2d47d 86%, #ffffff 14%);
+  color: #241d14;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 3px 8px rgba(0, 0, 0, 0.22);
+  z-index: 2;
+}
+
+.target-check-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
 .battle-slot.placement-highlighted {
   outline: 2px dashed #8c7a4a;
   outline-offset: -2px;
@@ -378,15 +603,15 @@ h2.luck-title > * {
 }
 
 .occupier-icon {
-  font-size: clamp(24px, 3vw, 40px);
+  font-size: clamp(34px, 3.2vw, 58px);
 }
 
 .entity-stats-row {
   position: absolute;
-  top: 4px;
-  right: 4px;
+  top: 6px;
+  right: 8px;
   display: flex;
-  gap: 4px;
+  gap: 5px;
 }
 
 .entity-stat-pill {
@@ -396,36 +621,126 @@ h2.luck-title > * {
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
   background: color-mix(in srgb, var(--panel) 90%, #ffffff 10%);
-  padding: 1px 5px;
-  font-size: 10px;
+  padding: 2px 6px;
+  font-size: 11px;
   font-weight: 700;
 }
 
 .entity-stat-pill svg {
-  width: 10px;
-  height: 10px;
+  width: 11px;
+  height: 11px;
 }
 
 .entity-healthbar {
   position: absolute;
-  left: 6px;
-  right: 6px;
-  bottom: 5px;
-  height: 5px;
+  left: 10px;
+  right: 10px;
+  bottom: 8px;
+  height: 10px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
-  background: color-mix(in srgb, #2c2418 45%, transparent);
+  border: 1px solid color-mix(in srgb, #2b2218 75%, transparent);
+  background: color-mix(in srgb, #2c2418 72%, transparent);
   overflow: hidden;
+  box-shadow:
+    inset 0 1px 1px rgba(0, 0, 0, 0.24),
+    0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent);
 }
 
 .entity-healthbar-fill {
   height: 100%;
-  background: linear-gradient(90deg, #d44f43, #e8be62);
+  transition: width 180ms ease, background 120ms ease;
+}
+
+.entity-healthbar-value {
+  position: absolute;
+  top: 50%;
+  left: 50%;
+  transform: translate(-50%, -50%);
+  font-size: 9px;
+  line-height: 1;
+  font-weight: 700;
+  color: #f7f4ed;
+  text-shadow:
+    0 1px 1px rgba(0, 0, 0, 0.72),
+    0 0 2px rgba(0, 0, 0, 0.52);
+  letter-spacing: 0.15px;
+  pointer-events: none;
 }
 
 .battlefield-hover-card {
-  min-width: 250px;
+  min-width: 300px;
   text-align: left;
+  padding: 12px;
+  display: grid;
+  gap: 8px;
+  align-content: start;
+  justify-items: stretch;
+}
+
+.battlefield-hover-header {
+  display: grid;
+  gap: 2px;
+  padding-bottom: 6px;
+  border-bottom: 1px solid color-mix(in srgb, #1f1b16 18%, transparent);
+}
+
+.battlefield-hover-header strong {
+  margin: 0;
+  font-size: 16px;
+  line-height: 1.05;
+}
+
+.battlefield-hover-kicker {
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.battlefield-hover-section {
+  display: grid;
+  gap: 4px;
+  padding: 8px 10px;
+  border-radius: 9px;
+  background: color-mix(in srgb, #ffffff 18%, transparent);
+}
+
+.battlefield-hover-note {
+  font-size: 11px;
+  line-height: 1.2;
+  opacity: 0.88;
+}
+
+.battlefield-hover-grid {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 6px;
+}
+
+.battlefield-hover-stat {
+  display: grid;
+  gap: 1px;
+  padding: 6px 8px;
+  border-radius: 8px;
+  background: color-mix(in srgb, #fff7dd 72%, #ffffff 28%);
+  border: 1px solid color-mix(in srgb, #7a5a19 18%, transparent);
+}
+
+.battlefield-hover-stat strong {
+  display: block;
+  margin: 0;
+  font-size: 10px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  opacity: 0.8;
+}
+
+.battlefield-hover-stat em {
+  font-style: normal;
+  font-size: 12px;
+  font-weight: 700;
+  line-height: 1.15;
 }
 
 .cell-empty {
@@ -433,6 +748,29 @@ h2.luck-title > * {
   height: 16px;
   border-radius: 999px;
   border: 1px dashed color-mix(in srgb, var(--text) 45%, transparent);
+}
+
+.placement-check-icon {
+  width: 30px;
+  height: 30px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #4d3f24 65%, transparent);
+  background: linear-gradient(
+    180deg,
+    color-mix(in srgb, #f6e4a6 78%, #ffffff 22%),
+    color-mix(in srgb, #e7c867 82%, #ffffff 18%)
+  );
+  color: #241d14;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 2px 8px rgba(0, 0, 0, 0.2);
+}
+
+.placement-check-icon svg {
+  width: 16px;
+  height: 16px;
 }
 
 .deck-overlay {
@@ -762,6 +1100,10 @@ h2.luck-title > * {
   opacity: 0.82;
   max-height: 26px;
   overflow: hidden;
+  display: -webkit-box;
+  -webkit-line-clamp: 2;
+  -webkit-box-orient: vertical;
+  overflow-wrap: anywhere;
 }
 
 .hand-card-cost {
@@ -780,27 +1122,109 @@ h2.luck-title > * {
   place-items: center;
 }
 
+.hand-card-check {
+  position: absolute;
+  inset: 0;
+  margin: auto;
+  width: 26px;
+  height: 26px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  border: 1px solid color-mix(in srgb, #2a1f12 70%, transparent);
+  background: color-mix(in srgb, #f2d47d 90%, #ffffff 10%);
+  color: #241d14;
+  box-shadow:
+    inset 0 1px 1px rgba(255, 255, 255, 0.45),
+    0 2px 6px rgba(0, 0, 0, 0.18);
+  z-index: 2;
+}
+
+.hand-card-check svg {
+  width: 14px;
+  height: 14px;
+}
+
 .hand-card-hover {
-  min-width: 210px;
+  inset: 6px;
+  min-width: 0;
+  max-width: none;
   text-align: left;
-  left: 50%;
-  bottom: calc(100% + 8px);
-  transform: translateX(-50%) scale(0.98);
+  transform: none;
+  padding: 8px;
+  display: grid;
+  gap: 3px;
+  align-content: start;
+  justify-items: start;
 }
 
 .hand-card:hover .hand-card-hover,
 .hand-card:focus-visible .hand-card-hover {
   opacity: 1;
-  transform: translateX(-50%) scale(1);
+  transform: none;
+}
+
+.hand-card-hover strong {
+  margin-bottom: 2px;
+  font-size: 12px;
+}
+
+.hand-card-hover span {
+  font-size: 10px;
+  line-height: 1.15;
 }
 
 .hand-focus-panel {
   border-top: 1px solid var(--border);
   padding-top: 8px;
+  display: grid;
+  gap: 5px;
 }
 
 .hand-focus-panel p {
-  margin: 0 0 6px;
+  margin: 0;
+}
+
+.hand-focus-head {
+  display: flex;
+  align-items: baseline;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.hand-focus-head strong {
+  font-size: 13px;
+}
+
+.hand-focus-badges {
+  display: inline-flex;
+  gap: 4px;
+  flex-wrap: wrap;
+}
+
+.hand-focus-badges span {
+  font-size: 10px;
+  border: 1px solid color-mix(in srgb, var(--border) 75%, transparent);
+  border-radius: 999px;
+  padding: 1px 6px;
+  background: color-mix(in srgb, var(--code-bg) 80%, #ffffff 20%);
+}
+
+.hand-focus-summary {
+  font-size: 12px;
+  line-height: 1.3;
+  color: color-mix(in srgb, var(--text-h) 90%, #000000 10%);
+}
+
+.hand-focus-meta {
+  font-size: 11px;
+  opacity: 0.76;
+}
+
+.hand-focus-instruction {
+  font-size: 11px;
+  line-height: 1.25;
+  opacity: 0.72;
 }
 
 .hand-focus-actions {
@@ -825,8 +1249,8 @@ h2.luck-title > * {
 
 .hand-focus-hint {
   margin: 0;
-  font-size: 13px;
-  opacity: 0.9;
+  font-size: 11px;
+  opacity: 0.72;
 }
 
 .action-intent-panel {
@@ -836,6 +1260,9 @@ h2.luck-title > * {
 
 .action-intent-panel p {
   margin: 0 0 8px;
+  font-size: 11px;
+  opacity: 0.76;
+  line-height: 1.25;
 }
 
 .preview {

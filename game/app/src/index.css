@@ -41,8 +41,7 @@
 }
 
 #root {
-  width: 1126px;
-  max-width: 100%;
+  width: min(1580px, 100%);
   margin: auto;
   text-align: center;
   background: var(--panel);

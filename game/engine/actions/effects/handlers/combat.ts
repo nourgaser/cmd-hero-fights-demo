@@ -1,5 +1,6 @@
 import { applyLuckToRoll } from "../../../core/luck";
 import { rollRange } from "../../../core/rng";
+import { roundWhole, toAppliedDamage, toHealAmount } from "../../../core/combat";
 import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
@@ -51,9 +52,10 @@ export function handleHealEffect(
     rollingHeroEntityId: actorHero.entityId,
   });
 
-  const amount = Math.max(0, adjustedRoll);
-  const nextHealth = Math.min(target.maxHealth, target.currentHealth + amount);
-  const applied = nextHealth - target.currentHealth;
+  const amount = toHealAmount(adjustedRoll);
+  const baseHealth = roundWhole(target.currentHealth);
+  const nextHealth = Math.min(target.maxHealth, baseHealth + amount);
+  const applied = nextHealth - baseHealth;
 
   return {
     ok: true,
@@ -157,9 +159,10 @@ export function handleDealDamageEffect(
         : effect.payload.damageType === "magic"
           ? target.magicResist
           : 0;
-    const reduced = Math.max(0, adjustedRoll - resistance);
-    appliedDamage = Math.max(0, reduced);
+    appliedDamage = toAppliedDamage(adjustedRoll, resistance);
   }
+
+  const targetHealth = roundWhole(target.currentHealth);
 
   return {
     ok: true,
@@ -169,7 +172,7 @@ export function handleDealDamageEffect(
         ...state.entitiesById,
         [targetId]: {
           ...target,
-          currentHealth: Math.max(0, target.currentHealth - appliedDamage),
+          currentHealth: Math.max(0, targetHealth - appliedDamage),
         },
       },
     },

@@ -14,33 +14,90 @@ import { DEFAULT_GAME_BOOTSTRAP_CONFIG } from './data/game-bootstrap.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 
+const DEBUG_SEED_STORAGE_KEY = 'cmd-hero:debug-seed'
+
 type AppRuntime = {
   session: AppBattleSession
   preview: AppBattlePreview
 }
 
-function App() {
-  const activeConfig = DEFAULT_GAME_BOOTSTRAP_CONFIG
+function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRuntime {
+  const initial = createInitialBattleSession(config)
+  return {
+    session: initial.session,
+    preview: initial.preview,
+  }
+}
 
-  const [bootstrap] = useState(() => {
+function loadBootstrapConfig() {
+  if (typeof window === 'undefined') {
+    return DEFAULT_GAME_BOOTSTRAP_CONFIG
+  }
+
+  const persistedSeed = window.localStorage.getItem(DEBUG_SEED_STORAGE_KEY)?.trim()
+  if (!persistedSeed) {
+    return DEFAULT_GAME_BOOTSTRAP_CONFIG
+  }
+
+  return {
+    ...DEFAULT_GAME_BOOTSTRAP_CONFIG,
+    seed: persistedSeed,
+  }
+}
+
+function App() {
+  const [bootstrapConfig, setBootstrapConfig] = useState(() => loadBootstrapConfig())
+  const [startupError] = useState(() => {
     try {
-      const initial = createInitialBattleSession(activeConfig)
-      return {
-        runtime: {
-          session: initial.session,
-          preview: initial.preview,
-        } as AppRuntime,
-        error: null as string | null,
-      }
+      createRuntimeFromConfig(loadBootstrapConfig())
+      return null as string | null
     } catch (error) {
-      return {
-        runtime: null as AppRuntime | null,
-        error: error instanceof Error ? error.message : 'Failed to create battle preview.',
-      }
+      return error instanceof Error ? error.message : 'Failed to create battle preview.'
     }
   })
+  const [runtime, setRuntime] = useState<AppRuntime | null>(() => {
+    try {
+      return createRuntimeFromConfig(loadBootstrapConfig())
+    } catch {
+      return null
+    }
+  })
+  const [resetEpoch, setResetEpoch] = useState(0)
 
-  const [runtime, setRuntime] = useState<AppRuntime | null>(bootstrap.runtime)
+  const resetRuntime = (nextConfig = bootstrapConfig) => {
+    try {
+      const nextRuntime = createRuntimeFromConfig(nextConfig)
+      setRuntime(nextRuntime)
+      setResetEpoch((current) => current + 1)
+      return null
+    } catch (error) {
+      return error instanceof Error ? error.message : 'Failed to reset battle preview.'
+    }
+  }
+
+  const handleSeedChange = (seed: string) => {
+    const nextConfig = {
+      ...bootstrapConfig,
+      seed: seed.trim() || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed,
+    }
+    setBootstrapConfig(nextConfig)
+
+    if (typeof window !== 'undefined') {
+      window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextConfig.seed)
+    }
+
+    const failureReason = resetRuntime(nextConfig)
+    if (failureReason) {
+      toast.error(failureReason)
+    }
+  }
+
+  const handleHardReset = () => {
+    const failureReason = resetRuntime(bootstrapConfig)
+    if (failureReason) {
+      toast.error(failureReason)
+    }
+  }
 
   if (!runtime) {
     return (
@@ -48,7 +105,7 @@ function App() {
         <section className="screen">
           <h1>CMD Hero Fights</h1>
           <p>Something went wrong.</p>
-          <pre className="preview">{bootstrap.error}</pre>
+          <pre className="preview">{startupError ?? 'Failed to create battle preview.'}</pre>
         </section>
       </main>
     )
@@ -200,9 +257,14 @@ function App() {
           duration: 2800,
         }}
       />
-      <DebugStatePanel state={runtime.session.state as Record<string, unknown>} />
+      <DebugStatePanel
+        state={runtime.session.state as Record<string, unknown>}
+        seed={bootstrapConfig.seed}
+        onSeedChange={handleSeedChange}
+        onHardReset={handleHardReset}
+      />
 
-      <main className="dual-screens">
+      <main key={resetEpoch} className="dual-screens">
         <PlayerScreen
           title="CMD Hero Fights"
           selfId={heroAId}
