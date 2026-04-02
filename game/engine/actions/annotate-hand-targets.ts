@@ -104,10 +104,18 @@ export function annotateBattleStateWithActiveHandTargets(options: {
         actorHeroEntityId: entity.entityId,
       });
 
+      const hasTargetingRequirement = cardDef.targeting !== "none";
+      const hasPlacementRequirement = validPlacementPositions.length > 0;
+      const hasValidTargetSelection = !hasTargetingRequirement || (validTargetEntityIds?.length ?? 0) > 0;
+      const hasValidPlacementSelection = !cardDef.effects.some((effect) => effect.payload.kind === "summonEntity") || hasPlacementRequirement;
+      const hasMoveCost = entity.movePoints >= cardDef.moveCost;
+      const isPlayable = hasMoveCost && hasValidTargetSelection && hasValidPlacementSelection;
+
       return {
         ...baseHandCard,
         validTargetEntityIds,
         validPlacementPositions: validPlacementPositions.length > 0 ? validPlacementPositions : undefined,
+        isPlayable,
       };
     });
 

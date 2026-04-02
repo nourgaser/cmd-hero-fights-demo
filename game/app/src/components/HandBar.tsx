@@ -132,14 +132,15 @@ export function HandBar(props: HandBarProps) {
           }
           const isFocused = card.handCardId === focusedHandCardId
           const requiresTarget = card.validTargetEntityIds.length > 0
+          const isCardEnabled = isActivePlayer && card.isPlayable
 
           return (
             <li key={card.handCardId}>
               <button
                 type="button"
-                className={`hand-card ${isFocused ? 'focused' : ''}`.trim()}
+                className={`hand-card ${isFocused ? 'focused' : ''} ${!card.isPlayable ? 'unplayable' : ''}`.trim()}
                 onClick={() => onFocusCard(card.handCardId)}
-                disabled={!isActivePlayer}
+                disabled={!isCardEnabled}
                 aria-pressed={isFocused}
                 aria-label={`${card.cardName}. Cost ${card.moveCost}. ${requiresTarget ? 'Requires target.' : 'No target required.'}`}
               >

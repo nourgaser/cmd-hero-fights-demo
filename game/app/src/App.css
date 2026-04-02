@@ -625,6 +625,11 @@ h2.luck-title > * {
   cursor: not-allowed;
 }
 
+.hand-card.unplayable {
+  opacity: 0.52;
+  filter: saturate(0.8);
+}
+
 .hand-card:hover,
 .hand-card:focus-visible,
 .hand-card.focused {

@@ -29,6 +29,7 @@ export type AppBattlePreview = {
       cardDefinitionId: string
       cardName: string
       moveCost: number
+      isPlayable: boolean
       targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
       validPlacementPositions: Array<{ row: number; column: number }>
@@ -152,6 +153,7 @@ function buildPreviewFromState(options: {
           cardDefinitionId: handCard.cardDefinitionId,
           cardName: cardDef.name,
           moveCost: cardDef.moveCost,
+          isPlayable: handCard.isPlayable ?? false,
           targeting: cardDef.targeting,
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
           validPlacementPositions: handCard.validPlacementPositions ?? [],
