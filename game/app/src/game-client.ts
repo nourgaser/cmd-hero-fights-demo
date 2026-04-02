@@ -29,6 +29,9 @@ export type AppBattlePreview = {
       cardDefinitionId: string
       cardName: string
       moveCost: number
+      cardType: 'ability' | 'weapon' | 'totem' | 'companion'
+      rarity: 'common' | 'rare' | 'ultimate' | 'general'
+      summaryText: string
       isPlayable: boolean
       targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
@@ -60,6 +63,26 @@ export type AppBattlePreview = {
       ownerHeroEntityId: string | null
       entityId: string | null
     }>
+    entitiesById: Record<
+      string,
+      {
+        entityId: string
+        kind: 'hero' | 'weapon' | 'totem' | 'companion'
+        ownerHeroEntityId: string
+        displayName: string
+        sourceCardName: string | null
+        currentHealth: number
+        maxHealth: number
+        armor: number
+        magicResist: number
+        attackDamage: number
+        abilityPower: number
+        criticalChance: number
+        dodgeChance: number
+        movePoints: number
+        maxMovePoints: number
+      }
+    >
   }
 }
 
@@ -111,6 +134,10 @@ function buildPreviewFromState(options: {
   state: BattleState
 }): AppBattlePreview {
   const { gameApi, state } = options
+  const heroesById = gameApi.heroesById as Record<
+    string,
+    (typeof gameApi.heroesById)[keyof typeof gameApi.heroesById]
+  >
   const cardsById = gameApi.cardsById as Record<
     string,
     (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]
@@ -153,6 +180,18 @@ function buildPreviewFromState(options: {
           cardDefinitionId: handCard.cardDefinitionId,
           cardName: cardDef.name,
           moveCost: cardDef.moveCost,
+          cardType: cardDef.type,
+          rarity: cardDef.rarity,
+          summaryText:
+            cardDef.summaryText?.mode === 'static'
+              ? cardDef.summaryText.text
+              : cardDef.summaryText?.mode === 'template'
+                ? cardDef.summaryText.template
+                : cardDef.effects[0]?.displayText.mode === 'static'
+                  ? cardDef.effects[0].displayText.text
+                  : cardDef.effects[0]?.displayText.mode === 'template'
+                    ? cardDef.effects[0].displayText.template
+                    : 'No summary.',
           isPlayable: handCard.isPlayable ?? false,
           targeting: cardDef.targeting,
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
@@ -201,6 +240,50 @@ function buildPreviewFromState(options: {
     }
   }
 
+  const battlefieldEntities: AppBattlePreview['battlefield']['entitiesById'] = {}
+  for (const entity of Object.values(state.entitiesById)) {
+    if (entity.kind === 'hero') {
+      const heroDef = heroesById[entity.heroDefinitionId]
+      battlefieldEntities[entity.entityId] = {
+        entityId: entity.entityId,
+        kind: 'hero',
+        ownerHeroEntityId: entity.entityId,
+        displayName: heroDef?.name ?? entity.heroDefinitionId,
+        sourceCardName: null,
+        currentHealth: entity.currentHealth,
+        maxHealth: entity.maxHealth,
+        armor: entity.armor,
+        magicResist: entity.magicResist,
+        attackDamage: entity.attackDamage,
+        abilityPower: entity.abilityPower,
+        criticalChance: entity.criticalChance,
+        dodgeChance: entity.dodgeChance,
+        movePoints: entity.movePoints,
+        maxMovePoints: entity.maxMovePoints,
+      }
+      continue
+    }
+
+    const sourceCard = cardsById[entity.definitionCardId]
+    battlefieldEntities[entity.entityId] = {
+      entityId: entity.entityId,
+      kind: entity.kind,
+      ownerHeroEntityId: entity.ownerHeroEntityId,
+      displayName: sourceCard?.name ?? entity.definitionCardId,
+      sourceCardName: sourceCard?.name ?? entity.definitionCardId,
+      currentHealth: entity.currentHealth,
+      maxHealth: entity.maxHealth,
+      armor: entity.armor,
+      magicResist: entity.magicResist,
+      attackDamage: entity.attackDamage,
+      abilityPower: entity.abilityPower,
+      criticalChance: entity.criticalChance,
+      dodgeChance: entity.dodgeChance,
+      movePoints: entity.remainingMoves,
+      maxMovePoints: entity.maxMovesPerTurn,
+    }
+  }
+
   return {
     battleId: state.battleId,
     seed: state.seed,
@@ -217,6 +300,7 @@ function buildPreviewFromState(options: {
       rows,
       columns,
       cells,
+      entitiesById: battlefieldEntities,
     },
   }
 }

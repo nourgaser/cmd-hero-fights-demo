@@ -171,6 +171,14 @@
   line-height: 1.2;
 }
 
+.hover-group-title {
+  margin-top: 6px;
+  font-size: 12px;
+  font-weight: 700;
+  text-transform: uppercase;
+  opacity: 0.85;
+}
+
 .hint-wrap:hover .hover-card,
 .hint-wrap:focus-visible .hover-card,
 .hint-wrap:focus-within .hover-card {
@@ -371,6 +379,53 @@ h2.luck-title > * {
 
 .occupier-icon {
   font-size: clamp(24px, 3vw, 40px);
+}
+
+.entity-stats-row {
+  position: absolute;
+  top: 4px;
+  right: 4px;
+  display: flex;
+  gap: 4px;
+}
+
+.entity-stat-pill {
+  display: inline-flex;
+  align-items: center;
+  gap: 3px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 80%, transparent);
+  background: color-mix(in srgb, var(--panel) 90%, #ffffff 10%);
+  padding: 1px 5px;
+  font-size: 10px;
+  font-weight: 700;
+}
+
+.entity-stat-pill svg {
+  width: 10px;
+  height: 10px;
+}
+
+.entity-healthbar {
+  position: absolute;
+  left: 6px;
+  right: 6px;
+  bottom: 5px;
+  height: 5px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, var(--border) 70%, transparent);
+  background: color-mix(in srgb, #2c2418 45%, transparent);
+  overflow: hidden;
+}
+
+.entity-healthbar-fill {
+  height: 100%;
+  background: linear-gradient(90deg, #d44f43, #e8be62);
+}
+
+.battlefield-hover-card {
+  min-width: 250px;
+  text-align: left;
 }
 
 .cell-empty {
@@ -589,6 +644,41 @@ h2.luck-title > * {
   gap: 8px;
   overflow-x: auto;
   overflow-y: hidden;
+  max-width: 100%;
+  min-width: 0;
+  scrollbar-gutter: stable;
+  scrollbar-width: thin;
+  scrollbar-color: color-mix(in srgb, #a48d57 70%, #ffffff 30%) transparent;
+}
+
+.hand-cards::-webkit-scrollbar {
+  height: 7px;
+}
+
+.hand-cards::-webkit-scrollbar-track {
+  background: transparent;
+}
+
+.hand-cards::-webkit-scrollbar-thumb {
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #4d3f24 40%, transparent);
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #9b8350 72%, #ffffff 28%),
+    color-mix(in srgb, #b59a62 72%, #ffffff 28%)
+  );
+}
+
+.hand-cards::-webkit-scrollbar-thumb:hover {
+  background: linear-gradient(
+    90deg,
+    color-mix(in srgb, #8f7849 78%, #ffffff 22%),
+    color-mix(in srgb, #a98f5b 78%, #ffffff 22%)
+  );
+}
+
+.hand-cards > li {
+  flex: 0 0 auto;
 }
 
 .hand-scroll-wrap {
@@ -642,9 +732,6 @@ h2.luck-title > * {
 .hand-card:hover,
 .hand-card:focus-visible,
 .hand-card.focused {
-  max-width: 100%;
-  min-width: 0;
-  scrollbar-gutter: stable;
   border-color: #c0963b;
   transform: translateY(-2px);
 }
@@ -663,12 +750,18 @@ h2.luck-title > * {
 }
 
 .hand-card-name {
-.hand-cards > li {
-  flex: 0 0 auto;
-}
   font-size: 12px;
   text-align: center;
   line-height: 1.2;
+}
+
+.hand-card-summary {
+  font-size: 10px;
+  line-height: 1.15;
+  text-align: center;
+  opacity: 0.82;
+  max-height: 26px;
+  overflow: hidden;
 }
 
 .hand-card-cost {
@@ -685,6 +778,20 @@ h2.luck-title > * {
   font-weight: 700;
   display: grid;
   place-items: center;
+}
+
+.hand-card-hover {
+  min-width: 210px;
+  text-align: left;
+  left: 50%;
+  bottom: calc(100% + 8px);
+  transform: translateX(-50%) scale(0.98);
+}
+
+.hand-card:hover .hand-card-hover,
+.hand-card:focus-visible .hand-card-hover {
+  opacity: 1;
+  transform: translateX(-50%) scale(1);
 }
 
 .hand-focus-panel {

@@ -185,7 +185,11 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                   ? 'owner-enemy'
                   : ''
             const meta = ENTITY_ICON_META[occupier.kind]
+            const entityStats = preview.battlefield.entitiesById[occupier.entityId]
             const ariaLabel = `${meta.label ?? occupier.kind} occupying ${occupier.rowSpan} by ${occupier.columnSpan} cells from row ${occupier.minRow + 1}, column ${occupier.minColumn + 1}`
+            const healthPercent = entityStats
+              ? Math.max(0, Math.min(100, (entityStats.currentHealth / Math.max(1, entityStats.maxHealth)) * 100))
+              : 0
 
             return (
               <div
@@ -223,11 +227,40 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 <span className="hint-wrap" tabIndex={0}>
                   <Icon icon={meta.id} className="occupier-icon" aria-hidden="true" />
                   <span className="sr-only">{ariaLabel}</span>
-                  <span className="hover-card" role="tooltip">
-                    <strong>{meta.label ?? occupier.kind}</strong>
+                  <span className="hover-card battlefield-hover-card" role="tooltip">
+                    <strong>{entityStats?.displayName ?? meta.label ?? occupier.kind}</strong>
                     <span>{meta.description ?? 'Unit on battlefield.'}</span>
+                    {entityStats ? (
+                      <>
+                        <span className="hover-group-title">Vitals</span>
+                        <span>HP: {entityStats.currentHealth} / {entityStats.maxHealth}</span>
+                        <span>Moves: {entityStats.movePoints} / {entityStats.maxMovePoints}</span>
+                        <span className="hover-group-title">Combat</span>
+                        <span>AD: {entityStats.attackDamage} | AP: {entityStats.abilityPower}</span>
+                        <span>Armor: {entityStats.armor} | MR: {entityStats.magicResist}</span>
+                        <span>Crit: {Math.round(entityStats.criticalChance * 100)}% | Dodge: {Math.round(entityStats.dodgeChance * 100)}%</span>
+                      </>
+                    ) : null}
                   </span>
                 </span>
+
+                {entityStats ? (
+                  <>
+                    <span className="entity-stats-row" aria-hidden="true">
+                      <span className="entity-stat-pill">
+                        <Icon icon="game-icons:broadsword" />
+                        {Math.round(entityStats.attackDamage)}
+                      </span>
+                      <span className="entity-stat-pill">
+                        <Icon icon="game-icons:checked-shield" />
+                        {entityStats.armor}
+                      </span>
+                    </span>
+                    <span className="entity-healthbar" aria-hidden="true">
+                      <span className="entity-healthbar-fill" style={{ width: `${healthPercent}%` }} />
+                    </span>
+                  </>
+                ) : null}
               </div>
             )
           })}

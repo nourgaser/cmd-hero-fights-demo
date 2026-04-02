@@ -133,6 +133,14 @@ export function HandBar(props: HandBarProps) {
           const isFocused = card.handCardId === focusedHandCardId
           const requiresTarget = card.validTargetEntityIds.length > 0
           const isCardEnabled = isActivePlayer && card.isPlayable
+          const targetingLabel =
+            card.targeting === 'none'
+              ? 'No target'
+              : card.targeting === 'selectedEnemy'
+                ? 'Enemy target'
+                : card.targeting === 'selectedAny'
+                  ? 'Any target'
+                  : 'Ally target'
 
           return (
             <li key={card.handCardId}>
@@ -146,7 +154,15 @@ export function HandBar(props: HandBarProps) {
               >
                 <Icon icon={meta.id} className="hand-card-icon" aria-hidden="true" />
                 <span className="hand-card-name">{card.cardName}</span>
+                <span className="hand-card-summary">{card.summaryText}</span>
                 <span className="hand-card-cost">{card.moveCost}</span>
+                <span className="hover-card hand-card-hover" role="tooltip">
+                  <strong>{card.cardName}</strong>
+                  <span>{card.summaryText}</span>
+                  <span>Type: {card.cardType} | Rarity: {card.rarity}</span>
+                  <span>Cost: {card.moveCost} | Targeting: {targetingLabel}</span>
+                  <span>{card.isPlayable ? 'Playable now' : 'Not playable now'}</span>
+                </span>
               </button>
             </li>
           )
