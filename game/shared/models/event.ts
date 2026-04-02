@@ -51,6 +51,17 @@ export const EntityRemovedEventSchema = z.object({
 });
 export type EntityRemovedEvent = z.infer<typeof EntityRemovedEventSchema>;
 
+export const ListenerTriggeredEventSchema = z.object({
+  kind: z.literal("listenerTriggered"),
+  sequence: EventSequenceSchema,
+  listenerId: z.string().min(1),
+  ownerHeroEntityId: EntityIdSchema,
+  sourceEntityId: EntityIdSchema.optional(),
+  triggerEventKind: z.string().min(1),
+  message: z.string().min(1),
+});
+export type ListenerTriggeredEvent = z.infer<typeof ListenerTriggeredEventSchema>;
+
 export const DamageAppliedEventSchema = z.object({
   kind: z.literal("damageApplied"),
   sequence: EventSequenceSchema,
@@ -147,6 +158,7 @@ export const BattleEventSchema = z.discriminatedUnion("kind", [
   CardDrawnEventSchema,
   EntitySummonedEventSchema,
   EntityRemovedEventSchema,
+  ListenerTriggeredEventSchema,
   DamageAppliedEventSchema,
   HealAppliedEventSchema,
   ArmorGainedEventSchema,

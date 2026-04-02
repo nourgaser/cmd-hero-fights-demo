@@ -116,6 +116,17 @@ export function handleDealDamageEffect(
 
   const target = state.entitiesById[targetId];
   if (!target) {
+    if (effect.payload.target === "triggeringTarget") {
+      return {
+        ok: true,
+        state,
+        events: [],
+        nextSequence: sequence,
+        lastDamageWasDodged: false,
+        lastSummonedEntityId,
+      };
+    }
+
     return { ok: false, reason: "dealDamage target was not found." };
   }
 

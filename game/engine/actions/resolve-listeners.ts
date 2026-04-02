@@ -11,6 +11,7 @@ import {
   resolveActorHeroForEffect,
   type SummonedEntityBlueprint,
 } from "./effects/execute-card-effect";
+import { renderEffectDisplayText } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
 
 function listenerMatchesEvent(listener: ListenerDefinition, event: BattleEvent): boolean {
@@ -113,6 +114,17 @@ export function resolveTriggeredListeners(options: {
       let lastSummonedEntityId: string | undefined;
 
       for (const effect of listener.effects) {
+        listenerLocalEvents.push({
+          kind: "listenerTriggered",
+          sequence,
+          listenerId: listener.listenerId,
+          ownerHeroEntityId: listener.ownerHeroEntityId,
+          sourceEntityId: listener.sourceEntityId,
+          triggerEventKind: event.kind,
+          message: renderEffectDisplayText(effect.displayText),
+        });
+        sequence += 1;
+
         const execution = executeCardEffect({
           state: listenerLocalState,
           effect,

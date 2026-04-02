@@ -6,7 +6,7 @@ import { SUMMON_ENTITY_IDS } from "../constants";
 export const JAQUEMIN_PATROL_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "companion",
   definitionCardId: "card.commander-x.jaquemin-patrol",
-  maxHealth: 20,
+  maxHealth: 15,
   armor: 1,
   magicResist: 0,
   attackDamage: 0,

@@ -1,4 +1,5 @@
 import { createGameApi } from '../../index.ts'
+import type { BattleEvent } from '../../shared/models'
 import {
   DEFAULT_GAME_BOOTSTRAP_CONFIG,
   type GameBootstrapConfig,
@@ -244,6 +245,21 @@ function resolveHeroSetup(
 type CreatedBattle = ReturnType<ReturnType<typeof createGameApi>['createBattle']>
 type BattleState = CreatedBattle['state']
 type BattleRng = CreatedBattle['rng']
+
+type SessionResolutionSuccess = {
+  ok: true
+  session: AppBattleSession
+  preview: AppBattlePreview
+  resultMessage: string
+  events: BattleEvent[]
+}
+
+type SessionResolutionFailure = {
+  ok: false
+  reason: string
+  session: AppBattleSession
+  preview: AppBattlePreview
+}
 
 export type AppBattleSession = {
   gameApi: ReturnType<typeof createGameApi>
@@ -547,8 +563,8 @@ export function resolveSessionPlayCard(options: {
   targetEntityId?: string
   targetPosition?: { row: number; column: number }
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
-  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
+  | SessionResolutionSuccess
+  | SessionResolutionFailure {
   const { session, actorHeroEntityId, handCardId, targetEntityId, targetPosition } = options
 
   const result = session.gameApi.resolveAction({
@@ -587,6 +603,7 @@ export function resolveSessionPlayCard(options: {
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
     resultMessage: result.resultMessage,
+    events: result.events,
   }
 }
 
@@ -595,8 +612,8 @@ export function resolveSessionSimpleAction(options: {
   actorHeroEntityId: string
   kind: 'pressLuck' | 'endTurn'
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
-  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
+  | SessionResolutionSuccess
+  | SessionResolutionFailure {
   const { session, actorHeroEntityId, kind } = options
 
   const result = session.gameApi.resolveAction({
@@ -630,6 +647,7 @@ export function resolveSessionSimpleAction(options: {
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
     resultMessage: result.resultMessage,
+    events: result.events,
   }
 }
 
@@ -639,8 +657,8 @@ export function resolveSessionBasicAttack(options: {
   attackerEntityId: string
   targetEntityId: string
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
-  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
+  | SessionResolutionSuccess
+  | SessionResolutionFailure {
   const { session, actorHeroEntityId, attackerEntityId, targetEntityId } = options
 
   const result = session.gameApi.resolveAction({
@@ -678,6 +696,7 @@ export function resolveSessionBasicAttack(options: {
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
     resultMessage: result.resultMessage,
+    events: result.events,
   }
 }
 
@@ -687,8 +706,8 @@ export function resolveSessionUseEntityActive(options: {
   sourceEntityId: string
   targetEntityId: string
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
-  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
+  | SessionResolutionSuccess
+  | SessionResolutionFailure {
   const { session, actorHeroEntityId, sourceEntityId, targetEntityId } = options
 
   const result = session.gameApi.resolveAction({
@@ -726,6 +745,7 @@ export function resolveSessionUseEntityActive(options: {
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
     resultMessage: result.resultMessage,
+    events: result.events,
   }
 }
 

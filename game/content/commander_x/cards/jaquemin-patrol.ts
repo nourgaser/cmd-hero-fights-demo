@@ -43,8 +43,8 @@ export const JAQUEMIN_PATROL_CARD = {
             payload: {
               kind: "dealDamage",
               target: "triggeringTarget",
-              minimum: 1,
-              maximum: 2,
+              minimum: 2,
+              maximum: 4,
               damageType: "physical",
               attackDamageScaling: 0.25,
               abilityPowerScaling: 0,

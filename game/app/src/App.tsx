@@ -1,6 +1,7 @@
 import './App.css'
 import { useEffect, useState } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
+import type { BattleEvent } from '../../shared/models'
 import {
   createInitialBattleSession,
   type AppBattleSession,
@@ -17,6 +18,7 @@ import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 const DEBUG_SEED_STORAGE_KEY = 'cmd-hero:debug-seed'
 const ACTION_TOAST_ID = 'action-feedback'
 const ACTION_TOAST_DURATION_MS = 7000
+const EVENT_TOAST_DURATION_MS = 4500
 
 type AppRuntime = {
   session: AppBattleSession
@@ -178,6 +180,17 @@ function App() {
     })
   }
 
+  const showBattleEventToast = (event: BattleEvent) => {
+    if (event.kind !== 'listenerTriggered') {
+      return
+    }
+
+    toast(event.message, {
+      id: `battle-event-${event.sequence}`,
+      duration: EVENT_TOAST_DURATION_MS,
+    })
+  }
+
   const handleSeedChange = (seed: string) => {
     const nextConfig = {
       ...bootstrapConfig,
@@ -222,6 +235,7 @@ function App() {
     return (input: { targetEntityId: string }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let events: BattleEvent[] = []
 
       setRuntime((prev) => {
         if (!prev) {
@@ -239,6 +253,7 @@ function App() {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          events = result.events
         }
 
         return {
@@ -251,6 +266,9 @@ function App() {
         showActionErrorToast(`Basic attack failed: ${failureReason}`)
       } else if (resultMessage) {
         showActionSuccessToast(resultMessage)
+        for (const event of events) {
+          showBattleEventToast(event)
+        }
       }
     }
   }
@@ -259,6 +277,7 @@ function App() {
     return (input: { sourceEntityId: string; targetEntityId: string }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let events: BattleEvent[] = []
 
       setRuntime((prev) => {
         if (!prev) {
@@ -276,6 +295,7 @@ function App() {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          events = result.events
         }
 
         return {
@@ -288,6 +308,9 @@ function App() {
         showActionErrorToast(`Entity active failed: ${failureReason}`)
       } else if (resultMessage) {
         showActionSuccessToast(resultMessage)
+        for (const event of events) {
+          showBattleEventToast(event)
+        }
       }
     }
   }
@@ -300,6 +323,7 @@ function App() {
     }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let events: BattleEvent[] = []
 
       setRuntime((prev) => {
         if (!prev) {
@@ -318,6 +342,7 @@ function App() {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          events = result.events
         }
 
         return {
@@ -330,6 +355,9 @@ function App() {
         showActionErrorToast(`Play card failed: ${failureReason}`)
       } else if (resultMessage) {
         showActionSuccessToast(resultMessage)
+        for (const event of events) {
+          showBattleEventToast(event)
+        }
       }
     }
   }
@@ -338,6 +366,7 @@ function App() {
     return () => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let events: BattleEvent[] = []
 
       setRuntime((prev) => {
         if (!prev) {
@@ -354,6 +383,7 @@ function App() {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          events = result.events
         }
 
         return {
@@ -366,6 +396,9 @@ function App() {
         showActionErrorToast(`${kind} failed: ${failureReason}`)
       } else if (resultMessage) {
         showActionSuccessToast(resultMessage)
+        for (const event of events) {
+          showBattleEventToast(event)
+        }
       }
     }
   }
