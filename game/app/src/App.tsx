@@ -1,7 +1,10 @@
 import { Icon } from '@iconify/react/offline'
 import './App.css'
+import { createInitialBattlePreview } from './game-client.ts'
 
 function App() {
+  const preview = createInitialBattlePreview('ui-seed-001')
+
   return (
     <main className="app-shell">
       <section className="card">
@@ -27,6 +30,13 @@ function App() {
             <span>game-icons:checked-shield</span>
           </div>
         </div>
+      </section>
+
+      <section className="card">
+        <h2>Public API Bootstrap</h2>
+        <p>App battle preview created through public API import from game/index.ts only.</p>
+
+        <pre className="preview">{JSON.stringify(preview, null, 2)}</pre>
       </section>
     </main>
   )

@@ -40,7 +40,7 @@ This checklist is the implementation gate for MVP work.
 
 - [x] Frontend stack bootstrap (Vite + React + TypeScript)
 - [x] Icon stack bootstrap (`@iconify-json/game-icons`, optional renderer package during app phase)
-- [ ] App imports only public game API entry (`game/index.ts`)
+- [x] App imports only public game API entry (`game/index.ts`)
 - [ ] Split-screen layout (Player A / Player B)
 - [ ] Battle bootstrap UI (seed + start/reset)
 - [ ] Battlefield occupancy view with procedural visuals

@@ -15,7 +15,7 @@ import {
   resolveAction as resolveActionCore,
   type ResolveActionResult,
 } from "./engine/actions/resolve-action";
-import type { BattleAction, BattleState, EntityFootprint, SummonedEntityKind } from "./shared/models";
+import type { BattleAction, BattleState } from "./shared/models";
 import type { BattleRng } from "./engine/core/rng";
 
 export type GameCreateBattleInput = CreateBattleInput;

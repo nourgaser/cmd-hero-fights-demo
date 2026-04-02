@@ -35,3 +35,15 @@
 .game-icon {
   font-size: 28px;
 }
+
+.preview {
+  margin: 12px 0 0;
+  padding: 12px;
+  border-radius: 8px;
+  border: 1px solid var(--border);
+  background: var(--code-bg);
+  overflow: auto;
+  font-family: var(--mono);
+  font-size: 13px;
+  line-height: 1.4;
+}
