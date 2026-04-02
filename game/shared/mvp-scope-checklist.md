@@ -38,7 +38,7 @@ This checklist is the implementation gate for MVP work.
 
 ## Minimal App Integration Plan
 
-- [ ] Frontend stack bootstrap (Vite + React + TypeScript)
+- [x] Frontend stack bootstrap (Vite + React + TypeScript)
 - [ ] Icon stack bootstrap (`@iconify-json/game-icons`, optional renderer package during app phase)
 - [ ] App imports only public game API entry (`game/index.ts`)
 - [ ] Split-screen layout (Player A / Player B)
