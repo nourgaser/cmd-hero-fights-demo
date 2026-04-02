@@ -13,7 +13,7 @@ type PlayerScreenProps = {
   enemyId: string
   selfSideKey: 'a' | 'b'
   preview: AppBattlePreview
-  onBasicAttack: () => void
+  onBasicAttack: (input: { targetEntityId: string }) => void
   onUseEntityActive: () => void
   onPressLuck: () => void
   onEndTurn: () => void
@@ -41,10 +41,13 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const selfDeckSize = self?.deckSize ?? 0
   const selfHandCards =
     preview.heroHands.find((heroHand) => heroHand.heroEntityId === selfId)?.cards ?? []
+  const selfActionTargets =
+    preview.heroActionTargets.find((entry) => entry.heroEntityId === selfId) ?? null
   const isActivePlayer = preview.activeHeroEntityId === selfId
 
   const [focusedHandCardId, setFocusedHandCardId] = useState<string | null>(null)
   const [selectedTargetEntityId, setSelectedTargetEntityId] = useState<string | null>(null)
+  const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | null>(null)
 
   const focusedCard = useMemo(() => {
     if (!focusedHandCardId) {
@@ -53,7 +56,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
     return selfHandCards.find((card) => card.handCardId === focusedHandCardId) ?? null
   }, [focusedHandCardId, selfHandCards])
 
-  const highlightedTargetEntityIds = focusedCard?.validTargetEntityIds ?? []
+  const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
+  const highlightedTargetEntityIds =
+    pendingActionMode === 'basicAttack'
+      ? basicAttackTargetEntityIds
+      : focusedCard?.validTargetEntityIds ?? []
 
   const handleFocusCard = (handCardId: string) => {
     if (!isActivePlayer) {
@@ -61,6 +68,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     }
 
     setFocusedHandCardId(handCardId)
+    setPendingActionMode(null)
     setSelectedTargetEntityId(null)
   }
 
@@ -92,11 +100,36 @@ export function PlayerScreen(props: PlayerScreenProps) {
     })
 
     setFocusedHandCardId(null)
+    setPendingActionMode(null)
+    setSelectedTargetEntityId(null)
+  }
+
+  const handleBeginBasicAttack = () => {
+    if (!isActivePlayer) {
+      return
+    }
+
+    setFocusedHandCardId(null)
+    setPendingActionMode('basicAttack')
+    setSelectedTargetEntityId(null)
+  }
+
+  const handleConfirmBasicAttack = () => {
+    if (!selectedTargetEntityId || pendingActionMode !== 'basicAttack') {
+      return
+    }
+    if (!basicAttackTargetEntityIds.includes(selectedTargetEntityId)) {
+      return
+    }
+
+    onBasicAttack({ targetEntityId: selectedTargetEntityId })
+    setPendingActionMode(null)
     setSelectedTargetEntityId(null)
   }
 
   const handleClearFocus = () => {
     setFocusedHandCardId(null)
+    setPendingActionMode(null)
     setSelectedTargetEntityId(null)
   }
 
@@ -152,7 +185,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
           <ActionControls
             selfId={selfId}
-            onBasicAttack={onBasicAttack}
+            onBasicAttack={handleBeginBasicAttack}
             onUseEntityActive={onUseEntityActive}
             onPressLuck={onPressLuck}
             onEndTurn={onEndTurn}
@@ -175,6 +208,27 @@ export function PlayerScreen(props: PlayerScreenProps) {
             </span>
           </aside>
         </section>
+
+        {pendingActionMode === 'basicAttack' ? (
+          <section className="card action-intent-panel" aria-label="Basic attack targeting">
+            <p>
+              <strong>Basic Attack:</strong> Select one highlighted enemy target, then confirm.
+            </p>
+            <div className="hand-focus-actions">
+              <button
+                type="button"
+                className="confirm-play"
+                disabled={!selectedTargetEntityId}
+                onClick={handleConfirmBasicAttack}
+              >
+                Confirm Attack
+              </button>
+              <button type="button" className="clear-focus" onClick={handleClearFocus}>
+                Cancel
+              </button>
+            </div>
+          </section>
+        ) : null}
 
         <HandBar
           cards={selfHandCards}

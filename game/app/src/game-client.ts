@@ -31,6 +31,13 @@ export type AppBattlePreview = {
       validTargetEntityIds: string[]
     }>
   }>
+  heroActionTargets: Array<{
+    heroEntityId: string
+    basicAttack: {
+      attackerEntityId: string
+      validTargetEntityIds: string[]
+    }
+  }>
   battlefield: {
     rows: number
     columns: number
@@ -139,6 +146,22 @@ function buildPreviewFromState(options: {
     }
   })
 
+  const heroActionTargets = state.heroEntityIds.map((heroEntityId) => {
+    const entity = state.entitiesById[heroEntityId]
+
+    if (!entity || entity.kind !== 'hero') {
+      throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
+    }
+
+    return {
+      heroEntityId,
+      basicAttack: {
+        attackerEntityId: entity.entityId,
+        validTargetEntityIds: entity.basicAttackTargetEntityIds ?? [],
+      },
+    }
+  })
+
   const { rows, columns } = state.battlefieldOccupancy.dimensions
   const cells: AppBattlePreview['battlefield']['cells'] = []
 
@@ -168,6 +191,7 @@ function buildPreviewFromState(options: {
     },
     heroHandCounts,
     heroHands,
+    heroActionTargets,
     battlefield: {
       rows,
       columns,
@@ -283,6 +307,53 @@ export function resolveSessionSimpleAction(options: {
     action: {
       kind,
       actorHeroEntityId,
+    },
+  })
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      reason: result.reason,
+      session,
+      preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+    }
+  }
+
+  const nextSession: AppBattleSession = {
+    ...session,
+    state: result.state,
+    nextSequence: result.nextSequence,
+  }
+
+  return {
+    ok: true,
+    session: nextSession,
+    preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+  }
+}
+
+export function resolveSessionBasicAttack(options: {
+  session: AppBattleSession
+  actorHeroEntityId: string
+  attackerEntityId: string
+  targetEntityId: string
+}):
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
+  const { session, actorHeroEntityId, attackerEntityId, targetEntityId } = options
+
+  const result = session.gameApi.resolveAction({
+    state: session.state,
+    nextSequence: session.nextSequence,
+    battleRng: session.battleRng,
+    createSummonedEntityId,
+    action: {
+      kind: 'basicAttack',
+      actorHeroEntityId,
+      attackerEntityId,
+      selection: {
+        targetEntityId,
+      },
     },
   })
 

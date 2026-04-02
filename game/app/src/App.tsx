@@ -4,6 +4,7 @@ import {
   createInitialBattleSession,
   type AppBattleSession,
   type AppBattlePreview,
+  resolveSessionBasicAttack,
   resolveSessionPlayCard,
   resolveSessionSimpleAction,
 } from './game-client.ts'
@@ -72,6 +73,31 @@ function App() {
     }
   }
 
+  const createBasicAttackHandler = (heroId: string) => {
+    return (input: { targetEntityId: string }) => {
+      setRuntime((prev) => {
+        if (!prev) {
+          return prev
+        }
+
+        const result = resolveSessionBasicAttack({
+          session: prev.session,
+          actorHeroEntityId: heroId,
+          attackerEntityId: heroId,
+          targetEntityId: input.targetEntityId,
+        })
+
+        return {
+          session: result.session,
+          preview: result.preview,
+          lastMessage: result.ok
+            ? `Basic attack resolved by ${heroId}.`
+            : `Basic attack failed: ${result.reason}`,
+        }
+      })
+    }
+  }
+
   const createPlayCardHandler = (heroId: string) => {
     return (input: { handCardId: string; targetEntityId?: string }) => {
       setRuntime((prev) => {
@@ -131,7 +157,7 @@ function App() {
           enemyId={heroBId}
           selfSideKey="a"
           preview={preview}
-          onBasicAttack={createUnwiredActionHandler(heroAId, 'basicAttack')}
+          onBasicAttack={createBasicAttackHandler(heroAId)}
           onUseEntityActive={createUnwiredActionHandler(heroAId, 'useEntityActive')}
           onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')}
           onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
@@ -143,7 +169,7 @@ function App() {
           enemyId={heroAId}
           selfSideKey="b"
           preview={preview}
-          onBasicAttack={createUnwiredActionHandler(heroBId, 'basicAttack')}
+          onBasicAttack={createBasicAttackHandler(heroBId)}
           onUseEntityActive={createUnwiredActionHandler(heroBId, 'useEntityActive')}
           onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')}
           onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}

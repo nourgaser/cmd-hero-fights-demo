@@ -617,6 +617,15 @@ h2.luck-title > * {
   opacity: 0.9;
 }
 
+.action-intent-panel {
+  margin-top: 8px;
+  padding: 10px 12px;
+}
+
+.action-intent-panel p {
+  margin: 0 0 8px;
+}
+
 .preview {
   margin: 0;
   padding: 12px;

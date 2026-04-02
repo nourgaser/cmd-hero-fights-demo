@@ -38,6 +38,7 @@ export const HeroEntityStateSchema = z.object({
   movePoints: z.number().int().nonnegative(),
   deckCardIds: z.array(CardIdSchema),
   handCards: z.array(HandCardSchema),
+  basicAttackTargetEntityIds: z.array(EntityIdSchema).optional(),
   discardCardIds: z.array(CardIdSchema),
 });
 export type HeroEntityState = z.infer<typeof HeroEntityStateSchema>;
