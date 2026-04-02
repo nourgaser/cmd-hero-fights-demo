@@ -523,8 +523,34 @@ h2.luck-title > * {
 .hand-bar-header {
   display: flex;
   align-items: center;
-  justify-content: flex-end;
+  justify-content: space-between;
   margin-bottom: 8px;
+}
+
+.move-meter {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  border: 1px solid var(--border);
+  border-radius: 999px;
+  padding: 2px 8px;
+  background: color-mix(in srgb, #d7e7f8 70%, #ffffff 30%);
+}
+
+.move-meter-icon {
+  width: 14px;
+  height: 14px;
+}
+
+.move-meter-value {
+  font-size: 12px;
+  font-weight: 700;
+  min-width: 18px;
+  text-align: center;
+}
+
+.move-hover-card {
+  min-width: 120px;
 }
 
 .hand-pill {

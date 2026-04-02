@@ -19,6 +19,8 @@ export type AppBattlePreview = {
     handSize: number
     deckSize: number
     battlefieldSide: 'north' | 'south'
+    movePoints: number
+    maxMovePoints: number
   }>
   heroHands: Array<{
     heroEntityId: string
@@ -125,6 +127,8 @@ function buildPreviewFromState(options: {
       handSize: entity.handCards.length,
       deckSize: entity.deckCardIds.length,
       battlefieldSide: entity.battlefieldSide,
+      movePoints: entity.movePoints,
+      maxMovePoints: entity.maxMovePoints,
     }
   })
 

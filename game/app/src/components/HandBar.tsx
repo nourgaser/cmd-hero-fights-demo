@@ -8,6 +8,8 @@ type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 type HandBarProps = {
   cards: HandBarCard[]
   isActivePlayer: boolean
+  movePoints: number
+  maxMovePoints: number
   basicAttackMoveCost: number
   pressLuckMoveCost: number
   focusedHandCardId: string | null
@@ -25,6 +27,8 @@ export function HandBar(props: HandBarProps) {
   const {
     cards,
     isActivePlayer,
+    movePoints,
+    maxMovePoints,
     basicAttackMoveCost,
     pressLuckMoveCost,
     focusedHandCardId,
@@ -75,6 +79,14 @@ export function HandBar(props: HandBarProps) {
   return (
     <section className="card hand-bar" aria-label="Hand cards">
       <div className="hand-bar-header">
+        <span className="move-meter hint-wrap" tabIndex={0} aria-label={`Moves ${movePoints} out of ${maxMovePoints}`}>
+          <Icon icon="game-icons:boot-prints" className="move-meter-icon" aria-hidden="true" />
+          <span className="move-meter-value">{movePoints}</span>
+          <span className="hover-card move-hover-card" role="tooltip">
+            <strong>Moves</strong>
+            <span>{movePoints} / {maxMovePoints}</span>
+          </span>
+        </span>
         {isActivePlayer ? (
           <button type="button" className="hand-pill hand-pill-button" onClick={onEndTurn}>
             End turn

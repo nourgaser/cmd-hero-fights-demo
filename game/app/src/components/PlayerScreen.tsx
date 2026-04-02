@@ -42,6 +42,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const shouldFlipRows = self?.battlefieldSide === 'north'
   const selfHandSize = self?.handSize ?? 0
   const selfDeckSize = self?.deckSize ?? 0
+  const selfMovePoints = self?.movePoints ?? 0
+  const selfMaxMovePoints = self?.maxMovePoints ?? 0
   const selfHandCards =
     preview.heroHands.find((heroHand) => heroHand.heroEntityId === selfId)?.cards ?? []
   const selfActionTargets =
@@ -373,6 +375,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
+          movePoints={selfMovePoints}
+          maxMovePoints={selfMaxMovePoints}
           basicAttackMoveCost={basicAttackMoveCost}
           pressLuckMoveCost={pressLuckMoveCost}
           focusedHandCardId={focusedHandCardId}
