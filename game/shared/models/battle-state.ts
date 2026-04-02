@@ -14,6 +14,7 @@ export type BattleId = z.infer<typeof BattleIdSchema>;
 export const HandCardSchema = z.object({
   id: HandCardIdSchema,
   cardDefinitionId: CardIdSchema,
+  validTargetEntityIds: z.array(EntityIdSchema).optional(),
 });
 export type HandCard = z.infer<typeof HandCardSchema>;
 

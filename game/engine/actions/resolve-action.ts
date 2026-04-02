@@ -32,6 +32,7 @@ import { type SummonedEntityBlueprint } from "./effects/execute-card-effect.ts";
 import { type HeroDefinition } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
 import { resolveTriggeredListeners } from "./resolve-listeners";
+import { annotateBattleStateWithActiveHandTargets } from "./annotate-hand-targets";
 
 export type ResolveActionResult =
   | {
@@ -192,7 +193,10 @@ export function resolveAction(options: {
 
   return {
     ok: true,
-    state: listenerResolution.state,
+    state: annotateBattleStateWithActiveHandTargets({
+      state: listenerResolution.state,
+      cardDefinitionsById,
+    }),
     events: [...eventsAfterCleanup, ...listenerResolution.events],
     nextSequence: listenerResolution.nextSequence,
   };

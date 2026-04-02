@@ -1,6 +1,7 @@
 import {
   type BattleState,
   type BattlefieldSide,
+  type CardDefinition,
   type CardId,
   type EntityFootprint,
   type EntityId,
@@ -15,6 +16,7 @@ import {
   setOccupantFootprint,
 } from "../../shared/models";
 import { createBattleRng, type BattleRng } from "./rng";
+import { annotateBattleStateWithActiveHandTargets } from "../actions/annotate-hand-targets";
 
 type CreateBattleHeroSetup = {
   heroEntityId: EntityId;
@@ -31,6 +33,7 @@ export type CreateBattleInput = {
   battlefieldColumns: number;
   openingHandSize: number;
   heroes: [CreateBattleHeroSetup, CreateBattleHeroSetup];
+  cardDefinitionsById?: Record<string, CardDefinition>;
   resolveHeroInitialListeners?: (context: {
     hero: HeroDefinition;
     heroEntityId: string;
@@ -230,8 +233,15 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     activeListeners: initialListeners,
   };
 
+  const annotatedState = input.cardDefinitionsById
+    ? annotateBattleStateWithActiveHandTargets({
+        state,
+        cardDefinitionsById: input.cardDefinitionsById,
+      })
+    : state;
+
   return {
-    state,
+    state: annotatedState,
     rng,
   };
 }
