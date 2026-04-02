@@ -31,7 +31,7 @@ This checklist is the implementation gate for MVP work.
 - [x] Shared models, one file at a time with review
 - [x] Engine deterministic core
 - [x] Battlefield helpers
-- [ ] Action resolution pipeline
-- [ ] Effect implementations needed by included cards
-- [ ] Runtime content for included cards
+- [x] Action resolution pipeline
+- [x] Effect implementations needed by included cards
+- [x] Runtime content for included cards
 - [ ] Minimal app integration
