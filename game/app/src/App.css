@@ -515,6 +515,7 @@ h2.luck-title > * {
 .hand-bar {
   margin-top: 6px;
   padding: 12px;
+  min-width: 0;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, #ffffff 4%), color-mix(in srgb, var(--code-bg) 88%, #ffffff 12%));
 }
@@ -522,12 +523,8 @@ h2.luck-title > * {
 .hand-bar-header {
   display: flex;
   align-items: center;
-  justify-content: space-between;
+  justify-content: flex-end;
   margin-bottom: 8px;
-}
-
-.hand-bar-header h2 {
-  margin: 0;
 }
 
 .hand-pill {
@@ -556,10 +553,31 @@ h2.luck-title > * {
   display: flex;
   gap: 8px;
   overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.hand-scroll-wrap {
+  position: relative;
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+.hand-scroll-indicator {
+  position: absolute;
+  right: 4px;
+  bottom: 10px;
+  font-size: 11px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--panel) 90%, #ffffff 10%);
+  padding: 1px 6px;
+  pointer-events: none;
 }
 
 .hand-card {
   width: 96px;
+  flex: 0 0 96px;
   min-height: 112px;
   border: 1px solid var(--border);
   border-radius: 12px;
@@ -584,8 +602,19 @@ h2.luck-title > * {
 .hand-card:hover,
 .hand-card:focus-visible,
 .hand-card.focused {
+  max-width: 100%;
+  min-width: 0;
+  scrollbar-gutter: stable;
   border-color: #c0963b;
   transform: translateY(-2px);
+}
+
+.hand-card.action-slot.basic {
+  background: linear-gradient(180deg, #e9e9ea 85%, #d7d7d9 25%);
+}
+
+.hand-card.action-slot.luck {
+  background: linear-gradient(180deg, #e7f3d9 85%, #cfe3b8 25%);
 }
 
 .hand-card-icon {
@@ -594,6 +623,9 @@ h2.luck-title > * {
 }
 
 .hand-card-name {
+.hand-cards > li {
+  flex: 0 0 auto;
+}
   font-size: 12px;
   text-align: center;
   line-height: 1.2;

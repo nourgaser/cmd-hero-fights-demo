@@ -1,3 +1,4 @@
+import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react/offline'
 import { CARD_ICON_META } from '../data/visual-metadata.ts'
 import type { AppBattlePreview } from '../game-client.ts'
@@ -10,6 +11,8 @@ type HandBarProps = {
   focusedHandCardId: string | null
   selectedTargetEntityId: string | null
   selectedPlacementPosition: { row: number; column: number } | null
+  onBeginBasicAttack: () => void
+  onPressLuck: () => void
   onEndTurn: () => void
   onFocusCard: (handCardId: string) => void
   onConfirmFocusedCard: () => void
@@ -23,11 +26,37 @@ export function HandBar(props: HandBarProps) {
     focusedHandCardId,
     selectedTargetEntityId,
     selectedPlacementPosition,
+    onBeginBasicAttack,
+    onPressLuck,
     onEndTurn,
     onFocusCard,
     onConfirmFocusedCard,
     onClearFocus,
   } = props
+  const scrollerRef = useRef<HTMLUListElement | null>(null)
+  const [showScrollHint, setShowScrollHint] = useState(false)
+
+  useEffect(() => {
+    const scroller = scrollerRef.current
+    if (!scroller) {
+      return
+    }
+
+    const updateScrollHint = () => {
+      const hasOverflow = scroller.scrollWidth > scroller.clientWidth + 2
+      const canScrollMoreRight = scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 2
+      setShowScrollHint(hasOverflow && canScrollMoreRight)
+    }
+
+    updateScrollHint()
+    scroller.addEventListener('scroll', updateScrollHint)
+    window.addEventListener('resize', updateScrollHint)
+
+    return () => {
+      scroller.removeEventListener('scroll', updateScrollHint)
+      window.removeEventListener('resize', updateScrollHint)
+    }
+  }, [cards])
 
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
@@ -42,7 +71,6 @@ export function HandBar(props: HandBarProps) {
   return (
     <section className="card hand-bar" aria-label="Hand cards">
       <div className="hand-bar-header">
-        <h2>Hand</h2>
         {isActivePlayer ? (
           <button type="button" className="hand-pill hand-pill-button" onClick={onEndTurn}>
             End turn
@@ -52,7 +80,34 @@ export function HandBar(props: HandBarProps) {
         )}
       </div>
 
-      <ul className="hand-cards" aria-label="Cards in hand">
+      <div className="hand-scroll-wrap">
+        <ul className="hand-cards" aria-label="Cards in hand and actions" ref={scrollerRef}>
+          <li>
+            <button
+              type="button"
+              className="hand-card action-slot basic"
+              onClick={onBeginBasicAttack}
+              disabled={!isActivePlayer}
+              aria-label="Basic attack"
+            >
+              <Icon icon="game-icons:crossed-swords" className="hand-card-icon" aria-hidden="true" />
+              <span className="hand-card-name">Basic Attack</span>
+              <span className="hand-card-cost">A</span>
+            </button>
+          </li>
+          <li>
+            <button
+              type="button"
+              className="hand-card action-slot luck"
+              onClick={onPressLuck}
+              disabled={!isActivePlayer}
+              aria-label="Press luck"
+            >
+              <Icon icon="game-icons:shamrock" className="hand-card-icon" aria-hidden="true" />
+              <span className="hand-card-name">Press Luck</span>
+              <span className="hand-card-cost">L</span>
+            </button>
+          </li>
         {cards.map((card) => {
           const meta = CARD_ICON_META[card.cardDefinitionId] ?? {
             id: 'game-icons:card-pick',
@@ -79,7 +134,10 @@ export function HandBar(props: HandBarProps) {
             </li>
           )
         })}
-      </ul>
+        </ul>
+
+        {showScrollHint ? <span className="hand-scroll-indicator">{'Scroll ->'}</span> : null}
+      </div>
 
       {focusedCard ? (
         <div className="hand-focus-panel" aria-live="polite">

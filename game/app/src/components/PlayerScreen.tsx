@@ -4,7 +4,6 @@ import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
 import { LuckBar } from './LuckBar.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
-import { ActionControls } from './ActionControls.tsx'
 import { HandBar } from './HandBar.tsx'
 
 type PlayerScreenProps = {
@@ -232,6 +231,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedPlacementPosition(null)
   }
 
+  const handlePressLuck = () => {
+    if (!isActivePlayer) {
+      return
+    }
+
+    handleClearFocus()
+    onPressLuck()
+  }
+
   const handleClearFocus = () => {
     setFocusedHandCardId(null)
     setPendingActionMode(null)
@@ -300,12 +308,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
             }
           />
 
-          <ActionControls
-            selfId={selfId}
-            onBasicAttack={handleBeginBasicAttack}
-            onPressLuck={onPressLuck}
-          />
-
           <aside
             className="deck-overlay hint-wrap"
             tabIndex={0}
@@ -372,6 +374,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
           focusedHandCardId={focusedHandCardId}
           selectedTargetEntityId={selectedTargetEntityId}
           selectedPlacementPosition={selectedPlacementPosition}
+          onBeginBasicAttack={handleBeginBasicAttack}
+          onPressLuck={handlePressLuck}
           onEndTurn={onEndTurn}
           onFocusCard={handleFocusCard}
           onConfirmFocusedCard={handleConfirmFocusedCard}
