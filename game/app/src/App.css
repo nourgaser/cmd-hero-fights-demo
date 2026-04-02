@@ -5,6 +5,15 @@
   padding: 32px;
 }
 
+.game-toast {
+  border: 2px solid #241d14;
+  border-radius: 10px;
+  background: #f2cc59;
+  color: #241d14;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  font-weight: 600;
+}
+
 .debug-panel {
   z-index: 90;
   border: 1px solid var(--border);

@@ -1,5 +1,6 @@
 import './App.css'
 import { useState } from 'react'
+import { Toaster, toast } from 'react-hot-toast'
 import {
   createInitialBattleSession,
   type AppBattleSession,
@@ -16,7 +17,6 @@ import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 type AppRuntime = {
   session: AppBattleSession
   preview: AppBattlePreview
-  lastMessage: string | null
 }
 
 function App() {
@@ -29,7 +29,6 @@ function App() {
         runtime: {
           session: initial.session,
           preview: initial.preview,
-          lastMessage: null,
         } as AppRuntime,
         error: null as string | null,
       }
@@ -61,6 +60,8 @@ function App() {
 
   const createBasicAttackHandler = (heroId: string) => {
     return (input: { targetEntityId: string }) => {
+      let failureReason: string | null = null
+
       setRuntime((prev) => {
         if (!prev) {
           return prev
@@ -73,19 +74,26 @@ function App() {
           targetEntityId: input.targetEntityId,
         })
 
+        if (!result.ok) {
+          failureReason = result.reason
+        }
+
         return {
           session: result.session,
           preview: result.preview,
-          lastMessage: result.ok
-            ? `Basic attack resolved by ${heroId}.`
-            : `Basic attack failed: ${result.reason}`,
         }
       })
+
+      if (failureReason) {
+        toast.error(`Basic attack failed: ${failureReason}`)
+      }
     }
   }
 
   const createEntityActiveHandler = (heroId: string) => {
     return (input: { sourceEntityId: string; targetEntityId: string }) => {
+      let failureReason: string | null = null
+
       setRuntime((prev) => {
         if (!prev) {
           return prev
@@ -98,14 +106,19 @@ function App() {
           targetEntityId: input.targetEntityId,
         })
 
+        if (!result.ok) {
+          failureReason = result.reason
+        }
+
         return {
           session: result.session,
           preview: result.preview,
-          lastMessage: result.ok
-            ? `Entity active resolved by ${heroId}.`
-            : `Entity active failed: ${result.reason}`,
         }
       })
+
+      if (failureReason) {
+        toast.error(`Entity active failed: ${failureReason}`)
+      }
     }
   }
 
@@ -115,6 +128,8 @@ function App() {
       targetEntityId?: string
       targetPosition?: { row: number; column: number }
     }) => {
+      let failureReason: string | null = null
+
       setRuntime((prev) => {
         if (!prev) {
           return prev
@@ -128,19 +143,26 @@ function App() {
           targetPosition: input.targetPosition,
         })
 
+        if (!result.ok) {
+          failureReason = result.reason
+        }
+
         return {
           session: result.session,
           preview: result.preview,
-          lastMessage: result.ok
-            ? `Played card from hand by ${heroId}.`
-            : `Play card failed: ${result.reason}`,
         }
       })
+
+      if (failureReason) {
+        toast.error(`Play card failed: ${failureReason}`)
+      }
     }
   }
 
   const createSimpleActionHandler = (heroId: string, kind: 'pressLuck' | 'endTurn') => {
     return () => {
+      let failureReason: string | null = null
+
       setRuntime((prev) => {
         if (!prev) {
           return prev
@@ -152,21 +174,35 @@ function App() {
           kind,
         })
 
+        if (!result.ok) {
+          failureReason = result.reason
+        }
+
         return {
           session: result.session,
           preview: result.preview,
-          lastMessage: result.ok ? `${kind} resolved.` : `${kind} failed: ${result.reason}`,
         }
       })
+
+      if (failureReason) {
+        toast.error(`${kind} failed: ${failureReason}`)
+      }
     }
   }
 
   return (
     <>
+      <Toaster
+        position="top-center"
+        gutter={10}
+        toastOptions={{
+          className: 'game-toast',
+          duration: 2800,
+        }}
+      />
       <DebugStatePanel state={runtime.session.state as Record<string, unknown>} />
 
       <main className="dual-screens">
-        {runtime.lastMessage ? <p className="action-feedback">{runtime.lastMessage}</p> : null}
         <PlayerScreen
           title="CMD Hero Fights"
           selfId={heroAId}
