@@ -963,11 +963,13 @@ h2.luck-title > * {
   margin: 0;
   padding: 4px 4px 16px;
   display: flex;
+  align-items: flex-end;
   gap: 8px;
   overflow-x: auto;
-  overflow-y: visible;
+  overflow-y: hidden;
   max-width: 100%;
   min-width: 0;
+  min-height: 224px;
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, #a48d57 70%, #ffffff 30%) transparent;
@@ -1003,6 +1005,8 @@ h2.luck-title > * {
   flex: 0 0 auto;
   position: relative;
   overflow: visible;
+  width: 96px;
+  min-height: 112px;
 }
 
 .hand-scroll-wrap {
@@ -1042,8 +1046,9 @@ h2.luck-title > * {
   position: relative;
   cursor: pointer;
   z-index: 1;
-  overflow: visible;
   transition:
+    flex-basis 120ms ease,
+    min-height 120ms ease,
     transform 120ms ease,
     box-shadow 120ms ease,
     border-color 120ms ease,
@@ -1063,10 +1068,13 @@ h2.luck-title > * {
 .hand-card:hover,
 .hand-card:focus-visible,
 .hand-card.focused {
+  width: 152px;
+  flex-basis: 152px;
+  min-height: 208px;
   border-color: color-mix(in srgb, #b77f19 78%, #ffffff 22%);
   background:
-    linear-gradient(180deg, color-mix(in srgb, #fff5d5 92%, #ffffff 8%), color-mix(in srgb, #e8c96f 80%, #ffffff 20%));
-  transform: translateY(-8px) scale(1.02);
+    linear-gradient(180deg, color-mix(in srgb, #fff3ce 88%, #ffffff 12%), color-mix(in srgb, #e1c06f 78%, #ffffff 22%));
+  transform: translateY(-10px) scale(1.03);
   z-index: 4;
   box-shadow:
     0 18px 32px rgba(0, 0, 0, 0.22),
@@ -1105,6 +1113,17 @@ h2.luck-title > * {
   -webkit-line-clamp: 2;
   -webkit-box-orient: vertical;
   overflow-wrap: anywhere;
+}
+
+.hand-card:hover .hand-card-summary,
+.hand-card:focus-visible .hand-card-summary,
+.hand-card.focused .hand-card-summary {
+  max-height: none;
+  overflow: visible;
+  display: block;
+  -webkit-line-clamp: unset;
+  font-size: 11px;
+  opacity: 0.94;
 }
 
 .hand-card-cost {
@@ -1147,32 +1166,28 @@ h2.luck-title > * {
 }
 
 .hand-card-hover {
-  left: 50%;
-  bottom: calc(100% + 10px);
-  min-width: 220px;
-  max-width: var(--hover-tooltip-max-width, 280px);
+  inset: 6px;
+  min-width: 0;
+  max-width: none;
   text-align: left;
-  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(0.98);
-  padding: 10px 12px;
+  transform: none;
+  padding: 9px 10px;
   display: grid;
-  gap: 5px;
+  gap: 4px;
   align-content: start;
   justify-items: start;
-  border-radius: 12px;
-  border: 2px solid color-mix(in srgb, #8b6720 26%, transparent);
-  background:
-    radial-gradient(circle at 50% 0%, rgba(255, 255, 255, 0.45), transparent 35%),
-    linear-gradient(180deg, rgba(255, 248, 222, 0.98), rgba(236, 209, 126, 0.96));
+  border-radius: 10px;
+  border: 1px solid color-mix(in srgb, #8b6720 22%, transparent);
+  background: linear-gradient(180deg, rgba(255, 250, 233, 0.94), rgba(237, 212, 144, 0.92));
   box-shadow:
-    0 10px 22px rgba(0, 0, 0, 0.18),
-    0 0 0 1px rgba(255, 255, 255, 0.18),
-    inset 0 1px 1px rgba(255, 255, 255, 0.55);
+    inset 0 1px 1px rgba(255, 255, 255, 0.55),
+    0 2px 8px rgba(0, 0, 0, 0.1);
 }
 
 .hand-card:hover .hand-card-hover,
 .hand-card:focus-visible .hand-card-hover {
   opacity: 1;
-  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(1);
+  transform: none;
 }
 
 .hand-card-hover strong {
