@@ -46,6 +46,11 @@ export function annotateBattleStateWithActiveHandTargets(options: {
     nextEntitiesById[entityId] = {
       ...entity,
       handCards: nextHandCards,
+      basicAttackTargetEntityIds: isActiveHero
+        ? Object.values(state.entitiesById)
+            .filter((entry) => entry.battlefieldSide !== entity.battlefieldSide)
+            .map((entry) => entry.entityId)
+        : undefined,
     };
   }
 
