@@ -5,6 +5,67 @@
   padding: 32px;
 }
 
+.debug-panel {
+  z-index: 90;
+  border: 1px solid var(--border);
+  border-radius: 12px;
+  background: color-mix(in srgb, var(--panel) 92%, #ffffff 8%);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.2);
+  display: grid;
+  grid-template-rows: auto 1fr;
+  overflow: hidden;
+}
+
+.debug-panel > aside {
+  height: 100%;
+  min-width: 0;
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+}
+
+.debug-panel-collapsed {
+  height: auto !important;
+}
+
+.debug-panel-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid var(--border);
+  background: color-mix(in srgb, var(--code-bg) 82%, #ffffff 18%);
+  cursor: move;
+}
+
+.debug-panel-actions {
+  display: flex;
+  gap: 6px;
+}
+
+.debug-panel-actions button {
+  border: 1px solid var(--border);
+  border-radius: 6px;
+  padding: 4px 8px;
+  font-size: 12px;
+  background: color-mix(in srgb, var(--panel) 84%, #ffffff 16%);
+  cursor: pointer;
+}
+
+.debug-tree-wrap {
+  overflow: auto;
+  padding: 10px;
+  font-size: 12px;
+  min-width: 0;
+  min-height: 0;
+}
+
+.debug-tree-wrap .json-view {
+  font-family: var(--mono);
+  max-width: 100%;
+}
+
 .action-feedback {
   grid-column: 1 / -1;
   margin: 0;

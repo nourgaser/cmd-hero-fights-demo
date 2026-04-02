@@ -9,6 +9,7 @@ import {
 } from './game-client.ts'
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG } from './data/game-bootstrap.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
+import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 
 type AppRuntime = {
   session: AppBattleSession
@@ -119,33 +120,37 @@ function App() {
   }
 
   return (
-    <main className="dual-screens">
-      {runtime.lastMessage ? <p className="action-feedback">{runtime.lastMessage}</p> : null}
-      <PlayerScreen
-        title="CMD Hero Fights"
-        selfId={heroAId}
-        enemyId={heroBId}
-        selfSideKey="a"
-        preview={preview}
-        onBasicAttack={createUnwiredActionHandler(heroAId, 'basicAttack')}
-        onUseEntityActive={createUnwiredActionHandler(heroAId, 'useEntityActive')}
-        onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')}
-        onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
-        onPlayCard={createPlayCardHandler(heroAId)}
-      />
-      <PlayerScreen
-        title="CMD Hero Fights"
-        selfId={heroBId}
-        enemyId={heroAId}
-        selfSideKey="b"
-        preview={preview}
-        onBasicAttack={createUnwiredActionHandler(heroBId, 'basicAttack')}
-        onUseEntityActive={createUnwiredActionHandler(heroBId, 'useEntityActive')}
-        onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')}
-        onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
-        onPlayCard={createPlayCardHandler(heroBId)}
-      />
-    </main>
+    <>
+      <DebugStatePanel state={runtime.session.state as Record<string, unknown>} />
+
+      <main className="dual-screens">
+        {runtime.lastMessage ? <p className="action-feedback">{runtime.lastMessage}</p> : null}
+        <PlayerScreen
+          title="CMD Hero Fights"
+          selfId={heroAId}
+          enemyId={heroBId}
+          selfSideKey="a"
+          preview={preview}
+          onBasicAttack={createUnwiredActionHandler(heroAId, 'basicAttack')}
+          onUseEntityActive={createUnwiredActionHandler(heroAId, 'useEntityActive')}
+          onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')}
+          onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
+          onPlayCard={createPlayCardHandler(heroAId)}
+        />
+        <PlayerScreen
+          title="CMD Hero Fights"
+          selfId={heroBId}
+          enemyId={heroAId}
+          selfSideKey="b"
+          preview={preview}
+          onBasicAttack={createUnwiredActionHandler(heroBId, 'basicAttack')}
+          onUseEntityActive={createUnwiredActionHandler(heroBId, 'useEntityActive')}
+          onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')}
+          onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
+          onPlayCard={createPlayCardHandler(heroBId)}
+        />
+      </main>
+    </>
   )
 }
 
