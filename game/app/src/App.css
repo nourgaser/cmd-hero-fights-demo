@@ -106,7 +106,7 @@
   padding: 2px 0 0;
 }
 
-.luck-title {
+h2.luck-title {
   font-family: var(--display);
   font-weight: bold;
   font-size: clamp(32px, 1vw, 92px);
@@ -116,6 +116,14 @@
   display: inline-flex;
   align-items: center;
 }
+
+h2.luck-title > * {
+  font-family: var(--heading);
+  font-weight: 500;
+  letter-spacing: normal;
+  line-height: normal;
+}
+
 
 .help-chip {
   margin-left: 10px;
