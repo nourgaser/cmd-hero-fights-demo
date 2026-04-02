@@ -12,8 +12,16 @@ export function annotateBattleStateWithActiveHandTargets(options: {
   state: BattleState;
   cardDefinitionsById: Record<string, CardDefinition>;
   resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
+  resolveEntityActiveProfile?: (context: {
+    sourceDefinitionCardId: string;
+    sourceKind: "weapon" | "companion";
+  }) =>
+    | {
+        moveCost: number;
+      }
+    | undefined;
 }): BattleState {
-  const { state, cardDefinitionsById, resolveSummonFootprint } = options;
+  const { state, cardDefinitionsById, resolveSummonFootprint, resolveEntityActiveProfile } = options;
   const activeHeroEntityId = state.turn.activeHeroEntityId;
 
   function resolveValidPlacementPositions(options: {
@@ -110,6 +118,35 @@ export function annotateBattleStateWithActiveHandTargets(options: {
         ? Object.values(state.entitiesById)
             .filter((entry) => entry.battlefieldSide !== entity.battlefieldSide)
             .map((entry) => entry.entityId)
+        : undefined,
+      entityActiveOptions: isActiveHero
+        ? Object.values(state.entitiesById)
+            .map((entry) => {
+              if (entry.kind !== "weapon" && entry.kind !== "companion") {
+                return null;
+              }
+              if (entry.ownerHeroEntityId !== entity.entityId) {
+                return null;
+              }
+
+              const profile = resolveEntityActiveProfile?.({
+                sourceDefinitionCardId: entry.definitionCardId,
+                sourceKind: entry.kind,
+              });
+              if (!profile || entry.remainingMoves < profile.moveCost) {
+                return null;
+              }
+
+              const validTargetEntityIds = Object.values(state.entitiesById)
+                .filter((target) => target.battlefieldSide !== entry.battlefieldSide)
+                .map((target) => target.entityId);
+
+              return {
+                sourceEntityId: entry.entityId,
+                validTargetEntityIds,
+              };
+            })
+            .filter((entry): entry is { sourceEntityId: string; validTargetEntityIds: string[] } => !!entry)
         : undefined,
     };
   }

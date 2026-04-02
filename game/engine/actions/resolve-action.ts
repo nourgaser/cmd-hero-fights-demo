@@ -197,6 +197,7 @@ export function resolveAction(options: {
       state: listenerResolution.state,
       cardDefinitionsById,
       resolveSummonFootprint,
+      resolveEntityActiveProfile,
     }),
     events: [...eventsAfterCleanup, ...listenerResolution.events],
     nextSequence: listenerResolution.nextSequence,

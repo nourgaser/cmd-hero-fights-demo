@@ -9,6 +9,7 @@ type HandBarProps = {
   isActivePlayer: boolean
   focusedHandCardId: string | null
   selectedTargetEntityId: string | null
+  selectedPlacementPosition: { row: number; column: number } | null
   onEndTurn: () => void
   onFocusCard: (handCardId: string) => void
   onConfirmFocusedCard: () => void
@@ -21,6 +22,7 @@ export function HandBar(props: HandBarProps) {
     isActivePlayer,
     focusedHandCardId,
     selectedTargetEntityId,
+    selectedPlacementPosition,
     onEndTurn,
     onFocusCard,
     onConfirmFocusedCard,
@@ -31,7 +33,11 @@ export function HandBar(props: HandBarProps) {
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
     : null
   const focusedNeedsTarget = !!focusedCard && focusedCard.validTargetEntityIds.length > 0
-  const canConfirm = !!focusedCard && (!focusedNeedsTarget || !!selectedTargetEntityId)
+  const focusedNeedsPlacement = !!focusedCard && focusedCard.validPlacementPositions.length > 0
+  const canConfirm =
+    !!focusedCard &&
+    (!focusedNeedsTarget || !!selectedTargetEntityId) &&
+    (!focusedNeedsPlacement || !!selectedPlacementPosition)
 
   return (
     <section className="card hand-bar" aria-label="Hand cards">
@@ -81,10 +87,15 @@ export function HandBar(props: HandBarProps) {
             <strong>{focusedCard.cardName}</strong>
             {focusedNeedsTarget
               ? ` requires a target (${focusedCard.validTargetEntityIds.length} valid).`
-              : ' does not require a target.'}
+              : focusedNeedsPlacement
+                ? ` requires placement (${focusedCard.validPlacementPositions.length} valid cells).`
+                : ' does not require a target.'}
           </p>
           {focusedNeedsTarget && !selectedTargetEntityId ? (
             <p>Choose one highlighted battlefield target, then confirm.</p>
+          ) : null}
+          {focusedNeedsPlacement && !selectedPlacementPosition ? (
+            <p>Choose one highlighted empty cell for placement, then confirm.</p>
           ) : null}
           <div className="hand-focus-actions">
             <button type="button" className="confirm-play" disabled={!canConfirm} onClick={onConfirmFocusedCard}>

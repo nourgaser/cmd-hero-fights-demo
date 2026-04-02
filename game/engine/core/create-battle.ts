@@ -35,6 +35,14 @@ export type CreateBattleInput = {
   heroes: [CreateBattleHeroSetup, CreateBattleHeroSetup];
   cardDefinitionsById?: Record<string, CardDefinition>;
   resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
+  resolveEntityActiveProfile?: (context: {
+    sourceDefinitionCardId: string;
+    sourceKind: "weapon" | "companion";
+  }) =>
+    | {
+        moveCost: number;
+      }
+    | undefined;
   resolveHeroInitialListeners?: (context: {
     hero: HeroDefinition;
     heroEntityId: string;
@@ -239,6 +247,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
         state,
         cardDefinitionsById: input.cardDefinitionsById,
         resolveSummonFootprint: input.resolveSummonFootprint,
+        resolveEntityActiveProfile: input.resolveEntityActiveProfile,
       })
     : state;
 

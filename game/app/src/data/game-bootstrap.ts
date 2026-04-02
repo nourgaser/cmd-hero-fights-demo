@@ -70,14 +70,14 @@ export const DEFAULT_GAME_BOOTSTRAP_CONFIG: GameBootstrapConfig = {
     {
       heroEntityId: 'hero-a',
       heroDefinitionId: HERO_IDS.commanderX,
-      openingMovePoints: 3,
+      openingMovePoints: 10,
       startAnchorPosition: { row: 0, column: 1 },
       openingDeckCardIds: [...STARTER_DECKS.commanderXCore],
     },
     {
       heroEntityId: 'hero-b',
       heroDefinitionId: HERO_IDS.commanderX,
-      openingMovePoints: 3,
+      openingMovePoints: 10,
       startAnchorPosition: { row: 5, column: 1 },
       openingDeckCardIds: [...STARTER_DECKS.commanderXCore],
     },

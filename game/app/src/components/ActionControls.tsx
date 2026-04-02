@@ -3,12 +3,11 @@ import { Icon } from '@iconify/react/offline'
 type ActionControlsProps = {
   selfId: string
   onBasicAttack: () => void
-  onUseEntityActive: () => void
   onPressLuck: () => void
 }
 
 export function ActionControls(props: ActionControlsProps) {
-  const { onBasicAttack, onUseEntityActive, onPressLuck } = props
+  const { onBasicAttack, onPressLuck } = props
 
   const actions = [
     {
@@ -17,13 +16,6 @@ export function ActionControls(props: ActionControlsProps) {
       label: 'Attack',
       description: 'Deal damage to an enemy unit.',
       onClick: onBasicAttack,
-    },
-    {
-      id: 'active',
-      icon: 'game-icons:spell-book',
-      label: 'Entity Active',
-      description: "Use an entity's active ability.",
-      onClick: onUseEntityActive,
     },
     {
       id: 'luck',

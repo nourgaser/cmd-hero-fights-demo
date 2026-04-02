@@ -47,6 +47,8 @@ export function createGameApi(): GameApi {
       return createBattleCore({
         ...input,
         cardDefinitionsById: CARD_DEFINITIONS_BY_ID,
+        resolveSummonFootprint,
+        resolveEntityActiveProfile,
         resolveHeroInitialListeners(context) {
           return resolveHeroInitialListeners({
             heroDefinitionId: context.hero.id,

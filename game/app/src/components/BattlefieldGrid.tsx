@@ -10,6 +10,10 @@ type BattlefieldGridProps = {
   highlightedTargetEntityIds?: string[]
   selectedTargetEntityId?: string | null
   onSelectTargetEntityId?: (entityId: string) => void
+  onSelectEntityId?: (entityId: string) => void
+  highlightedPlacementPositions?: Array<{ row: number; column: number }>
+  selectedPlacementPosition?: { row: number; column: number } | null
+  onSelectPlacementPosition?: (position: { row: number; column: number }) => void
 }
 
 export function BattlefieldGrid(props: BattlefieldGridProps) {
@@ -21,9 +25,16 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     highlightedTargetEntityIds = [],
     selectedTargetEntityId,
     onSelectTargetEntityId,
+    onSelectEntityId,
+    highlightedPlacementPositions = [],
+    selectedPlacementPosition,
+    onSelectPlacementPosition,
   } = props
   const halfRows = Math.floor(preview.battlefield.rows / 2)
   const highlightedSet = new Set(highlightedTargetEntityIds)
+  const highlightedPlacementSet = new Set(
+    highlightedPlacementPositions.map((position) => `${position.row}:${position.column}`),
+  )
 
   const displayCells = preview.battlefield.cells
     .map((cell) => {
@@ -34,6 +45,12 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
       }
     })
     .sort((a, b) => a.displayRow - b.displayRow || a.column - b.column)
+
+  const occupiedModelPositions = new Set(
+    preview.battlefield.cells
+      .filter((cell) => !!cell.entityId)
+      .map((cell) => `${cell.row}:${cell.column}`),
+  )
 
   const occupiersByEntityId = new Map<
     string,
@@ -64,7 +81,6 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     })
   }
 
-  const occupiedPositions = new Set<string>()
   const occupierBlocks = Array.from(occupiersByEntityId.values())
     .map((occupier) => {
       const rows = occupier.cells.map((entry) => entry.row)
@@ -73,10 +89,6 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
       const maxRow = Math.max(...rows)
       const minColumn = Math.min(...columns)
       const maxColumn = Math.max(...columns)
-
-      for (const part of occupier.cells) {
-        occupiedPositions.add(`${part.row}:${part.column}`)
-      }
 
       return {
         ...occupier,
@@ -90,12 +102,13 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     })
     .sort((a, b) => a.minRow - b.minRow || a.minColumn - b.minColumn)
 
-  const emptySlots = [] as Array<{ row: number; column: number }>
-  for (let row = 0; row < preview.battlefield.rows; row += 1) {
+  const emptySlots = [] as Array<{ modelRow: number; displayRow: number; column: number }>
+  for (let modelRow = 0; modelRow < preview.battlefield.rows; modelRow += 1) {
+    const displayRow = shouldFlipRows ? preview.battlefield.rows - 1 - modelRow : modelRow
     for (let column = 0; column < preview.battlefield.columns; column += 1) {
-      const key = `${row}:${column}`
-      if (!occupiedPositions.has(key)) {
-        emptySlots.push({ row, column })
+      const modelKey = `${modelRow}:${column}`
+      if (!occupiedModelPositions.has(modelKey)) {
+        emptySlots.push({ modelRow, displayRow, column })
       }
     }
   }
@@ -113,20 +126,46 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
         }}
       >
           {emptySlots.map((slot) => {
-            const sideClass = slot.row < halfRows ? 'north' : 'south'
-            const rowLabel = slot.row + 1
+            const sideClass = slot.displayRow < halfRows ? 'north' : 'south'
+            const rowLabel = slot.displayRow + 1
             const colLabel = slot.column + 1
+            const key = `${slot.modelRow}:${slot.column}`
+            const isHighlightedPlacement = highlightedPlacementSet.has(key)
+            const isSelectedPlacement =
+              selectedPlacementPosition?.row === slot.modelRow &&
+              selectedPlacementPosition?.column === slot.column
+            const isSelectablePlacement = !!onSelectPlacementPosition && isHighlightedPlacement
 
             return (
               <div
-                key={`empty:${slot.row}:${slot.column}`}
-                className={`battle-slot ${sideClass}`}
+                key={`empty:${slot.modelRow}:${slot.column}`}
+                className={`battle-slot ${sideClass} ${isHighlightedPlacement ? 'placement-highlighted' : ''} ${isSelectedPlacement ? 'placement-selected' : ''} ${isSelectablePlacement ? 'placement-selectable' : ''}`.trim()}
                 role="gridcell"
-                aria-label={`Empty cell at row ${rowLabel}, column ${colLabel}`}
+                aria-label={
+                  isSelectablePlacement
+                    ? `Empty selectable placement cell at row ${rowLabel}, column ${colLabel}`
+                    : `Empty cell at row ${rowLabel}, column ${colLabel}`
+                }
                 style={{
-                  gridRow: `${slot.row + 1} / span 1`,
+                  gridRow: `${slot.displayRow + 1} / span 1`,
                   gridColumn: `${slot.column + 1} / span 1`,
                 }}
+                onClick={
+                  isSelectablePlacement
+                    ? () => onSelectPlacementPosition({ row: slot.modelRow, column: slot.column })
+                    : undefined
+                }
+                onKeyDown={
+                  isSelectablePlacement
+                    ? (event) => {
+                        if (event.key === 'Enter' || event.key === ' ') {
+                          event.preventDefault()
+                          onSelectPlacementPosition({ row: slot.modelRow, column: slot.column })
+                        }
+                      }
+                    : undefined
+                }
+                tabIndex={isSelectablePlacement ? 0 : undefined}
               >
                 <span className="cell-empty" aria-hidden="true" />
               </div>
@@ -138,6 +177,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const isHighlightedTarget = highlightedSet.has(occupier.entityId)
             const isSelectedTarget = selectedTargetEntityId === occupier.entityId
             const isSelectableTarget = !!onSelectTargetEntityId && isHighlightedTarget
+            const isSelectableEntity = !!onSelectEntityId
             const ownerClass =
               occupier.ownerHeroEntityId === selfId
                 ? 'owner-self'
@@ -158,19 +198,27 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                   gridColumn: `${occupier.minColumn + 1} / span ${occupier.columnSpan}`,
                 }}
                 onClick={
-                  isSelectableTarget ? () => onSelectTargetEntityId(occupier.entityId) : undefined
+                  isSelectableTarget
+                    ? () => onSelectTargetEntityId(occupier.entityId)
+                    : isSelectableEntity
+                      ? () => onSelectEntityId(occupier.entityId)
+                      : undefined
                 }
                 onKeyDown={
-                  isSelectableTarget
+                  isSelectableTarget || isSelectableEntity
                     ? (event) => {
                         if (event.key === 'Enter' || event.key === ' ') {
                           event.preventDefault()
-                          onSelectTargetEntityId(occupier.entityId)
+                          if (isSelectableTarget) {
+                            onSelectTargetEntityId(occupier.entityId)
+                            return
+                          }
+                          onSelectEntityId?.(occupier.entityId)
                         }
                       }
                     : undefined
                 }
-                tabIndex={isSelectableTarget ? 0 : undefined}
+                tabIndex={isSelectableTarget || isSelectableEntity ? 0 : undefined}
               >
                 <span className="hint-wrap" tabIndex={0}>
                   <Icon icon={meta.id} className="occupier-icon" aria-hidden="true" />

@@ -29,6 +29,7 @@ export type AppBattlePreview = {
       moveCost: number
       targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
+      validPlacementPositions: Array<{ row: number; column: number }>
     }>
   }>
   heroActionTargets: Array<{
@@ -37,6 +38,10 @@ export type AppBattlePreview = {
       attackerEntityId: string
       validTargetEntityIds: string[]
     }
+    entityActive: Array<{
+      sourceEntityId: string
+      validTargetEntityIds: string[]
+    }>
   }>
   battlefield: {
     rows: number
@@ -141,6 +146,7 @@ function buildPreviewFromState(options: {
           moveCost: cardDef.moveCost,
           targeting: cardDef.targeting,
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
+          validPlacementPositions: handCard.validPlacementPositions ?? [],
         }
       }),
     }
@@ -159,6 +165,7 @@ function buildPreviewFromState(options: {
         attackerEntityId: entity.entityId,
         validTargetEntityIds: entity.basicAttackTargetEntityIds ?? [],
       },
+      entityActive: entity.entityActiveOptions ?? [],
     }
   })
 
@@ -248,10 +255,11 @@ export function resolveSessionPlayCard(options: {
   actorHeroEntityId: string
   handCardId: string
   targetEntityId?: string
+  targetPosition?: { row: number; column: number }
 }):
   | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
   | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
-  const { session, actorHeroEntityId, handCardId, targetEntityId } = options
+  const { session, actorHeroEntityId, handCardId, targetEntityId, targetPosition } = options
 
   const result = session.gameApi.resolveAction({
     state: session.state,
@@ -264,6 +272,7 @@ export function resolveSessionPlayCard(options: {
       handCardId,
       selection: {
         targetEntityId,
+        targetPosition,
       },
     },
   })
@@ -351,6 +360,53 @@ export function resolveSessionBasicAttack(options: {
       kind: 'basicAttack',
       actorHeroEntityId,
       attackerEntityId,
+      selection: {
+        targetEntityId,
+      },
+    },
+  })
+
+  if (!result.ok) {
+    return {
+      ok: false,
+      reason: result.reason,
+      session,
+      preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+    }
+  }
+
+  const nextSession: AppBattleSession = {
+    ...session,
+    state: result.state,
+    nextSequence: result.nextSequence,
+  }
+
+  return {
+    ok: true,
+    session: nextSession,
+    preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+  }
+}
+
+export function resolveSessionUseEntityActive(options: {
+  session: AppBattleSession
+  actorHeroEntityId: string
+  sourceEntityId: string
+  targetEntityId: string
+}):
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
+  const { session, actorHeroEntityId, sourceEntityId, targetEntityId } = options
+
+  const result = session.gameApi.resolveAction({
+    state: session.state,
+    nextSequence: session.nextSequence,
+    battleRng: session.battleRng,
+    createSummonedEntityId,
+    action: {
+      kind: 'useEntityActive',
+      actorHeroEntityId,
+      sourceEntityId,
       selection: {
         targetEntityId,
       },

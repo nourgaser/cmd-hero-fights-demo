@@ -7,6 +7,7 @@ import {
   resolveSessionBasicAttack,
   resolveSessionPlayCard,
   resolveSessionSimpleAction,
+  resolveSessionUseEntityActive,
 } from './game-client.ts'
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG } from './data/game-bootstrap.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
@@ -58,21 +59,6 @@ function App() {
 
   const [heroAId, heroBId] = preview.heroEntityIds
 
-  const createUnwiredActionHandler = (heroId: string, actionType: string) => {
-    return () => {
-      setRuntime((prev) => {
-        if (!prev) {
-          return prev
-        }
-
-        return {
-          ...prev,
-          lastMessage: `${actionType} for ${heroId} is not wired yet.`,
-        }
-      })
-    }
-  }
-
   const createBasicAttackHandler = (heroId: string) => {
     return (input: { targetEntityId: string }) => {
       setRuntime((prev) => {
@@ -98,8 +84,37 @@ function App() {
     }
   }
 
+  const createEntityActiveHandler = (heroId: string) => {
+    return (input: { sourceEntityId: string; targetEntityId: string }) => {
+      setRuntime((prev) => {
+        if (!prev) {
+          return prev
+        }
+
+        const result = resolveSessionUseEntityActive({
+          session: prev.session,
+          actorHeroEntityId: heroId,
+          sourceEntityId: input.sourceEntityId,
+          targetEntityId: input.targetEntityId,
+        })
+
+        return {
+          session: result.session,
+          preview: result.preview,
+          lastMessage: result.ok
+            ? `Entity active resolved by ${heroId}.`
+            : `Entity active failed: ${result.reason}`,
+        }
+      })
+    }
+  }
+
   const createPlayCardHandler = (heroId: string) => {
-    return (input: { handCardId: string; targetEntityId?: string }) => {
+    return (input: {
+      handCardId: string
+      targetEntityId?: string
+      targetPosition?: { row: number; column: number }
+    }) => {
       setRuntime((prev) => {
         if (!prev) {
           return prev
@@ -110,6 +125,7 @@ function App() {
           actorHeroEntityId: heroId,
           handCardId: input.handCardId,
           targetEntityId: input.targetEntityId,
+          targetPosition: input.targetPosition,
         })
 
         return {
@@ -158,7 +174,7 @@ function App() {
           selfSideKey="a"
           preview={preview}
           onBasicAttack={createBasicAttackHandler(heroAId)}
-          onUseEntityActive={createUnwiredActionHandler(heroAId, 'useEntityActive')}
+          onUseEntityActive={createEntityActiveHandler(heroAId)}
           onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')}
           onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroAId)}
@@ -170,7 +186,7 @@ function App() {
           selfSideKey="b"
           preview={preview}
           onBasicAttack={createBasicAttackHandler(heroBId)}
-          onUseEntityActive={createUnwiredActionHandler(heroBId, 'useEntityActive')}
+          onUseEntityActive={createEntityActiveHandler(heroBId)}
           onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')}
           onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroBId)}

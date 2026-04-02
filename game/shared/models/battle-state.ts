@@ -40,6 +40,14 @@ export const HeroEntityStateSchema = z.object({
   deckCardIds: z.array(CardIdSchema),
   handCards: z.array(HandCardSchema),
   basicAttackTargetEntityIds: z.array(EntityIdSchema).optional(),
+  entityActiveOptions: z
+    .array(
+      z.object({
+        sourceEntityId: EntityIdSchema,
+        validTargetEntityIds: z.array(EntityIdSchema),
+      }),
+    )
+    .optional(),
   discardCardIds: z.array(CardIdSchema),
 });
 export type HeroEntityState = z.infer<typeof HeroEntityStateSchema>;

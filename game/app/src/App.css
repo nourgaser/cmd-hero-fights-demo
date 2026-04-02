@@ -338,6 +338,28 @@ h2.luck-title > * {
     0 0 0 3px color-mix(in srgb, #f0cb58 75%, transparent);
 }
 
+.battle-slot.placement-highlighted {
+  outline: 2px dashed #8c7a4a;
+  outline-offset: -2px;
+}
+
+.battle-slot.placement-selectable {
+  cursor: pointer;
+}
+
+.battle-slot.placement-selectable:hover,
+.battle-slot.placement-selectable:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, #8c7a4a 60%, transparent),
+    0 0 0 2px color-mix(in srgb, #f0cb58 40%, transparent);
+}
+
+.battle-slot.placement-selected {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, #8c7a4a 80%, transparent),
+    0 0 0 3px color-mix(in srgb, #f0cb58 65%, transparent);
+}
+
 .occupier-icon {
   font-size: clamp(24px, 3vw, 40px);
 }

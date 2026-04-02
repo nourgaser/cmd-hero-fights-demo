@@ -14,10 +14,14 @@ type PlayerScreenProps = {
   selfSideKey: 'a' | 'b'
   preview: AppBattlePreview
   onBasicAttack: (input: { targetEntityId: string }) => void
-  onUseEntityActive: () => void
+  onUseEntityActive: (input: { sourceEntityId: string; targetEntityId: string }) => void
   onPressLuck: () => void
   onEndTurn: () => void
-  onPlayCard: (input: { handCardId: string; targetEntityId?: string }) => void
+  onPlayCard: (input: {
+    handCardId: string
+    targetEntityId?: string
+    targetPosition?: { row: number; column: number }
+  }) => void
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -47,7 +51,12 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
   const [focusedHandCardId, setFocusedHandCardId] = useState<string | null>(null)
   const [selectedTargetEntityId, setSelectedTargetEntityId] = useState<string | null>(null)
-  const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | null>(null)
+  const [selectedPlacementPosition, setSelectedPlacementPosition] = useState<{
+    row: number
+    column: number
+  } | null>(null)
+  const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | 'entityActiveTarget' | null>(null)
+  const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
 
   const focusedCard = useMemo(() => {
     if (!focusedHandCardId) {
@@ -57,10 +66,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }, [focusedHandCardId, selfHandCards])
 
   const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
+  const entityActiveOptions = selfActionTargets?.entityActive ?? []
+  const entityActiveSourceIds = entityActiveOptions.map((entry) => entry.sourceEntityId)
+  const selectedEntityActiveOption = selectedEntityActiveSourceId
+    ? entityActiveOptions.find((entry) => entry.sourceEntityId === selectedEntityActiveSourceId) ?? null
+    : null
+  const entityActiveTargetEntityIds = selectedEntityActiveOption?.validTargetEntityIds ?? []
+  const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
   const highlightedTargetEntityIds =
     pendingActionMode === 'basicAttack'
       ? basicAttackTargetEntityIds
-      : focusedCard?.validTargetEntityIds ?? []
+      : pendingActionMode === 'entityActiveTarget'
+          ? entityActiveTargetEntityIds
+          : focusedCard?.validTargetEntityIds ?? []
 
   const handleFocusCard = (handCardId: string) => {
     if (!isActivePlayer) {
@@ -69,19 +87,75 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
     setFocusedHandCardId(handCardId)
     setPendingActionMode(null)
+    setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
   }
 
   const handleSelectTarget = (targetEntityId: string) => {
-    if (!focusedCard) {
+    if (pendingActionMode === 'basicAttack') {
+      if (!basicAttackTargetEntityIds.includes(targetEntityId)) {
+        return
+      }
+      setSelectedTargetEntityId(targetEntityId)
       return
     }
 
-    if (!focusedCard.validTargetEntityIds.includes(targetEntityId)) {
+    if (pendingActionMode === 'entityActiveTarget') {
+      if (entityActiveSourceIds.includes(targetEntityId)) {
+        setSelectedEntityActiveSourceId(targetEntityId)
+        setSelectedTargetEntityId(null)
+        return
+      }
+      if (!entityActiveTargetEntityIds.includes(targetEntityId)) {
+        return
+      }
+      setSelectedTargetEntityId(targetEntityId)
+      return
+    }
+
+    if (!focusedCard || !focusedCard.validTargetEntityIds.includes(targetEntityId)) {
       return
     }
 
     setSelectedTargetEntityId(targetEntityId)
+  }
+
+  const handleSelectBattlefieldEntity = (entityId: string) => {
+    if (!isActivePlayer) {
+      return
+    }
+
+    if (pendingActionMode === 'basicAttack' || pendingActionMode === 'entityActiveTarget' || focusedCard) {
+      handleSelectTarget(entityId)
+      return
+    }
+
+    if (!entityActiveSourceIds.includes(entityId)) {
+      return
+    }
+
+    setFocusedHandCardId(null)
+    setPendingActionMode('entityActiveTarget')
+    setSelectedEntityActiveSourceId(entityId)
+    setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
+  }
+
+  const handleSelectPlacementPosition = (position: { row: number; column: number }) => {
+    if (!focusedCard) {
+      return
+    }
+
+    const isValid = focusedCard.validPlacementPositions.some(
+      (entry) => entry.row === position.row && entry.column === position.column,
+    )
+
+    if (!isValid) {
+      return
+    }
+
+    setSelectedPlacementPosition(position)
   }
 
   const handleConfirmFocusedCard = () => {
@@ -90,18 +164,25 @@ export function PlayerScreen(props: PlayerScreenProps) {
     }
 
     const requiresTarget = focusedCard.validTargetEntityIds.length > 0
+    const requiresPlacement = focusedCard.validPlacementPositions.length > 0
     if (requiresTarget && !selectedTargetEntityId) {
+      return
+    }
+    if (requiresPlacement && !selectedPlacementPosition) {
       return
     }
 
     onPlayCard({
       handCardId: focusedCard.handCardId,
       targetEntityId: selectedTargetEntityId ?? undefined,
+      targetPosition: selectedPlacementPosition ?? undefined,
     })
 
     setFocusedHandCardId(null)
     setPendingActionMode(null)
+    setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
   }
 
   const handleBeginBasicAttack = () => {
@@ -110,8 +191,31 @@ export function PlayerScreen(props: PlayerScreenProps) {
     }
 
     setFocusedHandCardId(null)
+    setSelectedEntityActiveSourceId(null)
     setPendingActionMode('basicAttack')
     setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
+  }
+
+  const handleConfirmEntityActive = () => {
+    if (pendingActionMode !== 'entityActiveTarget') {
+      return
+    }
+    if (!selectedEntityActiveSourceId || !selectedTargetEntityId) {
+      return
+    }
+    if (!entityActiveTargetEntityIds.includes(selectedTargetEntityId)) {
+      return
+    }
+
+    onUseEntityActive({
+      sourceEntityId: selectedEntityActiveSourceId,
+      targetEntityId: selectedTargetEntityId,
+    })
+    setPendingActionMode(null)
+    setSelectedEntityActiveSourceId(null)
+    setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
   }
 
   const handleConfirmBasicAttack = () => {
@@ -125,12 +229,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
     onBasicAttack({ targetEntityId: selectedTargetEntityId })
     setPendingActionMode(null)
     setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
   }
 
   const handleClearFocus = () => {
     setFocusedHandCardId(null)
     setPendingActionMode(null)
+    setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
   }
 
   const anchorIsSelf = preview.luck.anchorHeroEntityId === selfId
@@ -181,12 +288,21 @@ export function PlayerScreen(props: PlayerScreenProps) {
             highlightedTargetEntityIds={isActivePlayer ? highlightedTargetEntityIds : []}
             selectedTargetEntityId={selectedTargetEntityId}
             onSelectTargetEntityId={isActivePlayer ? handleSelectTarget : undefined}
+            onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
+            highlightedPlacementPositions={
+              isActivePlayer && pendingActionMode !== 'basicAttack' ? highlightedPlacementPositions : []
+            }
+            selectedPlacementPosition={selectedPlacementPosition}
+            onSelectPlacementPosition={
+              isActivePlayer && pendingActionMode !== 'basicAttack'
+                ? handleSelectPlacementPosition
+                : undefined
+            }
           />
 
           <ActionControls
             selfId={selfId}
             onBasicAttack={handleBeginBasicAttack}
-            onUseEntityActive={onUseEntityActive}
             onPressLuck={onPressLuck}
           />
 
@@ -229,11 +345,33 @@ export function PlayerScreen(props: PlayerScreenProps) {
           </section>
         ) : null}
 
+        {pendingActionMode === 'entityActiveTarget' ? (
+          <section className="card action-intent-panel" aria-label="Entity active targeting">
+            <p>
+              <strong>Entity Active:</strong> Select a highlighted enemy target, then confirm.
+            </p>
+            <div className="hand-focus-actions">
+              <button
+                type="button"
+                className="confirm-play"
+                disabled={!selectedTargetEntityId}
+                onClick={handleConfirmEntityActive}
+              >
+                Confirm Active
+              </button>
+              <button type="button" className="clear-focus" onClick={handleClearFocus}>
+                Cancel
+              </button>
+            </div>
+          </section>
+        ) : null}
+
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
           focusedHandCardId={focusedHandCardId}
           selectedTargetEntityId={selectedTargetEntityId}
+          selectedPlacementPosition={selectedPlacementPosition}
           onEndTurn={onEndTurn}
           onFocusCard={handleFocusCard}
           onConfirmFocusedCard={handleConfirmFocusedCard}
