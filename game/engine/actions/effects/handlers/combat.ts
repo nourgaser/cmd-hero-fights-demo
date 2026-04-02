@@ -117,16 +117,23 @@ export function handleDealDamageEffect(
     return { ok: false, reason: "dealDamage target was not found." };
   }
 
+  const sourceEntity = effectSourceEntityId
+    ? state.entitiesById[effectSourceEntityId]
+    : actorHero;
+  if (!sourceEntity) {
+    return { ok: false, reason: "dealDamage source entity was not found." };
+  }
+
   const minimum =
     effect.payload.minimum +
-    actorHero.attackDamage * effect.payload.attackDamageScaling +
-    actorHero.abilityPower * effect.payload.abilityPowerScaling +
-    actorHero.armor * effect.payload.armorScaling;
+    sourceEntity.attackDamage * effect.payload.attackDamageScaling +
+    sourceEntity.abilityPower * effect.payload.abilityPowerScaling +
+    sourceEntity.armor * effect.payload.armorScaling;
   const maximum =
     effect.payload.maximum +
-    actorHero.attackDamage * effect.payload.attackDamageScaling +
-    actorHero.abilityPower * effect.payload.abilityPowerScaling +
-    actorHero.armor * effect.payload.armorScaling;
+    sourceEntity.attackDamage * effect.payload.attackDamageScaling +
+    sourceEntity.abilityPower * effect.payload.abilityPowerScaling +
+    sourceEntity.armor * effect.payload.armorScaling;
 
   const rawRoll = rollRange(battleRng, minimum, maximum);
   const adjustedRoll = applyLuckToRoll({
