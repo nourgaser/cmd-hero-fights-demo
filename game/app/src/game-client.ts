@@ -97,9 +97,17 @@ export type AppBattlePreview = {
         attackDamage: number
         abilityPower: number
         criticalChance: number
+        criticalMultiplier: number
         dodgeChance: number
         movePoints: number
         maxMovePoints: number
+        activeAbility?: {
+          moveCost: number
+          damageType: 'physical' | 'magic' | 'true'
+          canBeDodged: boolean
+          summaryText: string
+          currentRangeText: string
+        }
       }
     >
   }
@@ -152,6 +160,51 @@ function buildHeroBasicAttackSummary(options: {
   return {
     summaryText: `${heroName} basic attack. ${summaryText}`,
     currentRangeText: `Current window: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)} ${attack.damageType} damage before dodge and resistance.`,
+  }
+}
+
+function buildEntityActiveSummary(options: {
+  attack: {
+    minimumDamage: number
+    maximumDamage: number
+    attackDamageScaling: number
+    abilityPowerScaling: number
+    damageType: 'physical' | 'magic' | 'true'
+    moveCost: number
+    canBeDodged: boolean
+  }
+  currentAttackDamage: number
+  currentAbilityPower: number
+}) {
+  const { attack, currentAttackDamage, currentAbilityPower } = options
+  const scalingParts = [
+    attack.attackDamageScaling > 0
+      ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% AD`
+      : null,
+    attack.abilityPowerScaling > 0
+      ? `${formatPreviewNumber(attack.abilityPowerScaling * 100)}% AP`
+      : null,
+  ].filter((part): part is string => !!part)
+
+  const summaryText = scalingParts.length > 0
+    ? `Base ${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)} ${attack.damageType} + ${scalingParts.join(' + ')}.`
+    : `Base ${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)} ${attack.damageType}.`
+
+  const minimum =
+    attack.minimumDamage +
+    currentAttackDamage * attack.attackDamageScaling +
+    currentAbilityPower * attack.abilityPowerScaling
+  const maximum =
+    attack.maximumDamage +
+    currentAttackDamage * attack.attackDamageScaling +
+    currentAbilityPower * attack.abilityPowerScaling
+
+  return {
+    moveCost: attack.moveCost,
+    damageType: attack.damageType,
+    canBeDodged: attack.canBeDodged,
+    summaryText,
+    currentRangeText: `Current window: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
   }
 }
 
@@ -364,6 +417,7 @@ function buildPreviewFromState(options: {
         attackDamage: entity.attackDamage,
         abilityPower: entity.abilityPower,
         criticalChance: entity.criticalChance,
+        criticalMultiplier: entity.criticalMultiplier,
         dodgeChance: entity.dodgeChance,
         movePoints: entity.movePoints,
         maxMovePoints: entity.maxMovePoints,
@@ -372,6 +426,14 @@ function buildPreviewFromState(options: {
     }
 
     const sourceCard = cardsById[entity.definitionCardId]
+    const activeProfile =
+      entity.kind === 'weapon' || entity.kind === 'companion'
+        ? gameApi.resolveEntityActiveProfile({
+            sourceDefinitionCardId: entity.definitionCardId,
+            sourceKind: entity.kind,
+          })
+        : undefined
+
     battlefieldEntities[entity.entityId] = {
       entityId: entity.entityId,
       kind: entity.kind,
@@ -385,9 +447,17 @@ function buildPreviewFromState(options: {
       attackDamage: entity.attackDamage,
       abilityPower: entity.abilityPower,
       criticalChance: entity.criticalChance,
+      criticalMultiplier: entity.criticalMultiplier,
       dodgeChance: entity.dodgeChance,
       movePoints: entity.remainingMoves,
       maxMovePoints: entity.maxMovesPerTurn,
+      activeAbility: activeProfile
+        ? buildEntityActiveSummary({
+            attack: activeProfile,
+            currentAttackDamage: entity.attackDamage,
+            currentAbilityPower: entity.abilityPower,
+          })
+        : undefined,
     }
   }
 

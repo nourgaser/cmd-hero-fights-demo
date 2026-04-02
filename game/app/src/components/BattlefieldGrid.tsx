@@ -266,9 +266,21 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         </div>
                       </>
                     ) : (
-                      <div className="battlefield-hover-section">
-                        <span>{meta.description ?? 'Unit on battlefield.'}</span>
-                      </div>
+                      <>
+                        <div className="battlefield-hover-section">
+                          <span>{meta.description ?? 'Unit on battlefield.'}</span>
+                        </div>
+                        {entityStats?.activeAbility ? (
+                          <div className="battlefield-hover-section">
+                            <span className="hover-group-title">Active</span>
+                            <span>{entityStats.activeAbility.summaryText}</span>
+                            <span>{entityStats.activeAbility.currentRangeText}</span>
+                            <span className="battlefield-hover-note">
+                              Costs {entityStats.activeAbility.moveCost} unit move{entityStats.activeAbility.moveCost === 1 ? '' : 's'}. {entityStats.activeAbility.canBeDodged ? 'Can be dodged.' : 'Cannot be dodged.'}
+                            </span>
+                          </div>
+                        ) : null}
+                      </>
                     )}
                     {entityStats ? (
                       <div className="battlefield-hover-section">
@@ -283,7 +295,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           <span className="battlefield-hover-stat"><strong>AP</strong><em>{entityStats.abilityPower}</em></span>
                           <span className="battlefield-hover-stat"><strong>Armor</strong><em>{entityStats.armor}</em></span>
                           <span className="battlefield-hover-stat"><strong>MR</strong><em>{entityStats.magicResist}</em></span>
-                          <span className="battlefield-hover-stat"><strong>Crit</strong><em>{Math.round(entityStats.criticalChance * 100)}%</em></span>
+                          <span className="battlefield-hover-stat"><strong>Crit</strong><em>{Math.round(entityStats.criticalChance * 100)}% x{entityStats.criticalMultiplier.toFixed(2)}</em></span>
                           <span className="battlefield-hover-stat"><strong>Dodge</strong><em>{Math.round(entityStats.dodgeChance * 100)}%</em></span>
                         </div>
                       </div>

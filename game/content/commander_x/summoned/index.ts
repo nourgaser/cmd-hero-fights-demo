@@ -15,8 +15,8 @@ export const COMMANDER_X_SUMMONED_BLUEPRINTS: Record<string, SummonedEntityBluep
 };
 
 export const COMMANDER_X_ENTITY_ACTIVE_PROFILES: Record<string, EntityActiveProfile> = {
-  [SUMMON_ENTITY_IDS.corrodedShortsword]: corrodedShortswordDef.active!,
-  [SUMMON_ENTITY_IDS.jaqueminPatrol]: jaqueminPatrolDef.active!,
+  [corrodedShortswordDef.blueprint.definitionCardId]: corrodedShortswordDef.active!,
+  [jaqueminPatrolDef.blueprint.definitionCardId]: jaqueminPatrolDef.active!,
 };
 
 export const COMMANDER_X_SUMMON_FOOTPRINTS: Record<string, EntityFootprint> = {
