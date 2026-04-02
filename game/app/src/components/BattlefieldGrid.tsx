@@ -269,6 +269,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       <>
                         <div className="battlefield-hover-section">
                           <span>{meta.description ?? 'Unit on battlefield.'}</span>
+                          {entityStats?.sourceCardSummary ? <span>{entityStats.sourceCardSummary}</span> : null}
                         </div>
                         {entityStats?.activeAbility ? (
                           <div className="battlefield-hover-section">

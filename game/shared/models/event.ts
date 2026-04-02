@@ -59,6 +59,11 @@ export const DamageAppliedEventSchema = z.object({
   amount: z.number().nonnegative(),
   damageType: DamageTypeSchema,
   wasDodged: z.boolean(),
+  wasCritical: z.boolean().optional(),
+  rngRawRoll: z.number().optional(),
+  rngAdjustedRoll: z.number().optional(),
+  rngFinalRoll: z.number().optional(),
+  rngDodgeRoll: z.number().optional(),
 });
 export type DamageAppliedEvent = z.infer<typeof DamageAppliedEventSchema>;
 

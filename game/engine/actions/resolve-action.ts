@@ -40,6 +40,7 @@ export type ResolveActionResult =
       state: BattleState;
       events: BattleEvent[];
       nextSequence: number;
+      resultMessage: string;
     }
   | {
       ok: false;
@@ -201,5 +202,6 @@ export function resolveAction(options: {
     }),
     events: [...eventsAfterCleanup, ...listenerResolution.events],
     nextSequence: listenerResolution.nextSequence,
+    resultMessage: baseResult.resultMessage,
   };
 }

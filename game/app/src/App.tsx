@@ -15,6 +15,8 @@ import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 
 const DEBUG_SEED_STORAGE_KEY = 'cmd-hero:debug-seed'
+const ACTION_TOAST_ID = 'action-feedback'
+const ACTION_TOAST_DURATION_MS = 7000
 
 type AppRuntime = {
   session: AppBattleSession
@@ -162,6 +164,20 @@ function App() {
     }
   }
 
+  const showActionErrorToast = (message: string) => {
+    toast.error(message, {
+      id: ACTION_TOAST_ID,
+      duration: ACTION_TOAST_DURATION_MS,
+    })
+  }
+
+  const showActionSuccessToast = (message: string) => {
+    toast.success(message, {
+      id: ACTION_TOAST_ID,
+      duration: ACTION_TOAST_DURATION_MS,
+    })
+  }
+
   const handleSeedChange = (seed: string) => {
     const nextConfig = {
       ...bootstrapConfig,
@@ -175,14 +191,14 @@ function App() {
 
     const failureReason = resetRuntime(nextConfig)
     if (failureReason) {
-      toast.error(failureReason)
+      showActionErrorToast(failureReason)
     }
   }
 
   const handleHardReset = () => {
     const failureReason = resetRuntime(bootstrapConfig)
     if (failureReason) {
-      toast.error(failureReason)
+      showActionErrorToast(failureReason)
     }
   }
 
@@ -205,6 +221,7 @@ function App() {
   const createBasicAttackHandler = (heroId: string) => {
     return (input: { targetEntityId: string }) => {
       let failureReason: string | null = null
+      let resultMessage: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
@@ -220,6 +237,8 @@ function App() {
 
         if (!result.ok) {
           failureReason = result.reason
+        } else {
+          resultMessage = result.resultMessage
         }
 
         return {
@@ -229,7 +248,9 @@ function App() {
       })
 
       if (failureReason) {
-        toast.error(`Basic attack failed: ${failureReason}`)
+        showActionErrorToast(`Basic attack failed: ${failureReason}`)
+      } else if (resultMessage) {
+        showActionSuccessToast(resultMessage)
       }
     }
   }
@@ -237,6 +258,7 @@ function App() {
   const createEntityActiveHandler = (heroId: string) => {
     return (input: { sourceEntityId: string; targetEntityId: string }) => {
       let failureReason: string | null = null
+      let resultMessage: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
@@ -252,6 +274,8 @@ function App() {
 
         if (!result.ok) {
           failureReason = result.reason
+        } else {
+          resultMessage = result.resultMessage
         }
 
         return {
@@ -261,7 +285,9 @@ function App() {
       })
 
       if (failureReason) {
-        toast.error(`Entity active failed: ${failureReason}`)
+        showActionErrorToast(`Entity active failed: ${failureReason}`)
+      } else if (resultMessage) {
+        showActionSuccessToast(resultMessage)
       }
     }
   }
@@ -273,6 +299,7 @@ function App() {
       targetPosition?: { row: number; column: number }
     }) => {
       let failureReason: string | null = null
+      let resultMessage: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
@@ -289,6 +316,8 @@ function App() {
 
         if (!result.ok) {
           failureReason = result.reason
+        } else {
+          resultMessage = result.resultMessage
         }
 
         return {
@@ -298,7 +327,9 @@ function App() {
       })
 
       if (failureReason) {
-        toast.error(`Play card failed: ${failureReason}`)
+        showActionErrorToast(`Play card failed: ${failureReason}`)
+      } else if (resultMessage) {
+        showActionSuccessToast(resultMessage)
       }
     }
   }
@@ -306,6 +337,7 @@ function App() {
   const createSimpleActionHandler = (heroId: string, kind: 'pressLuck' | 'endTurn') => {
     return () => {
       let failureReason: string | null = null
+      let resultMessage: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
@@ -320,6 +352,8 @@ function App() {
 
         if (!result.ok) {
           failureReason = result.reason
+        } else {
+          resultMessage = result.resultMessage
         }
 
         return {
@@ -329,7 +363,9 @@ function App() {
       })
 
       if (failureReason) {
-        toast.error(`${kind} failed: ${failureReason}`)
+        showActionErrorToast(`${kind} failed: ${failureReason}`)
+      } else if (resultMessage) {
+        showActionSuccessToast(resultMessage)
       }
     }
   }
@@ -339,9 +375,10 @@ function App() {
       <Toaster
         position="top-center"
         gutter={10}
+        reverseOrder
         toastOptions={{
           className: 'game-toast',
-          duration: 2800,
+          duration: ACTION_TOAST_DURATION_MS,
         }}
       />
       <DebugStatePanel

@@ -21,8 +21,8 @@ export const COMMANDER_X_HERO = {
   },
   basicAttack: {
     moveCost: 3,
-    minimumDamage: 1,
-    maximumDamage: 3,
+    minimumDamage: 4,
+    maximumDamage: 7,
     attackDamageScaling: 0.5,
     abilityPowerScaling: 0,
     damageType: "physical",

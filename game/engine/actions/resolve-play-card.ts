@@ -21,6 +21,7 @@ export type ResolvePlayCardResult =
       state: BattleState;
       events: BattleEvent[];
       nextSequence: number;
+      resultMessage: string;
     }
   | {
       ok: false;
@@ -178,5 +179,6 @@ export function resolvePlayCardAction(options: {
     state: nextState,
     events,
     nextSequence: sequence,
+    resultMessage: `Played ${card.name}.`,
   };
 }

@@ -90,6 +90,7 @@ export type AppBattlePreview = {
         ownerHeroEntityId: string
         displayName: string
         sourceCardName: string | null
+        sourceCardSummary: string | null
         currentHealth: number
         maxHealth: number
         armor: number
@@ -410,6 +411,7 @@ function buildPreviewFromState(options: {
         ownerHeroEntityId: entity.entityId,
         displayName: heroDef?.name ?? entity.heroDefinitionId,
         sourceCardName: null,
+        sourceCardSummary: null,
         currentHealth: entity.currentHealth,
         maxHealth: entity.maxHealth,
         armor: entity.armor,
@@ -426,6 +428,17 @@ function buildPreviewFromState(options: {
     }
 
     const sourceCard = cardsById[entity.definitionCardId]
+    const sourceCardSummary =
+      sourceCard?.summaryText?.mode === 'static'
+        ? sourceCard.summaryText.text
+        : sourceCard?.summaryText?.mode === 'template'
+          ? sourceCard.summaryText.template
+          : sourceCard?.effects[0]?.displayText.mode === 'static'
+            ? sourceCard.effects[0].displayText.text
+            : sourceCard?.effects[0]?.displayText.mode === 'template'
+              ? sourceCard.effects[0].displayText.template
+              : null
+
     const activeProfile =
       entity.kind === 'weapon' || entity.kind === 'companion'
         ? gameApi.resolveEntityActiveProfile({
@@ -440,6 +453,7 @@ function buildPreviewFromState(options: {
       ownerHeroEntityId: entity.ownerHeroEntityId,
       displayName: sourceCard?.name ?? entity.definitionCardId,
       sourceCardName: sourceCard?.name ?? entity.definitionCardId,
+      sourceCardSummary,
       currentHealth: entity.currentHealth,
       maxHealth: entity.maxHealth,
       armor: entity.armor,
@@ -533,7 +547,7 @@ export function resolveSessionPlayCard(options: {
   targetEntityId?: string
   targetPosition?: { row: number; column: number }
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
   | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
   const { session, actorHeroEntityId, handCardId, targetEntityId, targetPosition } = options
 
@@ -572,6 +586,7 @@ export function resolveSessionPlayCard(options: {
     ok: true,
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+    resultMessage: result.resultMessage,
   }
 }
 
@@ -580,7 +595,7 @@ export function resolveSessionSimpleAction(options: {
   actorHeroEntityId: string
   kind: 'pressLuck' | 'endTurn'
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
   | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
   const { session, actorHeroEntityId, kind } = options
 
@@ -614,6 +629,7 @@ export function resolveSessionSimpleAction(options: {
     ok: true,
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+    resultMessage: result.resultMessage,
   }
 }
 
@@ -623,7 +639,7 @@ export function resolveSessionBasicAttack(options: {
   attackerEntityId: string
   targetEntityId: string
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
   | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
   const { session, actorHeroEntityId, attackerEntityId, targetEntityId } = options
 
@@ -661,6 +677,7 @@ export function resolveSessionBasicAttack(options: {
     ok: true,
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+    resultMessage: result.resultMessage,
   }
 }
 
@@ -670,7 +687,7 @@ export function resolveSessionUseEntityActive(options: {
   sourceEntityId: string
   targetEntityId: string
 }):
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; resultMessage: string }
   | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview } {
   const { session, actorHeroEntityId, sourceEntityId, targetEntityId } = options
 
@@ -708,6 +725,7 @@ export function resolveSessionUseEntityActive(options: {
     ok: true,
     session: nextSession,
     preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
+    resultMessage: result.resultMessage,
   }
 }
 

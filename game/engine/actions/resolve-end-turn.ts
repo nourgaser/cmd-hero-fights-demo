@@ -13,6 +13,7 @@ export type ResolveEndTurnResult =
       state: BattleState;
       events: BattleEvent[];
       nextSequence: number;
+      resultMessage: string;
     }
   | {
       ok: false;
@@ -156,5 +157,8 @@ export function resolveEndTurnAction(options: {
     state: nextState,
     events,
     nextSequence: sequence,
+    resultMessage: drawCount > 0
+      ? `Turn ended. Drew ${drawCount} card for ${nextHero.entityId}.`
+      : `Turn ended. No card drawn.`,
   };
 }

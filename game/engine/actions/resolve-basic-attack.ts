@@ -14,6 +14,7 @@ export type ResolveBasicAttackResult =
       state: BattleState;
       events: BattleEvent[];
       nextSequence: number;
+      resultMessage: string;
     }
   | {
       ok: false;
@@ -117,7 +118,12 @@ export function resolveBasicAttackAction(options: {
     rollingHeroEntityId: attacker.entityId,
   });
 
-  const wasDodged = battleRng.nextFloat() < target.dodgeChance;
+  const wasCritical = battleRng.nextFloat() < attacker.criticalChance;
+  const criticalMultiplier = wasCritical ? attacker.criticalMultiplier : 1;
+  const finalRoll = adjustedRoll * criticalMultiplier;
+
+  const dodgeRoll = battleRng.nextFloat();
+  const wasDodged = dodgeRoll < target.dodgeChance;
 
   let appliedDamage = 0;
   if (!wasDodged) {
@@ -127,7 +133,7 @@ export function resolveBasicAttackAction(options: {
         : attack.damageType === "magic"
           ? target.magicResist
           : 0;
-    appliedDamage = toAppliedDamage(adjustedRoll, resistance);
+    appliedDamage = toAppliedDamage(finalRoll, resistance);
   }
 
   const targetHealth = roundWhole(target.currentHealth);
@@ -158,6 +164,11 @@ export function resolveBasicAttackAction(options: {
     amount: appliedDamage,
     damageType: attack.damageType,
     wasDodged,
+    wasCritical,
+    rngRawRoll: rawRoll,
+    rngAdjustedRoll: adjustedRoll,
+    rngFinalRoll: finalRoll,
+    rngDodgeRoll: dodgeRoll,
   });
   sequence += 1;
 
@@ -173,5 +184,8 @@ export function resolveBasicAttackAction(options: {
     state: nextState,
     events,
     nextSequence: sequence,
+    resultMessage: wasDodged
+      ? `Basic attack missed (dodge). RNG ${rawRoll.toFixed(2)} -> ${adjustedRoll.toFixed(2)}${wasCritical ? ` -> ${finalRoll.toFixed(2)} (crit)` : ""}; dodge roll ${dodgeRoll.toFixed(2)}.`
+      : `Basic attack dealt ${appliedDamage} ${attack.damageType} damage${wasCritical ? " (crit!)" : ""}. RNG ${rawRoll.toFixed(2)} -> ${adjustedRoll.toFixed(2)}${wasCritical ? ` -> ${finalRoll.toFixed(2)}` : ""}.`,
   };
 }

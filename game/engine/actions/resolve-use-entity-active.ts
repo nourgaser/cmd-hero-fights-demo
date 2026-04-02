@@ -24,6 +24,7 @@ export type ResolveUseEntityActiveResult =
       state: BattleState;
       events: BattleEvent[];
       nextSequence: number;
+      resultMessage: string;
     }
   | {
       ok: false;
@@ -150,9 +151,15 @@ export function resolveUseEntityActiveAction(options: {
     rollingHeroEntityId: actorHero.entityId,
   });
 
+  const wasCritical = battleRng.nextFloat() < source.criticalChance;
+  const criticalMultiplier = wasCritical ? source.criticalMultiplier : 1;
+  const finalRoll = adjustedRoll * criticalMultiplier;
+
   let wasDodged = false;
+  let dodgeRoll = 0;
   if (profile.canBeDodged) {
-    wasDodged = battleRng.nextFloat() < target.dodgeChance;
+    dodgeRoll = battleRng.nextFloat();
+    wasDodged = dodgeRoll < target.dodgeChance;
   }
 
   let appliedDamage = 0;
@@ -163,7 +170,7 @@ export function resolveUseEntityActiveAction(options: {
         : profile.damageType === "magic"
           ? target.magicResist
           : 0;
-    appliedDamage = toAppliedDamage(adjustedRoll, resistance);
+    appliedDamage = toAppliedDamage(finalRoll, resistance);
   }
 
   const targetHealth = roundWhole(target.currentHealth);
@@ -194,6 +201,11 @@ export function resolveUseEntityActiveAction(options: {
     amount: appliedDamage,
     damageType: profile.damageType,
     wasDodged,
+    wasCritical,
+    rngRawRoll: rawRoll,
+    rngAdjustedRoll: adjustedRoll,
+    rngFinalRoll: finalRoll,
+    rngDodgeRoll: profile.canBeDodged ? dodgeRoll : undefined,
   });
   sequence += 1;
 
@@ -209,5 +221,8 @@ export function resolveUseEntityActiveAction(options: {
     state: nextState,
     events,
     nextSequence: sequence,
+    resultMessage: wasDodged
+      ? `Entity active missed (dodge). RNG ${rawRoll.toFixed(2)} -> ${adjustedRoll.toFixed(2)}${wasCritical ? ` -> ${finalRoll.toFixed(2)} (crit)` : ""}; dodge roll ${dodgeRoll.toFixed(2)}.`
+      : `Entity active dealt ${appliedDamage} ${profile.damageType} damage${wasCritical ? " (crit!)" : ""}. RNG ${rawRoll.toFixed(2)} -> ${adjustedRoll.toFixed(2)}${wasCritical ? ` -> ${finalRoll.toFixed(2)}` : ""}.`,
   };
 }

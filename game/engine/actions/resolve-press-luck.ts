@@ -18,6 +18,7 @@ export type ResolvePressLuckResult =
       state: BattleState;
       events: BattleEvent[];
       nextSequence: number;
+      resultMessage: string;
     }
   | {
       ok: false;
@@ -107,5 +108,9 @@ export function resolvePressLuckAction(options: {
     state: nextState,
     events,
     nextSequence: sequence,
+    resultMessage:
+      nextBalance !== previousBalance
+        ? `Pressed luck. Balance ${previousBalance} -> ${nextBalance}.`
+        : `Pressed luck. Balance stayed at ${nextBalance} (already at limit).`,
   };
 }
