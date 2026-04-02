@@ -34,6 +34,7 @@ export type CreateBattleInput = {
   openingHandSize: number;
   heroes: [CreateBattleHeroSetup, CreateBattleHeroSetup];
   cardDefinitionsById?: Record<string, CardDefinition>;
+  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
   resolveHeroInitialListeners?: (context: {
     hero: HeroDefinition;
     heroEntityId: string;
@@ -237,6 +238,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     ? annotateBattleStateWithActiveHandTargets({
         state,
         cardDefinitionsById: input.cardDefinitionsById,
+        resolveSummonFootprint: input.resolveSummonFootprint,
       })
     : state;
 

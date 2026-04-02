@@ -15,6 +15,7 @@ export const HandCardSchema = z.object({
   id: HandCardIdSchema,
   cardDefinitionId: CardIdSchema,
   validTargetEntityIds: z.array(EntityIdSchema).optional(),
+  validPlacementPositions: z.array(PositionSchema).optional(),
 });
 export type HandCard = z.infer<typeof HandCardSchema>;
 

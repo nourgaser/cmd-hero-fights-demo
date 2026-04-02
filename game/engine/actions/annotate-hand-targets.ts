@@ -1,12 +1,61 @@
-import type { BattleState, CardDefinition } from "../../shared/models";
+import {
+  type BattleState,
+  type CardDefinition,
+  type EntityFootprint,
+  type Position,
+  SingleCellFootprint,
+} from "../../shared/models";
 import { computeValidTargetsForCard } from "./compute-valid-targets";
+import { validatePlacementForHeroSide } from "../battlefield/placement";
 
 export function annotateBattleStateWithActiveHandTargets(options: {
   state: BattleState;
   cardDefinitionsById: Record<string, CardDefinition>;
+  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
 }): BattleState {
-  const { state, cardDefinitionsById } = options;
+  const { state, cardDefinitionsById, resolveSummonFootprint } = options;
   const activeHeroEntityId = state.turn.activeHeroEntityId;
+
+  function resolveValidPlacementPositions(options: {
+    cardDef: CardDefinition;
+    actorHeroEntityId: string;
+  }): Position[] {
+    const summonEffects = options.cardDef.effects.filter(
+      (effect) => effect.payload.kind === "summonEntity",
+    );
+
+    if (summonEffects.length !== 1) {
+      return [];
+    }
+
+    const summonEffect = summonEffects[0]!;
+    if (summonEffect.payload.kind !== "summonEntity") {
+      return [];
+    }
+
+    const footprint =
+      resolveSummonFootprint?.(summonEffect.payload.entityDefinitionId) ?? SingleCellFootprint;
+
+    const { rows, columns } = state.battlefieldOccupancy.dimensions;
+    const validPositions: Position[] = [];
+
+    for (let row = 0; row < rows; row += 1) {
+      for (let column = 0; column < columns; column += 1) {
+        const anchorPosition = { row, column };
+        const validation = validatePlacementForHeroSide({
+          state,
+          heroEntityId: options.actorHeroEntityId,
+          anchorPosition,
+          footprint,
+        });
+        if (validation.ok) {
+          validPositions.push(anchorPosition);
+        }
+      }
+    }
+
+    return validPositions;
+  }
 
   const nextEntitiesById: BattleState["entitiesById"] = {};
 
@@ -29,17 +78,28 @@ export function annotateBattleStateWithActiveHandTargets(options: {
       }
 
       const cardDef = cardDefinitionsById[handCard.cardDefinitionId];
-      if (!cardDef || cardDef.targeting === "none") {
+      if (!cardDef) {
         return baseHandCard;
       }
 
+      const validTargetEntityIds =
+        cardDef.targeting === "none"
+          ? undefined
+          : computeValidTargetsForCard({
+              cardDef,
+              actorHero: entity,
+              state,
+            });
+
+      const validPlacementPositions = resolveValidPlacementPositions({
+        cardDef,
+        actorHeroEntityId: entity.entityId,
+      });
+
       return {
         ...baseHandCard,
-        validTargetEntityIds: computeValidTargetsForCard({
-          cardDef,
-          actorHero: entity,
-          state,
-        }),
+        validTargetEntityIds,
+        validPlacementPositions: validPlacementPositions.length > 0 ? validPlacementPositions : undefined,
       };
     });
 

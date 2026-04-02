@@ -196,6 +196,7 @@ export function resolveAction(options: {
     state: annotateBattleStateWithActiveHandTargets({
       state: listenerResolution.state,
       cardDefinitionsById,
+      resolveSummonFootprint,
     }),
     events: [...eventsAfterCleanup, ...listenerResolution.events],
     nextSequence: listenerResolution.nextSequence,
