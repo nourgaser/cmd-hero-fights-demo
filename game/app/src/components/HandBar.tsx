@@ -9,6 +9,7 @@ type HandBarProps = {
   isActivePlayer: boolean
   focusedHandCardId: string | null
   selectedTargetEntityId: string | null
+  onEndTurn: () => void
   onFocusCard: (handCardId: string) => void
   onConfirmFocusedCard: () => void
   onClearFocus: () => void
@@ -20,6 +21,7 @@ export function HandBar(props: HandBarProps) {
     isActivePlayer,
     focusedHandCardId,
     selectedTargetEntityId,
+    onEndTurn,
     onFocusCard,
     onConfirmFocusedCard,
     onClearFocus,
@@ -35,7 +37,13 @@ export function HandBar(props: HandBarProps) {
     <section className="card hand-bar" aria-label="Hand cards">
       <div className="hand-bar-header">
         <h2>Hand</h2>
-        {!isActivePlayer && <span className="hand-pill">Waiting turn</span>}
+        {isActivePlayer ? (
+          <button type="button" className="hand-pill hand-pill-button" onClick={onEndTurn}>
+            End turn
+          </button>
+        ) : (
+          <span className="hand-pill">Waiting turn</span>
+        )}
       </div>
 
       <ul className="hand-cards" aria-label="Cards in hand">

@@ -516,6 +516,17 @@ h2.luck-title > * {
   background: color-mix(in srgb, var(--code-bg) 80%, #ffffff 20%);
 }
 
+.hand-pill-button {
+  color: inherit;
+  cursor: pointer;
+}
+
+.hand-pill-button:hover,
+.hand-pill-button:focus-visible {
+  border-color: var(--text-h);
+  background: color-mix(in srgb, var(--code-bg) 88%, #ffffff 12%);
+}
+
 .hand-cards {
   list-style: none;
   margin: 0;

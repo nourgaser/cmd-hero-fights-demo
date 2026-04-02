@@ -188,7 +188,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
             onBasicAttack={handleBeginBasicAttack}
             onUseEntityActive={onUseEntityActive}
             onPressLuck={onPressLuck}
-            onEndTurn={onEndTurn}
           />
 
           <aside
@@ -235,6 +234,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           isActivePlayer={isActivePlayer}
           focusedHandCardId={focusedHandCardId}
           selectedTargetEntityId={selectedTargetEntityId}
+          onEndTurn={onEndTurn}
           onFocusCard={handleFocusCard}
           onConfirmFocusedCard={handleConfirmFocusedCard}
           onClearFocus={handleClearFocus}

@@ -5,11 +5,10 @@ type ActionControlsProps = {
   onBasicAttack: () => void
   onUseEntityActive: () => void
   onPressLuck: () => void
-  onEndTurn: () => void
 }
 
 export function ActionControls(props: ActionControlsProps) {
-  const { onBasicAttack, onUseEntityActive, onPressLuck, onEndTurn } = props
+  const { onBasicAttack, onUseEntityActive, onPressLuck } = props
 
   const actions = [
     {
@@ -32,13 +31,6 @@ export function ActionControls(props: ActionControlsProps) {
       label: 'Press Luck',
       description: 'Press your luck to shift the balance.',
       onClick: onPressLuck,
-    },
-    {
-      id: 'end',
-      icon: 'game-icons:hourglass',
-      label: 'End Turn',
-      description: 'End your turn and pass to opponent.',
-      onClick: onEndTurn,
     },
   ]
 
