@@ -29,19 +29,31 @@ function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRun
   }
 }
 
+function incrementSeed(seed: string): string {
+  const match = seed.match(/^(.*?)(\d+)$/)
+  if (!match) {
+    return `${seed}-1`
+  }
+
+  const [, prefix, digits] = match
+  const nextValue = Number.parseInt(digits, 10) + 1
+  const nextDigits = `${nextValue}`.padStart(digits.length, '0')
+  return `${prefix}${nextDigits}`
+}
+
 function loadBootstrapConfig() {
   if (typeof window === 'undefined') {
     return DEFAULT_GAME_BOOTSTRAP_CONFIG
   }
 
   const persistedSeed = window.localStorage.getItem(DEBUG_SEED_STORAGE_KEY)?.trim()
-  if (!persistedSeed) {
-    return DEFAULT_GAME_BOOTSTRAP_CONFIG
-  }
+  const baseSeed = persistedSeed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed
+  const nextSeed = incrementSeed(baseSeed)
+  window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextSeed)
 
   return {
     ...DEFAULT_GAME_BOOTSTRAP_CONFIG,
-    seed: persistedSeed,
+    seed: nextSeed,
   }
 }
 
@@ -82,10 +94,11 @@ function updateHoverCardPlacement(wrap: HTMLElement) {
 }
 
 function App() {
-  const [bootstrapConfig, setBootstrapConfig] = useState(() => loadBootstrapConfig())
+  const [initialBootstrapConfig] = useState(() => loadBootstrapConfig())
+  const [bootstrapConfig, setBootstrapConfig] = useState(initialBootstrapConfig)
   const [startupError] = useState(() => {
     try {
-      createRuntimeFromConfig(loadBootstrapConfig())
+      createRuntimeFromConfig(initialBootstrapConfig)
       return null as string | null
     } catch (error) {
       return error instanceof Error ? error.message : 'Failed to create battle preview.'
@@ -93,7 +106,7 @@ function App() {
   })
   const [runtime, setRuntime] = useState<AppRuntime | null>(() => {
     try {
-      return createRuntimeFromConfig(loadBootstrapConfig())
+      return createRuntimeFromConfig(initialBootstrapConfig)
     } catch {
       return null
     }
