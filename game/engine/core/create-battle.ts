@@ -76,6 +76,7 @@ function createHeroEntityState(
     dodgeChance: setup.hero.combat.dodgeChance,
     maxMovePoints: setup.openingMovePoints,
     movePoints: setup.openingMovePoints,
+    basicAttackMoveCost: setup.hero.basicAttack.moveCost,
     deckCardIds: [...setup.openingDeckCardIds],
     handCards: [],
     discardCardIds: [],

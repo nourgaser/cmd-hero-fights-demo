@@ -6,6 +6,7 @@ import {
 
 const LUCK_BALANCE_STEP = 1;
 const LUCK_BALANCE_LIMIT = 4;
+const PRESS_LUCK_MOVE_COST = 3;
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -48,6 +49,14 @@ export function resolvePressLuckAction(options: {
     };
   }
 
+  if (actor.movePoints < PRESS_LUCK_MOVE_COST) {
+    return {
+      ok: false,
+      state,
+      reason: "Not enough move points to press luck.",
+    };
+  }
+
   const actorIsAnchor = actor.entityId === state.luck.anchorHeroEntityId;
   const delta = actorIsAnchor ? LUCK_BALANCE_STEP : -LUCK_BALANCE_STEP;
   const previousBalance = state.luck.balance;
@@ -62,6 +71,13 @@ export function resolvePressLuckAction(options: {
 
   const nextState: BattleState = {
     ...state,
+    entitiesById: {
+      ...state.entitiesById,
+      [actor.entityId]: {
+        ...actor,
+        movePoints: actor.movePoints - PRESS_LUCK_MOVE_COST,
+      },
+    },
     luck: {
       ...state.luck,
       balance: nextBalance,

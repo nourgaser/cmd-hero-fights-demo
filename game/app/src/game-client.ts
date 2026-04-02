@@ -36,7 +36,11 @@ export type AppBattlePreview = {
     heroEntityId: string
     basicAttack: {
       attackerEntityId: string
+      moveCost: number
       validTargetEntityIds: string[]
+    }
+    pressLuck: {
+      moveCost: number
     }
     entityActive: Array<{
       sourceEntityId: string
@@ -163,7 +167,11 @@ function buildPreviewFromState(options: {
       heroEntityId,
       basicAttack: {
         attackerEntityId: entity.entityId,
+        moveCost: entity.basicAttackMoveCost,
         validTargetEntityIds: entity.basicAttackTargetEntityIds ?? [],
+      },
+      pressLuck: {
+        moveCost: 3,
       },
       entityActive: entity.entityActiveOptions ?? [],
     }

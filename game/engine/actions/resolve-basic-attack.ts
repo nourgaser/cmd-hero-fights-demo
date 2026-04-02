@@ -90,7 +90,7 @@ export function resolveBasicAttackAction(options: {
   }
 
   const attack = heroDefinition.basicAttack;
-  if (attacker.movePoints < attack.moveCost) {
+  if (attacker.movePoints < attacker.basicAttackMoveCost) {
     return {
       ok: false,
       state,
@@ -138,7 +138,7 @@ export function resolveBasicAttackAction(options: {
       ...state.entitiesById,
       [attacker.entityId]: {
         ...attacker,
-        movePoints: attacker.movePoints - attack.moveCost,
+        movePoints: attacker.movePoints - attacker.basicAttackMoveCost,
       },
       [target.entityId]: {
         ...target,

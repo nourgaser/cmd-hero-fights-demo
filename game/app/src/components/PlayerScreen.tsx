@@ -65,6 +65,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }, [focusedHandCardId, selfHandCards])
 
   const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
+  const basicAttackMoveCost = selfActionTargets?.basicAttack.moveCost ?? 0
+  const pressLuckMoveCost = selfActionTargets?.pressLuck.moveCost ?? 3
   const entityActiveOptions = selfActionTargets?.entityActive ?? []
   const entityActiveSourceIds = entityActiveOptions.map((entry) => entry.sourceEntityId)
   const selectedEntityActiveOption = selectedEntityActiveSourceId
@@ -371,6 +373,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
+          basicAttackMoveCost={basicAttackMoveCost}
+          pressLuckMoveCost={pressLuckMoveCost}
           focusedHandCardId={focusedHandCardId}
           selectedTargetEntityId={selectedTargetEntityId}
           selectedPlacementPosition={selectedPlacementPosition}

@@ -8,6 +8,8 @@ type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 type HandBarProps = {
   cards: HandBarCard[]
   isActivePlayer: boolean
+  basicAttackMoveCost: number
+  pressLuckMoveCost: number
   focusedHandCardId: string | null
   selectedTargetEntityId: string | null
   selectedPlacementPosition: { row: number; column: number } | null
@@ -23,6 +25,8 @@ export function HandBar(props: HandBarProps) {
   const {
     cards,
     isActivePlayer,
+    basicAttackMoveCost,
+    pressLuckMoveCost,
     focusedHandCardId,
     selectedTargetEntityId,
     selectedPlacementPosition,
@@ -92,7 +96,7 @@ export function HandBar(props: HandBarProps) {
             >
               <Icon icon="game-icons:crossed-swords" className="hand-card-icon" aria-hidden="true" />
               <span className="hand-card-name">Basic Attack</span>
-              <span className="hand-card-cost">A</span>
+              <span className="hand-card-cost">{basicAttackMoveCost}</span>
             </button>
           </li>
           <li>
@@ -105,7 +109,7 @@ export function HandBar(props: HandBarProps) {
             >
               <Icon icon="game-icons:shamrock" className="hand-card-icon" aria-hidden="true" />
               <span className="hand-card-name">Press Luck</span>
-              <span className="hand-card-cost">L</span>
+              <span className="hand-card-cost">{pressLuckMoveCost}</span>
             </button>
           </li>
         {cards.map((card) => {
