@@ -2,8 +2,6 @@ import {
   type BattleEvent,
   type PlayCardAction,
   type BattleState,
-  type ListenerCondition,
-  type ListenerDefinition,
   type SummonedEntityKind,
 } from "../../shared/models";
 import { type BattleRng } from "../core/rng";
@@ -14,6 +12,7 @@ import {
 } from "./effects/execute-card-effect";
 import { renderEffectDisplayText } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
+import { allConditionsMatch, listenerMatchesEvent } from "./listeners/matching";
 
 const SYNTHETIC_LISTENER_HAND_CARD_ID = "__listener__";
 
@@ -24,45 +23,6 @@ function createListenerTriggeredSyntheticAction(ownerHeroEntityId: string): Play
     handCardId: SYNTHETIC_LISTENER_HAND_CARD_ID,
     selection: {},
   };
-}
-
-function listenerMatchesEvent(listener: ListenerDefinition, event: BattleEvent): boolean {
-  return listener.eventKind === event.kind;
-}
-
-function conditionMatches(options: {
-  condition: ListenerCondition;
-  listener: ListenerDefinition;
-  event: BattleEvent;
-}): boolean {
-  const { condition, listener, event } = options;
-
-  switch (condition.kind) {
-    case "damageNotDodged": {
-      return event.kind === "damageApplied" && event.wasDodged === false;
-    }
-    case "damageSourceIsListenerOwnerHero": {
-      return event.kind === "damageApplied" && event.sourceEntityId === listener.ownerHeroEntityId;
-    }
-    case "removedEntityIsListenerSource": {
-      return (
-        event.kind === "entityRemoved" &&
-        listener.sourceEntityId !== undefined &&
-        event.entityId === listener.sourceEntityId
-      );
-    }
-    case "turnStartedIsListenerOwnerHero": {
-      return event.kind === "turnStarted" && event.activeHeroEntityId === listener.ownerHeroEntityId;
-    }
-    default:
-      return false;
-  }
-}
-
-function allConditionsMatch(listener: ListenerDefinition, event: BattleEvent): boolean {
-  return listener.conditions.every((condition) =>
-    conditionMatches({ condition, listener, event }),
-  );
 }
 
 export function resolveTriggeredListeners(options: {
