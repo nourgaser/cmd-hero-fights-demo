@@ -1,7 +1,11 @@
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { ENTITY_ICON_META } from '../data/visual-metadata.ts'
-import { renderTextWithHighlightedNumbers, splitDetailTextIntoLines } from '../utils/render-numeric-text.tsx'
+import {
+  renderTextWithHighlightedNumbers,
+  simplifyTooltipSummaryText,
+  splitDetailTextIntoLines,
+} from '../utils/render-numeric-text.tsx'
 
 type BattlefieldGridProps = {
   preview: AppBattlePreview
@@ -261,7 +265,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         </div>
                         <div className="battlefield-hover-section">
                           <span className="hover-group-title">Basic Attack</span>
-                          <span>{heroDetails.basicAttack.summaryText}</span>
+                          <span>{simplifyTooltipSummaryText(heroDetails.basicAttack.summaryText)}</span>
                           {isShiftHeld && heroDetails.basicAttack.summaryDetailText ? (
                             <span className="battle-tooltip-detail">
                               {splitDetailTextIntoLines(heroDetails.basicAttack.summaryDetailText).map((line, index) => (
@@ -283,7 +287,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       <>
                         <div className="battlefield-hover-section">
                           <span>{meta.description ?? 'Unit on battlefield.'}</span>
-                          {entityStats?.sourceCardSummary ? <span>{entityStats.sourceCardSummary}</span> : null}
+                          {entityStats?.sourceCardSummary ? <span>{simplifyTooltipSummaryText(entityStats.sourceCardSummary)}</span> : null}
                           {isShiftHeld && entityStats?.sourceCardSummaryDetailText ? (
                             <span className="battle-tooltip-detail">
                               {splitDetailTextIntoLines(entityStats.sourceCardSummaryDetailText).map((line, index) => (
@@ -297,7 +301,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         {entityStats?.activeAbility ? (
                           <div className="battlefield-hover-section">
                             <span className="hover-group-title">Active</span>
-                            <span>{entityStats.activeAbility.summaryText}</span>
+                            <span>{simplifyTooltipSummaryText(entityStats.activeAbility.summaryText)}</span>
                             {isShiftHeld && entityStats.activeAbility.summaryDetailText ? (
                               <span className="battle-tooltip-detail">
                                 {splitDetailTextIntoLines(entityStats.activeAbility.summaryDetailText).map((line, index) => (

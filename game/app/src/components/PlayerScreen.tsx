@@ -2,7 +2,11 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
-import { renderTextWithHighlightedNumbers, splitDetailTextIntoLines } from '../utils/render-numeric-text.tsx'
+import {
+  renderTextWithHighlightedNumbers,
+  simplifyTooltipSummaryText,
+  splitDetailTextIntoLines,
+} from '../utils/render-numeric-text.tsx'
 import { LuckBar } from './LuckBar.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
@@ -420,7 +424,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
               </button>
               <span className="hover-card battle-action-hover-card" role="tooltip">
                 <strong>Basic Attack</strong>
-                <span>{selfHeroDetails?.basicAttack.summaryText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
+                <span>{selfHeroDetails?.basicAttack.summaryText ? simplifyTooltipSummaryText(selfHeroDetails.basicAttack.summaryText) : `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
                 {isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
                   <span className="battle-tooltip-detail">
                     {basicAttackDetailLines.map((line, index) => (

@@ -41,6 +41,26 @@ export function splitDetailTextIntoLines(text: string): string[] {
     .filter((line) => line.length > 0)
 }
 
+export function simplifyTooltipSummaryText(text: string): string {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (!normalized) {
+    return text
+  }
+
+  const compact = [
+    /^([a-z0-9' -]+)\s+basic attack\s+/i,
+    /^basic attack\s+/i,
+    /^([a-z0-9' -]+)\s+active(?:\s+ability)?\s+/i,
+    /^active(?:\s+ability)?\s+/i,
+  ].reduce((current, pattern) => current.replace(pattern, ''), normalized)
+
+  if (compact !== normalized && /^[a-z]/.test(compact)) {
+    return `${compact.slice(0, 1).toUpperCase()}${compact.slice(1)}`
+  }
+
+  return compact
+}
+
 export function splitSummaryAndDetail(message: string): { summary: string; detail: string | null } {
   const trimmed = message.trim()
   if (!trimmed) {
