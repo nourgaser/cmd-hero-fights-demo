@@ -1,0 +1,17 @@
+services:
+  game-mvp:
+    container_name: cmd-hero-fights-demo
+    build:
+      context: .
+      dockerfile: Dockerfile
+    environment:
+      - VIRTUAL_HOST=cmd.nourgaser.com
+      - VIRTUAL_PORT=80
+      - LETSENCRYPT_HOST=cmd.nourgaser.com
+    restart: unless-stopped
+    networks:
+      - nginx-proxy
+
+networks:
+  nginx-proxy:
+    external: true
