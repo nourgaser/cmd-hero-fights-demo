@@ -262,7 +262,7 @@ export function HandBar(props: HandBarProps) {
                 />
               </div>
             </div>
-            <p className="hand-card-tooltip-summary">
+            <p className="hand-card-tooltip-summary tooltip-main-line">
               {hoveredCard.card.summaryText?.trim()
                 ? simplifyTooltipSummaryText(hoveredCard.card.summaryText)
                 : 'No text available.'}
@@ -280,7 +280,10 @@ export function HandBar(props: HandBarProps) {
               <span className="tooltip-shift-hint">Hold Shift for details.</span>
             ) : null}
             {hoveredCard.card.castConditionText ? (
-              <div className="hand-card-tooltip-note">{hoveredCard.card.castConditionText}</div>
+              <div className="hand-card-tooltip-note tooltip-row">
+                <strong className="tooltip-inline-label">Condition:</strong>
+                {hoveredCard.card.castConditionText}
+              </div>
             ) : null}
           </span>
         ) : null}

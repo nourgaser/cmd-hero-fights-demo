@@ -424,7 +424,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
               </button>
               <span className="hover-card battle-action-hover-card" role="tooltip">
                 <strong>Basic Attack</strong>
-                <span>{selfHeroDetails?.basicAttack.summaryText ? simplifyTooltipSummaryText(selfHeroDetails.basicAttack.summaryText) : `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
+                <span className="tooltip-main-line">
+                  {selfHeroDetails?.basicAttack.summaryText
+                    ? simplifyTooltipSummaryText(selfHeroDetails.basicAttack.summaryText)
+                    : `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}
+                </span>
                 {isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
                   <span className="battle-tooltip-detail">
                     {basicAttackDetailLines.map((line, index) => (
@@ -437,8 +441,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 {!isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
                   <span className="tooltip-shift-hint">Hold Shift for details.</span>
                 ) : null}
-                <span>{selfHeroDetails?.passiveText ?? 'Passive unavailable.'}</span>
-                <span>Click once to arm it, then click the badge again to confirm.</span>
+                <span className="tooltip-row">
+                  <strong className="tooltip-inline-label">Passive:</strong>
+                  {selfHeroDetails?.passiveText ?? 'Passive unavailable.'}
+                </span>
+                <span className="tooltip-divider" aria-hidden="true" />
+                <span className="tooltip-row tooltip-row-muted">
+                  <strong className="tooltip-inline-label">Use:</strong>
+                  Click once to arm it, then click the badge again to confirm.
+                </span>
               </span>
             </span>
           </aside>
@@ -476,8 +487,14 @@ export function PlayerScreen(props: PlayerScreenProps) {
             <span className="sr-only">Deck status popup</span>
             <span className="hover-card deck-hover-card" role="tooltip">
               <strong>Your Deck</strong>
-              <span>There are {selfDeckSize} cards in your deck.</span>
-              <span>You have {selfHandSize} cards in hand.</span>
+              <span className="tooltip-row">
+                <strong className="tooltip-inline-label">Deck:</strong>
+                {selfDeckSize} cards remaining.
+              </span>
+              <span className="tooltip-row">
+                <strong className="tooltip-inline-label">Hand:</strong>
+                {selfHandSize} cards.
+              </span>
             </span>
           </aside>
 
@@ -506,9 +523,18 @@ export function PlayerScreen(props: PlayerScreenProps) {
               ) : null}
               <span className="hover-card battle-action-hover-card" role="tooltip">
                 <strong>Press Luck</strong>
-                <span>Spend {pressLuckMoveCost} moves to shift the luck track.</span>
-                {pressLuckUsedThisTurn ? <span>You can only press luck once per turn.</span> : null}
-                <span>Click once to arm it, then click the badge again to confirm.</span>
+                <span className="tooltip-main-line">Spend {pressLuckMoveCost} moves to shift the luck track.</span>
+                {pressLuckUsedThisTurn ? (
+                  <span className="tooltip-row">
+                    <strong className="tooltip-inline-label">Limit:</strong>
+                    You can only press luck once per turn.
+                  </span>
+                ) : null}
+                <span className="tooltip-divider" aria-hidden="true" />
+                <span className="tooltip-row tooltip-row-muted">
+                  <strong className="tooltip-inline-label">Use:</strong>
+                  Click once to arm it, then click the badge again to confirm.
+                </span>
               </span>
             </button>
           </aside>

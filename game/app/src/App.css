@@ -619,6 +619,33 @@ h2.luck-title > * {
   line-height: 1.25;
 }
 
+.tooltip-main-line {
+  font-weight: 600;
+  line-height: 1.3;
+}
+
+.tooltip-row {
+  line-height: 1.3;
+}
+
+.tooltip-row-muted {
+  color: color-mix(in srgb, #1f1b16 82%, #ffffff 18%);
+}
+
+.tooltip-divider {
+  height: 1px;
+  margin: 3px 0 1px;
+  background: color-mix(in srgb, #1f1b16 20%, #ffffff 80%);
+}
+
+.hover-card .tooltip-inline-label {
+  display: inline;
+  margin: 0 4px 0 0;
+  font-size: inherit;
+  line-height: inherit;
+  font-weight: 700;
+}
+
 .battle-tooltip-detail {
   margin-top: 2px;
   display: grid;
