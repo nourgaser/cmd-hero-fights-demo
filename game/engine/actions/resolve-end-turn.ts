@@ -147,6 +147,14 @@ export function resolveEndTurnAction(options: {
   };
 
   events.push({
+    kind: "turnStarted",
+    sequence,
+    activeHeroEntityId: nextHero.entityId,
+    turnNumber: nextState.turn.turnNumber,
+  });
+  sequence += 1;
+
+  events.push({
     kind: "actionResolved",
     sequence,
     action,

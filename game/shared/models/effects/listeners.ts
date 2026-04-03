@@ -15,6 +15,7 @@ export const ListenerEventKindSchema = z.enum([
   "attackDamageGained",
   "attackDamageLost",
   "turnEnded",
+  "turnStarted",
   "luckBalanceChanged",
 ]);
 export type ListenerEventKind = z.infer<typeof ListenerEventKindSchema>;
@@ -23,6 +24,7 @@ export const ListenerConditionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("damageNotDodged") }),
   z.object({ kind: z.literal("damageSourceIsListenerOwnerHero") }),
   z.object({ kind: z.literal("removedEntityIsListenerSource") }),
+  z.object({ kind: z.literal("turnStartedIsListenerOwnerHero") }),
 ]);
 export type ListenerCondition = z.infer<typeof ListenerConditionSchema>;
 

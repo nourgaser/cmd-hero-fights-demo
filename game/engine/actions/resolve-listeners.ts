@@ -39,6 +39,9 @@ function conditionMatches(options: {
         event.entityId === listener.sourceEntityId
       );
     }
+    case "turnStartedIsListenerOwnerHero": {
+      return event.kind === "turnStarted" && event.activeHeroEntityId === listener.ownerHeroEntityId;
+    }
     default:
       return false;
   }

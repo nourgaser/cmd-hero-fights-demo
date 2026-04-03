@@ -143,6 +143,14 @@ export const TurnEndedEventSchema = z.object({
 });
 export type TurnEndedEvent = z.infer<typeof TurnEndedEventSchema>;
 
+export const TurnStartedEventSchema = z.object({
+  kind: z.literal("turnStarted"),
+  sequence: EventSequenceSchema,
+  activeHeroEntityId: EntityIdSchema,
+  turnNumber: z.number().int().positive(),
+});
+export type TurnStartedEvent = z.infer<typeof TurnStartedEventSchema>;
+
 export const LuckBalanceChangedEventSchema = z.object({
   kind: z.literal("luckBalanceChanged"),
   sequence: EventSequenceSchema,
@@ -168,6 +176,7 @@ export const BattleEventSchema = z.discriminatedUnion("kind", [
   AttackDamageGainedEventSchema,
   AttackDamageLostEventSchema,
   TurnEndedEventSchema,
+  TurnStartedEventSchema,
   LuckBalanceChangedEventSchema,
 ]);
 export type BattleEvent = z.infer<typeof BattleEventSchema>;
