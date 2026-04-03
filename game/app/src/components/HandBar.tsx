@@ -270,6 +270,9 @@ export function HandBar(props: HandBarProps) {
                 ))}
               </p>
             ) : null}
+            {!isShiftHeld && hoveredCard.card.summaryDetailText ? (
+              <span className="tooltip-shift-hint">Hold Shift for details.</span>
+            ) : null}
             {hoveredCard.card.castConditionText ? (
               <div className="hand-card-tooltip-note">{hoveredCard.card.castConditionText}</div>
             ) : null}

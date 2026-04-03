@@ -640,6 +640,14 @@ h2.luck-title > * {
   color: color-mix(in srgb, #7a5a19 70%, #ffffff 30%);
 }
 
+.tooltip-shift-hint {
+  margin-top: 1px;
+  font-size: 10px;
+  line-height: 1.2;
+  color: color-mix(in srgb, #1f1b16 52%, #ffffff 48%);
+  letter-spacing: 0.01em;
+}
+
 .battle-grid {
   margin-top: 12px;
   display: grid;

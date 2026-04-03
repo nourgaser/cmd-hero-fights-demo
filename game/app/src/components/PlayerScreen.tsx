@@ -429,9 +429,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
                       </span>
                     ))}
                   </span>
-                ) : (
-                  <span>{selfHeroDetails?.basicAttack.currentRangeText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
-                )}
+                ) : null}
+                {!isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
+                  <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                ) : null}
                 <span>{selfHeroDetails?.passiveText ?? 'Passive unavailable.'}</span>
                 <span>Click once to arm it, then click the badge again to confirm.</span>
               </span>

@@ -270,9 +270,10 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                                 </span>
                               ))}
                             </span>
-                          ) : (
-                            <span>{heroDetails.basicAttack.currentRangeText}</span>
-                          )}
+                          ) : null}
+                          {!isShiftHeld && heroDetails.basicAttack.summaryDetailText ? (
+                            <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                          ) : null}
                           <span className="battlefield-hover-note">
                             Costs {heroDetails.basicAttack.moveCost} moves. Damage type: {heroDetails.basicAttack.damageType}.
                           </span>
@@ -305,9 +306,10 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                                   </span>
                                 ))}
                               </span>
-                            ) : (
-                              <span>{entityStats.activeAbility.currentRangeText}</span>
-                            )}
+                            ) : null}
+                            {!isShiftHeld && entityStats.activeAbility.summaryDetailText ? (
+                              <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                            ) : null}
                             <span className="battlefield-hover-note">
                               Costs {entityStats.activeAbility.moveCost} unit move{entityStats.activeAbility.moveCost === 1 ? '' : 's'}. {entityStats.activeAbility.canBeDodged ? 'Can be dodged.' : 'Cannot be dodged.'}
                             </span>
