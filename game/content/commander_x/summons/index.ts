@@ -4,7 +4,6 @@ import type { EntityActiveProfile } from "../../../engine/actions/resolve-use-en
 import {
   type CommanderXSummonedEntityId,
   isCommanderXSummonedEntityId,
-  SUMMON_ENTITY_IDS,
 } from "../constants";
 import type { CommanderXSummonedDefinition } from "./types";
 import corrodedShortswordDef from "./corroded-shortsword";
