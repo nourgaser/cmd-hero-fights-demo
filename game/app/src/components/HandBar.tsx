@@ -149,6 +149,7 @@ export function HandBar(props: HandBarProps) {
                 <span className="hover-card hand-card-hover" role="tooltip">
                   <strong>{card.cardName}</strong>
                   <span>{summaryText}</span>
+                  {card.castConditionText ? <span>{card.castConditionText}</span> : null}
                   <span>Type: {card.cardType} | Rarity: {card.rarity}</span>
                   <span>Cost: {card.moveCost} | Targeting: {targetingLabel}</span>
                   <span>{card.isPlayable ? 'Playable now' : 'Not playable now'}</span>

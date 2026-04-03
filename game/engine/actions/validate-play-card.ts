@@ -4,6 +4,7 @@ import {
     type EntityFootprint,
     type PlayCardAction,
     SingleCellFootprint,
+    isCardCastConditionMet,
 } from "../../shared/models";
 import { validatePlacementForHeroSide, type PlacementValidationResult } from "../battlefield/placement";
 
@@ -36,6 +37,10 @@ export function validatePlayCardAction(options: {
     const card = cardDefinitionsById[handCard.cardDefinitionId];
     if (!card) {
         return { ok: false, reason: "Card definition for hand card was not found." };
+    }
+
+    if (card.castCondition && !isCardCastConditionMet({ condition: card.castCondition, currentHealth: actor.currentHealth })) {
+        return { ok: false, reason: `${card.name} can only be played when its cast condition is met.` };
     }
 
     if (actor.movePoints < card.moveCost) {

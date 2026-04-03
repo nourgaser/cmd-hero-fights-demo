@@ -3,6 +3,7 @@ import {
   type CardDefinition,
   type EntityFootprint,
   type Position,
+  isCardCastConditionMet,
   SingleCellFootprint,
 } from "../../shared/models";
 import { computeValidTargetsForCard } from "./compute-valid-targets";
@@ -109,7 +110,11 @@ export function annotateBattleStateWithActiveHandTargets(options: {
       const hasValidTargetSelection = !hasTargetingRequirement || (validTargetEntityIds?.length ?? 0) > 0;
       const hasValidPlacementSelection = !cardDef.effects.some((effect) => effect.payload.kind === "summonEntity") || hasPlacementRequirement;
       const hasMoveCost = entity.movePoints >= cardDef.moveCost;
-      const isPlayable = hasMoveCost && hasValidTargetSelection && hasValidPlacementSelection;
+      const hasCastCondition = !cardDef.castCondition || isCardCastConditionMet({
+        condition: cardDef.castCondition,
+        currentHealth: entity.currentHealth,
+      });
+      const isPlayable = hasMoveCost && hasValidTargetSelection && hasValidPlacementSelection && hasCastCondition;
 
       return {
         ...baseHandCard,

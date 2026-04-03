@@ -20,6 +20,28 @@ export const CardTargetingSchema = z.enum([
 ]);
 export type CardTargeting = z.infer<typeof CardTargetingSchema>;
 
+export const CardCastConditionSchema = z.discriminatedUnion("kind", [
+  z.object({
+    kind: z.literal("heroHealthBelow"),
+    threshold: z.number().int().nonnegative(),
+  }),
+]);
+export type CardCastCondition = z.infer<typeof CardCastConditionSchema>;
+
+export function isCardCastConditionMet(options: {
+  condition: CardCastCondition;
+  currentHealth: number;
+}): boolean {
+  const { condition, currentHealth } = options;
+
+  switch (condition.kind) {
+    case "heroHealthBelow":
+      return currentHealth < condition.threshold;
+    default:
+      return true;
+  }
+}
+
 export const CardDefinitionSchema = z.object({
   id: CardIdSchema,
   name: z.string().min(1),
@@ -30,6 +52,7 @@ export const CardDefinitionSchema = z.object({
   targeting: CardTargetingSchema,
   effects: z.array(EffectDefinitionSchema).min(1),
   summaryText: EffectDisplayTextSchema.optional(),
+  castCondition: CardCastConditionSchema.optional(),
   tags: z.array(z.string().min(1)).default([]),
 });
 export type CardDefinition = z.infer<typeof CardDefinitionSchema>;

@@ -9,10 +9,14 @@ export const CHAAARGE_CARD = {
   heroId: COMMANDER_X_HERO_ID,
   moveCost: 10,
   targeting: "selectedEnemy",
+  castCondition: {
+    kind: "heroHealthBelow",
+    threshold: 15,
+  },
   tags: ["refund"],
   summaryText: {
     mode: "static",
-    text: "Deal 2-10 damage to an enemy. If not dodged, refund move cost.",
+    text: "Deal 2-10 damage to an enemy. Only playable when Commander X is below 15 HP. If not dodged, refund move cost.",
   },
   effects: [
     {

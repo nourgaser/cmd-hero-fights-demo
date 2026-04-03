@@ -56,6 +56,7 @@ export type AppBattlePreview = {
       cardType: 'ability' | 'weapon' | 'totem' | 'companion'
       rarity: 'common' | 'rare' | 'ultimate' | 'general'
       summaryText: string
+        castConditionText: string | null
       isPlayable: boolean
       targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
@@ -214,6 +215,19 @@ function buildEntityActiveSummary(options: {
   }
 }
 
+function describeCardCastCondition(cardDefinition: { castCondition?: { kind: 'heroHealthBelow'; threshold: number } }): string | null {
+  if (!cardDefinition.castCondition) {
+    return null
+  }
+
+  switch (cardDefinition.castCondition.kind) {
+    case 'heroHealthBelow':
+      return `Only playable when your hero is below ${cardDefinition.castCondition.threshold} HP.`
+    default:
+      return null
+  }
+}
+
 function resolveHeroSetup(
   gameApi: ReturnType<typeof createGameApi>,
   setup: HeroBootstrapConfig,
@@ -335,6 +349,7 @@ function buildPreviewFromState(options: {
                   : cardDef.effects[0]?.displayText.mode === 'template'
                     ? cardDef.effects[0].displayText.template
                     : 'No summary.',
+              castConditionText: describeCardCastCondition(cardDef),
           isPlayable: handCard.isPlayable ?? false,
           targeting: cardDef.targeting,
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
