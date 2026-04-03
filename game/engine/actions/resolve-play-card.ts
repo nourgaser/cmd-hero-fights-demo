@@ -3,6 +3,7 @@ import {
   type BattleState,
   type CardDefinition,
   type EntityFootprint,
+  type EffectDefinition,
   type PlayCardAction,
   type SummonedEntityKind,
 } from "../../shared/models";
@@ -11,7 +12,7 @@ import {
   executeCardEffect,
   resolveActorHeroForEffect,
   type SummonedEntityBlueprint,
-} from "./effects/execute-card-effect.ts";
+} from "./effects/execute-card-effect";
 import { validatePlayCardAction } from "./validate-play-card";
 
 export type ResolvePlayCardResult =
@@ -122,7 +123,7 @@ export function resolvePlayCardAction(options: {
   sequence += 1;
 
   // Stage 3: execute card effects through dedicated handler module.
-  for (const effect of card.effects) {
+  for (const effect of card.effects as EffectDefinition[]) {
     const actorResolution = resolveActorHeroForEffect({
       state: nextState,
       actorHeroEntityId: actorHero.entityId,

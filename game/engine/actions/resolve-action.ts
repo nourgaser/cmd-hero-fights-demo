@@ -28,7 +28,7 @@ import {
   type EntityActiveProfile,
   type ResolveUseEntityActiveResult,
 } from "./resolve-use-entity-active";
-import { type SummonedEntityBlueprint } from "./effects/execute-card-effect.ts";
+import { type SummonedEntityBlueprint } from "./effects/execute-card-effect";
 import { type HeroDefinition } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
 import { resolveTriggeredListeners } from "./resolve-listeners";
