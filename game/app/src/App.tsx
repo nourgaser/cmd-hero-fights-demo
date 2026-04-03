@@ -11,11 +11,12 @@ import {
   resolveSessionSimpleAction,
   resolveSessionUseEntityActive,
 } from './game-client.ts'
-import { DEFAULT_GAME_BOOTSTRAP_CONFIG } from './data/game-bootstrap.ts'
+import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from './data/game-bootstrap.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 
 const DEBUG_SEED_STORAGE_KEY = 'cmd-hero:debug-seed'
+const DEBUG_BOOTSTRAP_STORAGE_KEY = 'cmd-hero:debug-bootstrap-config'
 const ACTION_TOAST_ID = 'action-feedback'
 const ACTION_TOAST_DURATION_MS = 7000
 const EVENT_TOAST_DURATION_MS = 4500
@@ -50,15 +51,36 @@ function loadBootstrapConfig() {
     return DEFAULT_GAME_BOOTSTRAP_CONFIG
   }
 
+  const persistedBootstrapConfig = window.localStorage.getItem(DEBUG_BOOTSTRAP_STORAGE_KEY)
+  if (persistedBootstrapConfig) {
+    try {
+      const parsed = JSON.parse(persistedBootstrapConfig) as GameBootstrapConfig
+      const nextConfig = {
+        ...parsed,
+        seed: incrementSeed(parsed.seed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed),
+      }
+
+      window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
+      window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextConfig.seed)
+
+      return nextConfig
+    } catch {
+      // Fall back to the default config path below.
+    }
+  }
+
   const persistedSeed = window.localStorage.getItem(DEBUG_SEED_STORAGE_KEY)?.trim()
   const baseSeed = persistedSeed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed
   const nextSeed = incrementSeed(baseSeed)
-  window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextSeed)
-
-  return {
+  const nextConfig = {
     ...DEFAULT_GAME_BOOTSTRAP_CONFIG,
     seed: nextSeed,
   }
+
+  window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextSeed)
+  window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
+
+  return nextConfig
 }
 
 function updateHoverCardPlacement(wrap: HTMLElement) {
@@ -192,19 +214,25 @@ function App() {
   }
 
   const handleSeedChange = (seed: string) => {
-    const nextConfig = {
+    const nextConfig: GameBootstrapConfig = {
       ...bootstrapConfig,
       seed: seed.trim() || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed,
     }
+    handleBootstrapConfigChange(nextConfig)
+  }
+
+  const handleBootstrapConfigChange = (nextConfig: GameBootstrapConfig) => {
+    const failureReason = resetRuntime(nextConfig)
+    if (failureReason) {
+      showActionErrorToast(failureReason)
+      return
+    }
+
     setBootstrapConfig(nextConfig)
 
     if (typeof window !== 'undefined') {
       window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextConfig.seed)
-    }
-
-    const failureReason = resetRuntime(nextConfig)
-    if (failureReason) {
-      showActionErrorToast(failureReason)
+      window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
     }
   }
 
@@ -416,8 +444,10 @@ function App() {
       />
       <DebugStatePanel
         state={runtime.session.state as Record<string, unknown>}
+        bootstrapConfig={bootstrapConfig}
         seed={bootstrapConfig.seed}
         onSeedChange={handleSeedChange}
+        onBootstrapConfigChange={handleBootstrapConfigChange}
         onHardReset={handleHardReset}
       />
 
