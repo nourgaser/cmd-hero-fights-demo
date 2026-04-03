@@ -1,0 +1,12 @@
+node_modules
+.git
+.github
+.vscode
+*.log
+
+# Reference/design content is not needed for container build
+content
+
+# Local app artifacts
+game/app/node_modules
+game/app/dist

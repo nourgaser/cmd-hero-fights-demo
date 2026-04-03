@@ -2,8 +2,8 @@ services:
   game-mvp:
     container_name: cmd-hero-fights-demo
     build:
-      context: ..
-      dockerfile: app/Dockerfile
+      context: ../..
+      dockerfile: game/app/Dockerfile
     environment:
       - VIRTUAL_HOST=cmd.nourgaser.com
       - VIRTUAL_PORT=80
