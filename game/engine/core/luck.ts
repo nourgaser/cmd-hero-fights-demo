@@ -36,8 +36,15 @@ export function applyLuckToRoll(options: {
   }
 
   const bias = luckBiasForHero(luck, rollingHeroEntityId);
-  const shift = Math.round(range * LUCK_STEP_RATIO * Math.abs(bias));
-  const adjusted = rawRoll + Math.sign(bias) * shift;
+  const luckPercent = clamp(bias * LUCK_STEP_RATIO, -1, 1);
+  if (luckPercent === 0) {
+    return clamp(rawRoll, minimum, maximum);
+  }
+
+  const adjusted =
+    luckPercent > 0
+      ? rawRoll + (maximum - rawRoll) * luckPercent
+      : rawRoll - (rawRoll - minimum) * Math.abs(luckPercent);
 
   return clamp(adjusted, minimum, maximum);
 }
