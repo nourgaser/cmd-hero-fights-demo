@@ -21,17 +21,34 @@ type HandBarProps = {
   onClearFocus: () => void
 }
 
-function getTargetingLabel(targeting: HandBarCard['targeting']) {
-  if (targeting === 'none') {
-    return 'No target'
+function getCardTypeVisual(cardType: HandBarCard['cardType']) {
+  switch (cardType) {
+    case 'ability':
+      return { icon: 'game-icons:crossed-swords', label: 'Ability' }
+    case 'weapon':
+      return { icon: 'game-icons:broadsword', label: 'Weapon' }
+    case 'totem':
+      return { icon: 'game-icons:obelisk', label: 'Totem' }
+    case 'companion':
+      return { icon: 'game-icons:wolf-head', label: 'Companion' }
+    default:
+      return { icon: 'game-icons:card-pick', label: 'Card' }
   }
-  if (targeting === 'selectedEnemy') {
-    return 'Enemy target'
+}
+
+function getRarityLabel(rarity: HandBarCard['rarity']) {
+  switch (rarity) {
+    case 'common':
+      return 'Common'
+    case 'rare':
+      return 'Rare'
+    case 'ultimate':
+      return 'Ultimate'
+    case 'general':
+      return 'General'
+    default:
+      return rarity
   }
-  if (targeting === 'selectedAny') {
-    return 'Any target'
-  }
-  return 'Ally target'
 }
 
 export function HandBar(props: HandBarProps) {
@@ -51,7 +68,28 @@ export function HandBar(props: HandBarProps) {
     onClearFocus,
   } = props
   const scrollerRef = useRef<HTMLUListElement | null>(null)
+  const handWrapRef = useRef<HTMLDivElement | null>(null)
   const [showScrollHint, setShowScrollHint] = useState(false)
+  const [hoveredCard, setHoveredCard] = useState<{
+    card: HandBarCard
+    left: number
+    top: number
+  } | null>(null)
+
+  const setHoveredCardFromAnchor = (card: HandBarCard, anchor: HTMLElement) => {
+    const wrap = handWrapRef.current
+    if (!wrap) {
+      return
+    }
+
+    const anchorRect = anchor.getBoundingClientRect()
+    const wrapRect = wrap.getBoundingClientRect()
+    setHoveredCard({
+      card,
+      left: anchorRect.left - wrapRect.left + anchorRect.width / 2,
+      top: anchorRect.top - wrapRect.top,
+    })
+  }
 
   useEffect(() => {
     const scroller = scrollerRef.current
@@ -106,59 +144,102 @@ export function HandBar(props: HandBarProps) {
         )}
       </div>
 
-      <div className="hand-scroll-wrap">
+      <div className="hand-scroll-wrap" ref={handWrapRef}>
         <ul className="hand-cards" aria-label="Cards in hand and actions" ref={scrollerRef}>
-        {cards.map((card) => {
+          {cards.map((card) => {
           const meta = CARD_ICON_META[card.cardDefinitionId] ?? {
             id: 'game-icons:card-pick',
             label: card.cardName,
             description: 'Card',
           }
+          const typeVisual = getCardTypeVisual(card.cardType)
+          const rarityLabel = getRarityLabel(card.rarity)
           const isFocused = card.handCardId === focusedHandCardId
           const canConfirmCard = isFocused && canConfirm
           const requiresTarget = card.validTargetEntityIds.length > 0
-          const targetingLabel = getTargetingLabel(card.targeting)
-          const summaryText = card.summaryText?.trim() ? card.summaryText : 'No text available.'
 
           return (
-            <li key={card.handCardId}>
+            <li
+              key={card.handCardId}
+              className={`hand-card-item ${card.isPlayable && isActivePlayer ? 'playable' : 'blocked'}`.trim()}
+              onMouseEnter={(event) => {
+                setHoveredCardFromAnchor(card, event.currentTarget)
+              }}
+              onMouseLeave={() => {
+                setHoveredCard(null)
+              }}
+            >
               <button
                 type="button"
-                className={`hand-card ${isFocused ? 'focused' : ''} ${!card.isPlayable ? 'unplayable' : ''}`.trim()}
+                className={`hand-card rarity-${card.rarity} ${isFocused ? 'focused' : ''} ${!card.isPlayable ? 'unplayable' : ''}`.trim()}
                 onClick={() => {
                   if (canConfirmCard) {
                     onConfirmFocusedCard()
                     return
                   }
 
+                  if (!card.isPlayable || !isActivePlayer) {
+                    return
+                  }
+
                   onFocusCard(card.handCardId)
+                }}
+                onFocus={(event) => {
+                  setHoveredCardFromAnchor(card, event.currentTarget)
+                }}
+                onBlur={() => {
+                  setHoveredCard(null)
                 }}
                 disabled={!isActivePlayer}
                 aria-pressed={isFocused}
                 aria-label={`${card.cardName}. Cost ${card.moveCost}. ${requiresTarget ? 'Requires target.' : 'No target required.'}`}
               >
+                <span className="hand-card-type-badge" aria-hidden="true" title={typeVisual.label}>
+                  <Icon icon={typeVisual.icon} />
+                </span>
+                <span className="hand-card-rarity-mark" aria-hidden="true" title={rarityLabel} />
                 <Icon icon={meta.id} className="hand-card-icon" aria-hidden="true" />
                 <span className="hand-card-name">{card.cardName}</span>
-                <span className="hand-card-summary">{summaryText}</span>
-                <span className="hand-card-cost">{card.moveCost}</span>
+                <span className="hand-card-cost" title={`Cost ${card.moveCost}`}>{card.moveCost}</span>
                 {canConfirmCard ? (
                   <span className="hand-card-check" aria-hidden="true">
                     <Icon icon="game-icons:check-mark" />
                   </span>
                 ) : null}
-                <span className="hover-card hand-card-hover" role="tooltip">
-                  <strong>{card.cardName}</strong>
-                  <span>{summaryText}</span>
-                  {card.castConditionText ? <span>{card.castConditionText}</span> : null}
-                  <span>Type: {card.cardType} | Rarity: {card.rarity}</span>
-                  <span>Cost: {card.moveCost} | Targeting: {targetingLabel}</span>
-                  <span>{card.isPlayable ? 'Playable now' : 'Not playable now'}</span>
-                </span>
               </button>
             </li>
           )
-        })}
+          })}
         </ul>
+
+        {hoveredCard ? (
+          <span
+            className="hover-card hand-card-hover hand-card-hover-overlay"
+            role="tooltip"
+            style={{
+              left: `${hoveredCard.left}px`,
+              top: `${hoveredCard.top}px`,
+            }}
+          >
+            <div className="hand-card-tooltip-header">
+              <strong>{hoveredCard.card.cardName}</strong>
+              <div className="hand-card-tooltip-badges">
+                <span className="hand-card-type-icon" title={getCardTypeVisual(hoveredCard.card.cardType).label} aria-label={getCardTypeVisual(hoveredCard.card.cardType).label}>
+                  <Icon icon={getCardTypeVisual(hoveredCard.card.cardType).icon} aria-hidden="true" />
+                </span>
+                <span
+                  className={`hand-card-rarity-swatch rarity-${hoveredCard.card.rarity}`}
+                  title={getRarityLabel(hoveredCard.card.rarity)}
+                  aria-label={getRarityLabel(hoveredCard.card.rarity)}
+                />
+              </div>
+            </div>
+            <p className="hand-card-tooltip-summary">{hoveredCard.card.summaryText?.trim() ? hoveredCard.card.summaryText : 'No text available.'}</p>
+            {hoveredCard.card.castConditionText ? (
+              <div className="hand-card-tooltip-note">{hoveredCard.card.castConditionText}</div>
+            ) : null}
+          </span>
+        ) : null}
 
         {showScrollHint ? <span className="hand-scroll-indicator">{'Scroll ->'}</span> : null}
       </div>
@@ -202,15 +283,23 @@ export function HandBar(props: HandBarProps) {
       ) : focusedCard ? (
         <div className="hand-focus-panel" aria-live="polite">
           <div className="hand-focus-head">
-            <strong>{focusedCard.cardName}</strong>
-            <span className="hand-focus-badges">
-              <span>{focusedCard.cardType}</span>
-              <span>{focusedCard.rarity}</span>
-              <span>Cost {focusedCard.moveCost}</span>
-            </span>
+            <div className="hand-focus-title-block">
+              <span className="hand-card-tooltip-badges">
+                <span className="hand-card-chip hand-card-chip-type" title={getCardTypeVisual(focusedCard.cardType).label}>
+                  <Icon icon={getCardTypeVisual(focusedCard.cardType).icon} aria-hidden="true" />
+                  <span>{getCardTypeVisual(focusedCard.cardType).label}</span>
+                </span>
+                <span
+                  className={`hand-card-rarity-swatch rarity-${focusedCard.rarity}`}
+                  title={getRarityLabel(focusedCard.rarity)}
+                  aria-label={getRarityLabel(focusedCard.rarity)}
+                />
+              </span>
+              <strong>{focusedCard.cardName}</strong>
+            </div>
+            <span className="hand-focus-cost" title={`Cost ${focusedCard.moveCost}`}>{focusedCard.moveCost}</span>
           </div>
           <p className="hand-focus-summary">{focusedCard.summaryText?.trim() ? focusedCard.summaryText : 'No text available.'}</p>
-          <p className="hand-focus-meta">Targeting: {getTargetingLabel(focusedCard.targeting)}</p>
           {!focusedCard.isPlayable ? <p className="hand-focus-instruction">Not playable right now.</p> : null}
           <p className="hand-focus-instruction">
             {focusedNeedsTarget
