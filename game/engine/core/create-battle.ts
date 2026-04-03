@@ -16,7 +16,7 @@ import {
   setOccupantFootprint,
 } from "../../shared/models";
 import { createBattleRng, type BattleRng } from "./rng";
-import { annotateBattleStateWithActiveHandTargets } from "../actions/annotate-hand-targets";
+import { annotateBattleStateWithActionOptions } from "../actions/annotate-action-options";
 
 type CreateBattleHeroSetup = {
   heroEntityId: EntityId;
@@ -245,7 +245,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
   };
 
   const annotatedState = input.cardDefinitionsById
-    ? annotateBattleStateWithActiveHandTargets({
+    ? annotateBattleStateWithActionOptions({
         state,
         cardDefinitionsById: input.cardDefinitionsById,
         resolveSummonFootprint: input.resolveSummonFootprint,

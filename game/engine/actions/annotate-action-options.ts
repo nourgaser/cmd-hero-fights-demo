@@ -9,7 +9,7 @@ import {
 import { computeValidTargetsForCard } from "./compute-valid-targets";
 import { validatePlacementForHeroSide } from "../battlefield/placement";
 
-export function annotateBattleStateWithActiveHandTargets(options: {
+export function annotateBattleStateWithActionOptions(options: {
   state: BattleState;
   cardDefinitionsById: Record<string, CardDefinition>;
   resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
