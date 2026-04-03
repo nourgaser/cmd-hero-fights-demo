@@ -50,6 +50,14 @@ export function resolvePressLuckAction(options: {
     };
   }
 
+  if (state.turn.pressLuckUsedThisTurn) {
+    return {
+      ok: false,
+      state,
+      reason: "Press luck can only be used once per turn.",
+    };
+  }
+
   if (actor.movePoints < PRESS_LUCK_MOVE_COST) {
     return {
       ok: false,
@@ -82,6 +90,10 @@ export function resolvePressLuckAction(options: {
     luck: {
       ...state.luck,
       balance: nextBalance,
+    },
+    turn: {
+      ...state.turn,
+      pressLuckUsedThisTurn: true,
     },
   };
 

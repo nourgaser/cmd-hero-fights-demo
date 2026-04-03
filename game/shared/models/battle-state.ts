@@ -95,6 +95,7 @@ export type BattleLuckState = z.infer<typeof BattleLuckStateSchema>;
 export const TurnStateSchema = z.object({
   turnNumber: z.number().int().positive(),
   activeHeroEntityId: EntityIdSchema,
+  pressLuckUsedThisTurn: z.boolean().default(false),
 });
 export type TurnState = z.infer<typeof TurnStateSchema>;
 

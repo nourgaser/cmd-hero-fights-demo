@@ -234,6 +234,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     turn: {
       turnNumber: 1,
       activeHeroEntityId: heroASetup.heroEntityId,
+      pressLuckUsedThisTurn: false,
     },
     entitiesById: {
       [heroAState.entityId]: heroAState,

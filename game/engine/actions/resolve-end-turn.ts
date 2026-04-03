@@ -138,6 +138,7 @@ export function resolveEndTurnAction(options: {
     turn: {
       turnNumber: state.turn.turnNumber + 1,
       activeHeroEntityId: nextHero.entityId,
+      pressLuckUsedThisTurn: false,
     },
     entitiesById: {
       ...refreshedSummonedEntries,

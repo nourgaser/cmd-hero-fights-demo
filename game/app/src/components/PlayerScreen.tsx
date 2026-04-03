@@ -70,7 +70,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
   const basicAttackMoveCost = selfActionTargets?.basicAttack.moveCost ?? 0
   const pressLuckMoveCost = selfActionTargets?.pressLuck.moveCost ?? 3
-  const canConfirmPressLuck = isActivePlayer && selfMovePoints >= pressLuckMoveCost
+  const pressLuckUsedThisTurn = preview.turn.pressLuckUsedThisTurn
+  const canConfirmPressLuck = isActivePlayer && !pressLuckUsedThisTurn && selfMovePoints >= pressLuckMoveCost
   const entityActiveOptions = selfActionTargets?.entityActive ?? []
   const entityActiveSourceIds = entityActiveOptions.map((entry) => entry.sourceEntityId)
   const selectedEntityActiveOption = selectedEntityActiveSourceId
@@ -78,7 +79,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     : null
   const entityActiveTargetEntityIds = selectedEntityActiveOption?.validTargetEntityIds ?? []
   const canBeginBasicAttack = isActivePlayer && selfMovePoints >= basicAttackMoveCost
-  const canBeginPressLuck = isActivePlayer && selfMovePoints >= pressLuckMoveCost
+  const canBeginPressLuck = isActivePlayer && !pressLuckUsedThisTurn && selfMovePoints >= pressLuckMoveCost
   const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
   const highlightedTargetEntityIds =
     pendingActionMode === 'basicAttack'
@@ -282,7 +283,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }
 
   const handleBeginPressLuck = () => {
-    if (!isActivePlayer || selfMovePoints < pressLuckMoveCost) {
+    if (!isActivePlayer || pressLuckUsedThisTurn || selfMovePoints < pressLuckMoveCost) {
       return
     }
 
@@ -443,7 +444,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
               aria-label={
                 pendingActionMode === 'pressLuckConfirm'
                   ? `Press luck selected. Confirm by clicking again.`
-                  : `Press luck. Costs ${pressLuckMoveCost} moves.`
+                  : pressLuckUsedThisTurn
+                    ? `Press luck already used this turn.`
+                    : `Press luck. Costs ${pressLuckMoveCost} moves.`
               }
             >
               <Icon icon="game-icons:shamrock" className="battle-action-icon" aria-hidden="true" />
@@ -458,6 +461,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
               <span className="hover-card battle-action-hover-card" role="tooltip">
                 <strong>Press Luck</strong>
                 <span>Spend {pressLuckMoveCost} moves to shift the luck track.</span>
+                {pressLuckUsedThisTurn ? <span>You can only press luck once per turn.</span> : null}
                 <span>Click once to arm it, then click the badge again to confirm.</span>
               </span>
             </button>

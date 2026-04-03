@@ -11,6 +11,10 @@ export type AppBattlePreview = {
   seed: string
   heroEntityIds: [string, string]
   activeHeroEntityId: string
+  turn: {
+    turnNumber: number
+    pressLuckUsedThisTurn: boolean
+  }
   luck: {
     anchorHeroEntityId: string
     balance: number
@@ -496,6 +500,10 @@ function buildPreviewFromState(options: {
     seed: state.seed,
     heroEntityIds: state.heroEntityIds,
     activeHeroEntityId: state.turn.activeHeroEntityId,
+    turn: {
+      turnNumber: state.turn.turnNumber,
+      pressLuckUsedThisTurn: state.turn.pressLuckUsedThisTurn,
+    },
     luck: {
       anchorHeroEntityId: state.luck.anchorHeroEntityId,
       balance: state.luck.balance,
