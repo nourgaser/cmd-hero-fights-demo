@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../../../shared/models";
+import type { StrongCardDefinition } from "./types";
 
 import { BASTION_STANCE_CARD } from "./bastion-stance";
 import { BATTLE_FOCUS_CARD } from "./battle-focus";
@@ -26,7 +26,7 @@ export {
   WAR_STANDARD_CARD,
 };
 
-export const COMMANDER_X_CARDS: CardDefinition[] = [
+export const COMMANDER_X_CARDS = [
   REROLL_CARD,
   IRON_SKIN_CARD,
   HEALTH_POTION_CARD,
@@ -38,4 +38,7 @@ export const COMMANDER_X_CARDS: CardDefinition[] = [
   WAR_STANDARD_CARD,
   GUARD_SIGIL_CARD,
   JAQUEMIN_PATROL_CARD,
-];
+] as const satisfies readonly StrongCardDefinition[];
+
+export type CommanderXCardDefinition = (typeof COMMANDER_X_CARDS)[number];
+export type CommanderXCardId = CommanderXCardDefinition["id"];

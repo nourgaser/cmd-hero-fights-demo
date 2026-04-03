@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../../../shared/models";
+import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
 export const HEALTH_POTION_CARD = {
@@ -37,4 +37,4 @@ export const HEALTH_POTION_CARD = {
       },
     },
   ],
-} satisfies CardDefinition;
+} satisfies StrongCardDefinition;

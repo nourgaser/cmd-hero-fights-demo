@@ -2,6 +2,7 @@ import type { SummonedEntityBlueprint } from "../../../engine/actions/effects/co
 import type { EntityActiveProfile } from "../../../engine/actions/resolve-use-entity-active";
 import type { EntityFootprint } from "../../../shared/models";
 import { SUMMON_ENTITY_IDS } from "../constants";
+import type { CommanderXSummonedDefinition } from "./types";
 
 export const CORRODED_SHORTSWORD_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "weapon",
@@ -37,4 +38,4 @@ export default {
   blueprint: CORRODED_SHORTSWORD_BLUEPRINT,
   active: CORRODED_SHORTSWORD_ACTIVE,
   footprint: CORRODED_SHORTSWORD_FOOTPRINT,
-};
+} satisfies CommanderXSummonedDefinition;

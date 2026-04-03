@@ -18,5 +18,8 @@ export {
   COMMANDER_X_ENTITY_ACTIVE_PROFILES,
   COMMANDER_X_SUMMONED_BLUEPRINTS,
   COMMANDER_X_SUMMON_FOOTPRINTS,
+  resolveCommanderXEntityActiveProfile,
+  resolveCommanderXSummonedBlueprint,
+  resolveCommanderXSummonFootprint,
 } from "./summoned";
 

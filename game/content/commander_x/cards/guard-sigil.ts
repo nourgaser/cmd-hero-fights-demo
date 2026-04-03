@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../../../shared/models";
+import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 
 export const GUARD_SIGIL_CARD = {
@@ -103,4 +103,4 @@ export const GUARD_SIGIL_CARD = {
       },
     },
   ],
-} satisfies CardDefinition;
+} satisfies StrongCardDefinition;

@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../../../shared/models";
+import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
 export const IRON_SKIN_CARD = {
@@ -34,4 +34,4 @@ export const IRON_SKIN_CARD = {
       },
     },
   ],
-} satisfies CardDefinition;
+} satisfies StrongCardDefinition;

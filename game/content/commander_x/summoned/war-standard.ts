@@ -1,6 +1,7 @@
 import type { SummonedEntityBlueprint } from "../../../engine/actions/effects/context";
 import type { EntityFootprint } from "../../../shared/models";
 import { SUMMON_ENTITY_IDS } from "../constants";
+import type { CommanderXSummonedDefinition } from "./types";
 
 export const WAR_STANDARD_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "totem",
@@ -25,4 +26,4 @@ export default {
   entityId: SUMMON_ENTITY_IDS.warStandard,
   blueprint: WAR_STANDARD_BLUEPRINT,
   footprint: WAR_STANDARD_FOOTPRINT,
-};
+} satisfies CommanderXSummonedDefinition;

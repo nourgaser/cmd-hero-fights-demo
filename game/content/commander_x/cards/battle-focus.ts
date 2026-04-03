@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../../../shared/models";
+import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
 export const BATTLE_FOCUS_CARD = {
@@ -56,4 +56,4 @@ export const BATTLE_FOCUS_CARD = {
       },
     },
   ],
-} satisfies CardDefinition;
+} satisfies StrongCardDefinition;

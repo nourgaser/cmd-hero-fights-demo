@@ -1,27 +1,75 @@
 import type { EntityFootprint } from "../../../shared/models";
 import type { SummonedEntityBlueprint } from "../../../engine/actions/effects/context";
 import type { EntityActiveProfile } from "../../../engine/actions/resolve-use-entity-active";
-import { SUMMON_ENTITY_IDS } from "../constants";
+import {
+  type CommanderXSummonedEntityId,
+  isCommanderXSummonedEntityId,
+  SUMMON_ENTITY_IDS,
+} from "../constants";
+import type { CommanderXSummonedDefinition } from "./types";
 import corrodedShortswordDef from "./corroded-shortsword";
 import warStandardDef from "./war-standard";
 import guardSigilDef from "./guard-sigil";
 import jaqueminPatrolDef from "./jaquemin-patrol";
 
-export const COMMANDER_X_SUMMONED_BLUEPRINTS: Record<string, SummonedEntityBlueprint> = {
-  [SUMMON_ENTITY_IDS.corrodedShortsword]: corrodedShortswordDef.blueprint,
-  [SUMMON_ENTITY_IDS.warStandard]: warStandardDef.blueprint,
-  [SUMMON_ENTITY_IDS.guardSigil]: guardSigilDef.blueprint,
-  [SUMMON_ENTITY_IDS.jaqueminPatrol]: jaqueminPatrolDef.blueprint,
-};
+const COMMANDER_X_SUMMONED_DEFINITIONS = [
+  corrodedShortswordDef,
+  warStandardDef,
+  guardSigilDef,
+  jaqueminPatrolDef,
+] as const satisfies readonly CommanderXSummonedDefinition[];
 
-export const COMMANDER_X_ENTITY_ACTIVE_PROFILES: Record<string, EntityActiveProfile> = {
-  [corrodedShortswordDef.blueprint.definitionCardId]: corrodedShortswordDef.active!,
-  [jaqueminPatrolDef.blueprint.definitionCardId]: jaqueminPatrolDef.active!,
-};
+const COMMANDER_X_SUMMONED_BLUEPRINT_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS.map((definition) => [
+  definition.entityId,
+  definition.blueprint,
+] as const);
 
-export const COMMANDER_X_SUMMON_FOOTPRINTS: Record<string, EntityFootprint> = {
-  [SUMMON_ENTITY_IDS.corrodedShortsword]: corrodedShortswordDef.footprint,
-  [SUMMON_ENTITY_IDS.warStandard]: warStandardDef.footprint,
-  [SUMMON_ENTITY_IDS.guardSigil]: guardSigilDef.footprint,
-  [SUMMON_ENTITY_IDS.jaqueminPatrol]: jaqueminPatrolDef.footprint,
-};
+const COMMANDER_X_SUMMON_FOOTPRINT_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS.map((definition) => [
+  definition.entityId,
+  definition.footprint,
+] as const);
+
+const COMMANDER_X_ENTITY_ACTIVE_PROFILE_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS
+  .filter(
+    (definition): definition is CommanderXSummonedDefinition & { active: EntityActiveProfile } =>
+      "active" in definition && definition.active !== undefined,
+  )
+  .map((definition) => [definition.blueprint.definitionCardId, definition.active] as const);
+
+export const COMMANDER_X_SUMMONED_BLUEPRINTS = Object.fromEntries(
+  COMMANDER_X_SUMMONED_BLUEPRINT_ENTRIES,
+) as Readonly<Record<CommanderXSummonedEntityId, SummonedEntityBlueprint>>;
+
+export const COMMANDER_X_ENTITY_ACTIVE_PROFILES = Object.fromEntries(
+  COMMANDER_X_ENTITY_ACTIVE_PROFILE_ENTRIES,
+) as Readonly<Partial<Record<string, EntityActiveProfile>>>;
+
+export const COMMANDER_X_SUMMON_FOOTPRINTS = Object.fromEntries(
+  COMMANDER_X_SUMMON_FOOTPRINT_ENTRIES,
+) as Readonly<Record<CommanderXSummonedEntityId, EntityFootprint>>;
+
+export function resolveCommanderXSummonedBlueprint(
+  entityDefinitionId: string,
+): SummonedEntityBlueprint | undefined {
+  if (!isCommanderXSummonedEntityId(entityDefinitionId)) {
+    return undefined;
+  }
+
+  return COMMANDER_X_SUMMONED_BLUEPRINTS[entityDefinitionId];
+}
+
+export function resolveCommanderXSummonFootprint(
+  entityDefinitionId: string,
+): EntityFootprint | undefined {
+  if (!isCommanderXSummonedEntityId(entityDefinitionId)) {
+    return undefined;
+  }
+
+  return COMMANDER_X_SUMMON_FOOTPRINTS[entityDefinitionId];
+}
+
+export function resolveCommanderXEntityActiveProfile(
+  sourceDefinitionCardId: string,
+): EntityActiveProfile | undefined {
+  return COMMANDER_X_ENTITY_ACTIVE_PROFILES[sourceDefinitionCardId];
+}

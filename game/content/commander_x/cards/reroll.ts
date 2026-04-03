@@ -1,4 +1,4 @@
-import type { CardDefinition } from "../../../shared/models";
+import type { StrongCardDefinition } from "./types";
 
 export const REROLL_CARD = {
   id: "card.general.reroll",
@@ -32,4 +32,4 @@ export const REROLL_CARD = {
       },
     },
   ],
-} satisfies CardDefinition;
+} satisfies StrongCardDefinition;

@@ -1,6 +1,7 @@
 import type { SummonedEntityBlueprint } from "../../../engine/actions/effects/context";
 import type { EntityFootprint } from "../../../shared/models";
 import { SUMMON_ENTITY_IDS } from "../constants";
+import type { CommanderXSummonedDefinition } from "./types";
 
 export const GUARD_SIGIL_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "totem",
@@ -25,4 +26,4 @@ export default {
   entityId: SUMMON_ENTITY_IDS.guardSigil,
   blueprint: GUARD_SIGIL_BLUEPRINT,
   footprint: GUARD_SIGIL_FOOTPRINT,
-};
+} satisfies CommanderXSummonedDefinition;

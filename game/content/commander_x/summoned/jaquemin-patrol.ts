@@ -2,6 +2,7 @@ import type { SummonedEntityBlueprint } from "../../../engine/actions/effects/co
 import type { EntityActiveProfile } from "../../../engine/actions/resolve-use-entity-active";
 import type { EntityFootprint } from "../../../shared/models";
 import { SUMMON_ENTITY_IDS } from "../constants";
+import type { CommanderXSummonedDefinition } from "./types";
 
 export const JAQUEMIN_PATROL_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "companion",
@@ -37,4 +38,4 @@ export default {
   blueprint: JAQUEMIN_PATROL_BLUEPRINT,
   active: JAQUEMIN_PATROL_ACTIVE,
   footprint: JAQUEMIN_PATROL_FOOTPRINT,
-};
+} satisfies CommanderXSummonedDefinition;
