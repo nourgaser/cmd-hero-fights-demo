@@ -47,6 +47,104 @@ This checklist is the implementation gate for MVP work.
 - [x] Card/entity icon mapping via `game-icons:*` ids and visual metadata policy
 - [x] Hand and card play controls (with targeting)
 - [x] Non-card action controls (basic attack, entity active, press luck, end turn)
-- [ ] Event feed and invalid-action feedback
-- [ ] MVP scope guard: expose only non-low-priority prototype content
-- [ ] Mark "Minimal app integration" complete
+
+## Stat Modifier Rehaul Plan
+
+Goal: move from direct mutable stat edits to derived, traceable effective stats powered by modifiers and aura rules.
+
+### Phase 1: Shared Model Foundation
+
+- [ ] Add immutable base combat stats to runtime entities (hero, weapon, totem, companion)
+- [ ] Add active stat modifier model (id, source metadata, stat, operation, value, lifetime, label)
+- [ ] Add selector-driven aura/rule model (source + target selector + stat operations + active condition)
+- [ ] Add stat explanation row model for UI traceability (base, contributions, effective)
+- [ ] Document and enforce deterministic stat resolution order in code
+
+### Phase 2: Central Resolver
+
+- [ ] Add engine stat resolver module to compute effective stats from base + active modifiers + aura rules
+- [ ] Add resolver outputs for explanation breakdown per stat (source-tagged contribution rows)
+- [ ] Add helper APIs for effective stat reads in engine paths (combat, scaling, resistances, previews)
+
+### Phase 3: Lifecycle Integration
+
+- [ ] Initialize modifier/aura collections in battle creation
+- [ ] Initialize modifier/aura collections on summoned entities
+- [ ] Add source cleanup on entity removal (remove/disable source-emitted aura effects and linked modifiers)
+- [ ] Extend battle events with modifier/aura applied/removed events for deterministic traceability
+
+### Phase 4: Hard Switch Effect/Action Migration
+
+- [ ] Replace direct stat mutation handlers (gain/lose armor, MR, AD) with modifier operations only
+- [ ] Implement `modifyAttackDamageWhileSourcePresent` using selector-driven aura rules
+- [ ] Refactor temporary buff patterns from inverse rollback effects to lifetime/condition-based modifiers
+- [ ] Update damage/heal/action calculations to read effective stats from resolver only
+- [ ] Remove obsolete direct-stat effect payloads/handlers after migration
+
+### Phase 5: Full UX Traceability
+
+- [ ] Extend app preview data with stat base/effective/delta and explanation rows
+- [ ] Battlefield hover: color AD/Armor/MR/AP states by delta vs base (up/down/neutral)
+- [ ] Shift-hover: show per-stat detailed contribution lines grouped by source
+- [ ] Ensure hero/summon tooltips and active previews consistently use effective stats
+
+### Phase 6: Commander X Content Migration
+
+- [ ] Update included Commander X cards that currently rely on direct stat mutations to modifier/rule semantics
+- [ ] Keep effect modeling declarative: active rules + conditions + expirations, not one-off direct edits
+
+### Phase 7: Manual Acceptance Pass (No Tests)
+
+- [ ] Fixed-seed scenario: aura source present before ally summon still affects newly summoned ally
+- [ ] Fixed-seed scenario: removing aura source removes contributions from all valid targets
+- [ ] Fixed-seed scenario: stacked positive/negative modifiers resolve deterministically and display correctly
+- [ ] Fixed-seed scenario: temporary modifier expiration updates effective stats without direct rollback mutation
+- [ ] Verify all gameplay stat changes are driven by modifier/rule records and resolver output
+
+
+## Next UI/Product Tasks
+
+### Summon Preview Tooltip
+
+- [ ] Add side tooltip for summon cards showing summoned entity preview before play
+- [ ] Match existing card tooltip framing (header, type, rarity) for summon preview panel
+- [ ] Show summon preview combat/vitals stats and relevant active/passive summary text
+- [ ] Wire preview data from runtime content definitions (no markdown/reference-content parsing)
+
+### Action/Toast History
+
+- [ ] Persist a history list of engine result messages in app state (ordered timeline)
+- [ ] Capture action metadata per entry (turn number, actor, action kind, result text, success/failure)
+- [ ] Add "History" button to open a modal timeline view
+- [ ] Modal UX: dismiss with close button, outside click, and Escape key
+- [ ] Ensure history panel styling follows current game theme and remains readable on mobile
+
+### Replayable Snapshot Debugger
+
+- [ ] Add timeline snapshots in app state after each resolved action (state, action input, produced events, nextSequence)
+- [ ] Include pre-action and post-action snapshots to inspect invalid actions and successful transitions
+- [ ] Add snapshot list UI controls (jump to snapshot, step backward, step forward, jump to latest)
+- [ ] Add clear snapshot labels (turn, actor, action kind, short result summary)
+- [ ] Add branch-from-snapshot flow so we can continue gameplay from any prior snapshot for what-if debugging
+- [ ] Add deterministic RNG checkpoint metadata per snapshot (seed + rng cursor/step count)
+- [ ] Add engine RNG restore/advance utility so loading a snapshot resumes with the same future roll sequence
+- [ ] Validate replay determinism by rebuilding from seed + action log and comparing snapshot events/state
+- [ ] Add quick copy/export for action log plus snapshot metadata for bug reports and repro sharing
+
+### Unified Extensible Game Debugger
+
+- [ ] Rename current debugger surface to `Game Debugger` and route all debug tools through one entry point
+- [ ] Define debugger module structure by feature section (battle state, events, action history, snapshots, RNG, inspector)
+- [ ] Add collapsible sections with independent open/closed state persistence
+- [ ] Add global "collapse all / expand all" controls for fast navigation
+- [ ] Add fully minimized mode that collapses debugger into a very small docked chip/button
+- [ ] Add quick restore from minimized mode while preserving current tab/section state
+- [ ] Add compact and full layout modes (compact for gameplay, full for deep debugging)
+- [ ] Persist debugger UI preferences in local storage (position, size, collapsed sections, minimized state)
+- [ ] Add keyboard shortcuts for open/close, minimize, and section navigation
+- [ ] Add extensibility contract for new debugger sections (shared section API + registration pattern)
+- [ ] Ensure debugger can be safely extended without changing engine architecture (UI-only composition over game API)
+- [ ] Keep debugger read-only against engine state except explicit debug actions (jump to snapshot, branch, replay)
+- [ ] Add visual polish pass for readability (spacing, hierarchy, sticky controls, scroll behavior)
+- [ ] Ensure responsive behavior: usable on mobile and narrow desktop widths
+
