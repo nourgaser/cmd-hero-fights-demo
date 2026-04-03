@@ -41,7 +41,11 @@ function incrementSeed(seed: string): string {
     return `${seed}-1`
   }
 
-  const [, prefix, digits] = match
+  const prefix = match[1] ?? ''
+  const digits = match[2]
+  if (!digits) {
+    return `${seed}-1`
+  }
   const nextValue = Number.parseInt(digits, 10) + 1
   const nextDigits = `${nextValue}`.padStart(digits.length, '0')
   return `${prefix}${nextDigits}`

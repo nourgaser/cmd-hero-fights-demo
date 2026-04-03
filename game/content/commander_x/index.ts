@@ -2,6 +2,8 @@ export { COMMANDER_X_HERO, createCommanderXInitialListeners } from "./hero";
 export { COMMANDER_X_HERO_ID } from "./constants";
 export {
   COMMANDER_X_CARDS,
+  type CommanderXCardDefinition,
+  type CommanderXCardId,
   BASTION_STANCE_CARD,
   BATTLE_FOCUS_CARD,
   CHAAARGE_CARD,

@@ -501,14 +501,28 @@ function buildEntityActiveSummary(options: {
   }
 }
 
-function describeCardCastCondition(cardDefinition: { castCondition?: { kind: 'heroHealthBelow'; threshold: number } }): string | null {
-  if (!cardDefinition.castCondition) {
+function describeCardCastCondition(cardDefinition: unknown): string | null {
+  if (!cardDefinition || typeof cardDefinition !== 'object' || !('castCondition' in cardDefinition)) {
     return null
   }
 
-  switch (cardDefinition.castCondition.kind) {
+  const castCondition = (cardDefinition as { castCondition?: unknown }).castCondition
+  if (!castCondition || typeof castCondition !== 'object' || !('kind' in castCondition)) {
+    return null
+  }
+
+  if (castCondition.kind !== 'heroHealthBelow') {
+    return null
+  }
+
+  const threshold = (castCondition as { threshold?: unknown }).threshold
+  if (typeof threshold !== 'number') {
+    return null
+  }
+
+  switch (castCondition.kind) {
     case 'heroHealthBelow':
-      return `Only playable when your hero is below ${cardDefinition.castCondition.threshold} HP.`
+      return `Only playable when your hero is below ${threshold} HP.`
     default:
       return null
   }
