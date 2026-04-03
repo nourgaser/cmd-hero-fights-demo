@@ -1,5 +1,6 @@
 import { createGameApi } from '../../index.ts'
 import type { BattleEvent } from '../../shared/models'
+import { luckBiasForHero } from '../../engine/core/luck.ts'
 import {
   DEFAULT_GAME_BOOTSTRAP_CONFIG,
   type GameBootstrapConfig,
@@ -42,6 +43,8 @@ export type AppBattlePreview = {
         attackDamageScaling: number
         abilityPowerScaling: number
         summaryText: string
+        summaryDetailText: string | null
+        summaryTone: 'neutral' | 'positive' | 'negative'
         currentRangeText: string
       }
     }
@@ -56,7 +59,9 @@ export type AppBattlePreview = {
       cardType: 'ability' | 'weapon' | 'totem' | 'companion'
       rarity: 'common' | 'rare' | 'ultimate' | 'general'
       summaryText: string
-        castConditionText: string | null
+      summaryDetailText: string | null
+      summaryTone: 'neutral' | 'positive' | 'negative'
+      castConditionText: string | null
       isPlayable: boolean
       targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
@@ -97,6 +102,8 @@ export type AppBattlePreview = {
         displayName: string
         sourceCardName: string | null
         sourceCardSummary: string | null
+        sourceCardSummaryDetailText: string | null
+        sourceCardSummaryTone: 'neutral' | 'positive' | 'negative'
         currentHealth: number
         maxHealth: number
         armor: number
@@ -113,6 +120,8 @@ export type AppBattlePreview = {
           damageType: 'physical' | 'magic' | 'true'
           canBeDodged: boolean
           summaryText: string
+          summaryDetailText: string | null
+          summaryTone: 'neutral' | 'positive' | 'negative'
           currentRangeText: string
         }
       }
@@ -125,8 +134,240 @@ function formatPreviewNumber(value: number): string {
   return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`
 }
 
+function formatSignedDelta(value: number): string {
+  const formatted = formatPreviewNumber(Math.abs(value))
+  return `${value >= 0 ? '+' : '-'}${formatted}`
+}
+
+function clamp(value: number, minimum: number, maximum: number): number {
+  return Math.max(minimum, Math.min(maximum, value))
+}
+
+function summarizeLuckAdjustedRange(options: {
+  minimum: number
+  maximum: number
+  luckBalance: number
+  rollingHeroEntityId: string
+  anchorHeroEntityId: string
+}): { minimum: number; maximum: number; shift: number; bias: number } {
+  const { minimum, maximum, luckBalance, rollingHeroEntityId, anchorHeroEntityId } = options
+  if (maximum <= minimum) {
+    return { minimum, maximum, shift: 0, bias: 0 }
+  }
+
+  const bias = luckBiasForHero({ anchorHeroEntityId, balance: luckBalance }, rollingHeroEntityId)
+  const shift = Math.round((maximum - minimum) * 0.25 * Math.abs(bias))
+  const direction = Math.sign(bias)
+
+  return {
+    minimum: clamp(minimum + direction * shift, minimum, maximum),
+    maximum: clamp(maximum + direction * shift, minimum, maximum),
+    shift,
+    bias,
+  }
+}
+
+function describeNumericCardText(options: {
+  card: {
+    name: string
+    summaryText?: {
+      mode: 'static' | 'template'
+      text?: string
+      template?: string
+      params?: Record<string, string | number | boolean>
+    }
+    effects: Array<{
+      payload: { kind: string } & Record<string, unknown>
+      displayText: {
+        mode: 'static' | 'template'
+        text?: string
+        template?: string
+        params?: Record<string, string | number | boolean>
+      }
+    }>
+  }
+  actorHero: {
+    entityId: string
+    attackDamage: number
+    abilityPower: number
+    armor: number
+  }
+  luck: {
+    anchorHeroEntityId: string
+    balance: number
+  }
+}): {
+  summaryText: string
+  summaryDetailText: string | null
+  summaryTone: 'neutral' | 'positive' | 'negative'
+} {
+  const { card, actorHero, luck } = options
+  const firstEffect = card.effects[0]
+
+  const renderDisplayText = (displayText?: {
+    mode: 'static' | 'template'
+    text?: string
+    template?: string
+    params?: Record<string, string | number | boolean>
+  }): string | null => {
+    if (!displayText) {
+      return null
+    }
+
+    if (displayText.mode === 'static') {
+      return displayText.text ?? null
+    }
+
+    const template = displayText.template
+    if (!template) {
+      return null
+    }
+
+    return template.replaceAll(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
+      const value = displayText.params?.[key]
+      return value === undefined ? match : String(value)
+    })
+  }
+
+  const defaultSummary =
+    renderDisplayText(card.summaryText) ??
+    renderDisplayText(firstEffect?.displayText) ??
+    'No summary.'
+
+  if (!firstEffect) {
+    return {
+      summaryText: defaultSummary,
+      summaryDetailText: null,
+      summaryTone: 'neutral',
+    }
+  }
+
+  const payload = firstEffect.payload
+
+  if (payload.kind === 'dealDamage') {
+    const damagePayload = payload as {
+      kind: 'dealDamage'
+      minimum: number
+      maximum: number
+      attackDamageScaling: number
+      abilityPowerScaling: number
+      armorScaling: number
+      damageType: 'physical' | 'magic' | 'true'
+    }
+
+    const minimum = damagePayload.minimum + actorHero.attackDamage * damagePayload.attackDamageScaling + actorHero.abilityPower * damagePayload.abilityPowerScaling + actorHero.armor * damagePayload.armorScaling
+    const maximum = damagePayload.maximum + actorHero.attackDamage * damagePayload.attackDamageScaling + actorHero.abilityPower * damagePayload.abilityPowerScaling + actorHero.armor * damagePayload.armorScaling
+    const adjusted = summarizeLuckAdjustedRange({
+      minimum,
+      maximum,
+      luckBalance: luck.balance,
+      rollingHeroEntityId: actorHero.entityId,
+      anchorHeroEntityId: luck.anchorHeroEntityId,
+    })
+
+    const damageLabel = damagePayload.damageType === 'physical' ? 'physical damage' : damagePayload.damageType === 'magic' ? 'magic damage' : 'true damage'
+    const summaryText = adjusted.minimum === adjusted.maximum
+      ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${damageLabel}.`
+      : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${damageLabel}.`
+
+    const detailParts = [
+      `${formatPreviewNumber(damagePayload.minimum)}-${formatPreviewNumber(damagePayload.maximum)} base`,
+      damagePayload.attackDamageScaling > 0 ? `${formatPreviewNumber(damagePayload.attackDamageScaling * 100)}% AD` : null,
+      damagePayload.abilityPowerScaling > 0 ? `${formatPreviewNumber(damagePayload.abilityPowerScaling * 100)}% AP` : null,
+      damagePayload.armorScaling > 0 ? `${formatPreviewNumber(damagePayload.armorScaling * 100)}% armor` : null,
+      adjusted.shift > 0 ? `Luck shift ${formatSignedDelta(adjusted.shift)} (${adjusted.bias >= 0 ? 'favored' : 'unfavored'})` : 'No luck shift',
+    ].filter((part): part is string => !!part)
+
+    return {
+      summaryText,
+      summaryDetailText: `Formula: ${detailParts.join(' + ')}.`,
+      summaryTone: adjusted.maximum > maximum ? 'positive' : adjusted.maximum < maximum ? 'negative' : 'neutral',
+    }
+  }
+
+  if (payload.kind === 'heal') {
+    const healPayload = payload as {
+      kind: 'heal'
+      minimum: number
+      maximum: number
+    }
+
+    const summaryText = healPayload.minimum === healPayload.maximum
+      ? `Restore ${formatPreviewNumber(healPayload.minimum)} HP to your hero.`
+      : `Restore ${formatPreviewNumber(healPayload.minimum)}-${formatPreviewNumber(healPayload.maximum)} HP to your hero.`
+
+    return {
+      summaryText,
+      summaryDetailText: `Heals from ${formatPreviewNumber(healPayload.minimum)} to ${formatPreviewNumber(healPayload.maximum)} HP.`,
+      summaryTone: 'positive',
+    }
+  }
+
+  if (payload.kind === 'gainArmor' || payload.kind === 'loseArmor') {
+    const armorPayload = payload as {
+      kind: 'gainArmor' | 'loseArmor'
+      amount: number
+      target: string
+    }
+    const sign = payload.kind === 'gainArmor' ? '+' : '-'
+    return {
+      summaryText: `${armorPayload.kind === 'gainArmor' ? 'Gain' : 'Lose'} ${sign}${armorPayload.amount} armor.`,
+      summaryDetailText: `Target: ${String(armorPayload.target)}.`,
+      summaryTone: payload.kind === 'gainArmor' ? 'positive' : 'negative',
+    }
+  }
+
+  if (payload.kind === 'gainMagicResist' || payload.kind === 'loseMagicResist') {
+    const magicResistPayload = payload as {
+      kind: 'gainMagicResist' | 'loseMagicResist'
+      amount: number
+      target: string
+    }
+    const sign = payload.kind === 'gainMagicResist' ? '+' : '-'
+    return {
+      summaryText: `${magicResistPayload.kind === 'gainMagicResist' ? 'Gain' : 'Lose'} ${sign}${magicResistPayload.amount} magic resist.`,
+      summaryDetailText: `Target: ${String(magicResistPayload.target)}.`,
+      summaryTone: payload.kind === 'gainMagicResist' ? 'positive' : 'negative',
+    }
+  }
+
+  if (payload.kind === 'gainAttackDamage' || payload.kind === 'loseAttackDamage') {
+    const attackDamagePayload = payload as {
+      kind: 'gainAttackDamage' | 'loseAttackDamage'
+      amount: number
+      target: string
+    }
+    const sign = payload.kind === 'gainAttackDamage' ? '+' : '-'
+    return {
+      summaryText: `${attackDamagePayload.kind === 'gainAttackDamage' ? 'Gain' : 'Lose'} ${sign}${attackDamagePayload.amount} attack damage.`,
+      summaryDetailText: `Target: ${String(attackDamagePayload.target)}.`,
+      summaryTone: payload.kind === 'gainAttackDamage' ? 'positive' : 'negative',
+    }
+  }
+
+  if (payload.kind === 'drawCards') {
+    const drawPayload = payload as {
+      kind: 'drawCards'
+      amount: number
+      target: string
+    }
+    return {
+      summaryText: `Draw ${drawPayload.amount} card${drawPayload.amount === 1 ? '' : 's'}.`,
+      summaryDetailText: `Target: ${String(drawPayload.target)}.`,
+      summaryTone: 'positive',
+    }
+  }
+
+  return {
+    summaryText: defaultSummary,
+    summaryDetailText: null,
+    summaryTone: 'neutral',
+  }
+}
+
 function buildHeroBasicAttackSummary(options: {
   heroName: string
+  rollingHeroEntityId: string
   attack: {
     minimumDamage: number
     maximumDamage: number
@@ -136,11 +377,17 @@ function buildHeroBasicAttackSummary(options: {
   }
   currentAttackDamage: number
   currentAbilityPower: number
+  luck: {
+    anchorHeroEntityId: string
+    balance: number
+  }
 }): {
   summaryText: string
+  summaryDetailText: string
+  summaryTone: 'neutral' | 'positive' | 'negative'
   currentRangeText: string
 } {
-  const { heroName, attack, currentAttackDamage, currentAbilityPower } = options
+  const { heroName, rollingHeroEntityId, attack, currentAttackDamage, currentAbilityPower, luck } = options
   const scalingParts = [
     attack.attackDamageScaling > 0
       ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% of current attack damage`
@@ -164,13 +411,27 @@ function buildHeroBasicAttackSummary(options: {
     currentAttackDamage * attack.attackDamageScaling +
     currentAbilityPower * attack.abilityPowerScaling
 
+  const adjusted = summarizeLuckAdjustedRange({
+    minimum,
+    maximum,
+    luckBalance: luck.balance,
+    rollingHeroEntityId,
+    anchorHeroEntityId: luck.anchorHeroEntityId,
+  })
+
   return {
-    summaryText: `${heroName} basic attack. ${summaryText}`,
-    currentRangeText: `Current window: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)} ${attack.damageType} damage before dodge and resistance.`,
+    summaryText:
+      adjusted.minimum === adjusted.maximum
+        ? `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType} damage.`
+        : `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage.`,
+    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift > 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryTone: adjusted.maximum > maximum ? 'positive' : adjusted.maximum < maximum ? 'negative' : 'neutral',
+    currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage before dodge and resistance.`,
   }
 }
 
 function buildEntityActiveSummary(options: {
+  rollingHeroEntityId: string
   attack: {
     minimumDamage: number
     maximumDamage: number
@@ -182,8 +443,20 @@ function buildEntityActiveSummary(options: {
   }
   currentAttackDamage: number
   currentAbilityPower: number
-}) {
-  const { attack, currentAttackDamage, currentAbilityPower } = options
+  luck: {
+    anchorHeroEntityId: string
+    balance: number
+  }
+}): {
+  moveCost: number
+  damageType: 'physical' | 'magic' | 'true'
+  canBeDodged: boolean
+  summaryText: string
+  summaryDetailText: string | null
+  summaryTone: 'neutral' | 'positive' | 'negative'
+  currentRangeText: string
+} {
+  const { rollingHeroEntityId, attack, currentAttackDamage, currentAbilityPower, luck } = options
   const scalingParts = [
     attack.attackDamageScaling > 0
       ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% AD`
@@ -206,12 +479,25 @@ function buildEntityActiveSummary(options: {
     currentAttackDamage * attack.attackDamageScaling +
     currentAbilityPower * attack.abilityPowerScaling
 
+  const adjusted = summarizeLuckAdjustedRange({
+    minimum,
+    maximum,
+    luckBalance: luck.balance,
+    rollingHeroEntityId,
+    anchorHeroEntityId: luck.anchorHeroEntityId,
+  })
+
   return {
     moveCost: attack.moveCost,
     damageType: attack.damageType,
     canBeDodged: attack.canBeDodged,
-    summaryText,
-    currentRangeText: `Current window: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
+    summaryText:
+      adjusted.minimum === adjusted.maximum
+        ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType}.`
+        : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType}.`,
+    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift > 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryTone: adjusted.maximum > maximum ? 'positive' : adjusted.maximum < maximum ? 'negative' : 'neutral',
+    currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
   }
 }
 
@@ -339,17 +625,12 @@ function buildPreviewFromState(options: {
           moveCost: cardDef.moveCost,
           cardType: cardDef.type,
           rarity: cardDef.rarity,
-          summaryText:
-            cardDef.summaryText?.mode === 'static'
-              ? cardDef.summaryText.text
-              : cardDef.summaryText?.mode === 'template'
-                ? cardDef.summaryText.template
-                : cardDef.effects[0]?.displayText.mode === 'static'
-                  ? cardDef.effects[0].displayText.text
-                  : cardDef.effects[0]?.displayText.mode === 'template'
-                    ? cardDef.effects[0].displayText.template
-                    : 'No summary.',
-              castConditionText: describeCardCastCondition(cardDef),
+          ...describeNumericCardText({
+            card: cardDef,
+            actorHero: entity,
+            luck: state.luck,
+          }),
+          castConditionText: describeCardCastCondition(cardDef),
           isPlayable: handCard.isPlayable ?? false,
           targeting: cardDef.targeting,
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
@@ -374,9 +655,11 @@ function buildPreviewFromState(options: {
 
     const basicAttack = buildHeroBasicAttackSummary({
       heroName: heroDef.name,
+      rollingHeroEntityId: entity.entityId,
       attack: heroDef.basicAttack,
       currentAttackDamage: entity.attackDamage,
       currentAbilityPower: entity.abilityPower,
+      luck: state.luck,
     })
 
     heroDetailsByEntityId[heroEntityId] = {
@@ -392,6 +675,8 @@ function buildPreviewFromState(options: {
         attackDamageScaling: heroDef.basicAttack.attackDamageScaling,
         abilityPowerScaling: heroDef.basicAttack.abilityPowerScaling,
         summaryText: basicAttack.summaryText,
+        summaryDetailText: basicAttack.summaryDetailText,
+        summaryTone: basicAttack.summaryTone,
         currentRangeText: basicAttack.currentRangeText,
       },
     }
@@ -447,6 +732,8 @@ function buildPreviewFromState(options: {
         displayName: heroDef?.name ?? entity.heroDefinitionId,
         sourceCardName: null,
         sourceCardSummary: null,
+        sourceCardSummaryDetailText: null,
+        sourceCardSummaryTone: 'neutral',
         currentHealth: entity.currentHealth,
         maxHealth: entity.maxHealth,
         armor: entity.armor,
@@ -463,16 +750,13 @@ function buildPreviewFromState(options: {
     }
 
     const sourceCard = cardsById[entity.definitionCardId]
-    const sourceCardSummary =
-      sourceCard?.summaryText?.mode === 'static'
-        ? sourceCard.summaryText.text
-        : sourceCard?.summaryText?.mode === 'template'
-          ? sourceCard.summaryText.template
-          : sourceCard?.effects[0]?.displayText.mode === 'static'
-            ? sourceCard.effects[0].displayText.text
-            : sourceCard?.effects[0]?.displayText.mode === 'template'
-              ? sourceCard.effects[0].displayText.template
-              : null
+    const sourceCardText = sourceCard
+      ? describeNumericCardText({
+          card: sourceCard,
+          actorHero: entity,
+          luck: state.luck,
+        })
+      : null
 
     const activeProfile =
       entity.kind === 'weapon' || entity.kind === 'companion'
@@ -488,7 +772,9 @@ function buildPreviewFromState(options: {
       ownerHeroEntityId: entity.ownerHeroEntityId,
       displayName: sourceCard?.name ?? entity.definitionCardId,
       sourceCardName: sourceCard?.name ?? entity.definitionCardId,
-      sourceCardSummary,
+      sourceCardSummary: sourceCardText?.summaryText ?? null,
+      sourceCardSummaryDetailText: sourceCardText?.summaryDetailText ?? null,
+      sourceCardSummaryTone: sourceCardText?.summaryTone ?? 'neutral',
       currentHealth: entity.currentHealth,
       maxHealth: entity.maxHealth,
       armor: entity.armor,
@@ -502,9 +788,11 @@ function buildPreviewFromState(options: {
       maxMovePoints: entity.maxMovesPerTurn,
       activeAbility: activeProfile
         ? buildEntityActiveSummary({
+            rollingHeroEntityId: entity.entityId,
             attack: activeProfile,
             currentAttackDamage: entity.attackDamage,
             currentAbilityPower: entity.abilityPower,
+            luck: state.luck,
           })
         : undefined,
     }

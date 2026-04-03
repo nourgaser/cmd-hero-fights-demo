@@ -11,8 +11,11 @@ export const SHIELD_TOSS_CARD = {
   targeting: "selectedAny",
   tags: [],
   summaryText: {
-    mode: "static",
-    text: "Deal 3 damage (scales with armor).",
+    mode: "template",
+    template: "Deal {minimum} damage (scales with armor).",
+    params: {
+      minimum: 3,
+    },
   },
   effects: [
     {
@@ -29,8 +32,11 @@ export const SHIELD_TOSS_CARD = {
         canBeDodged: true,
       },
       displayText: {
-        mode: "static",
-        text: "Deal 3 damage plus armor scaling.",
+        mode: "template",
+        template: "Deal {minimum} damage plus armor scaling.",
+        params: {
+          minimum: 3,
+        },
       },
     },
   ],

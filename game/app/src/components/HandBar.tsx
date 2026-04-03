@@ -2,6 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react/offline'
 import { CARD_ICON_META } from '../data/visual-metadata.ts'
 import type { AppBattlePreview } from '../game-client.ts'
+import { renderTextWithHighlightedNumbers } from '../utils/render-numeric-text.tsx'
 
 type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 
@@ -70,6 +71,7 @@ export function HandBar(props: HandBarProps) {
   const scrollerRef = useRef<HTMLUListElement | null>(null)
   const handWrapRef = useRef<HTMLDivElement | null>(null)
   const [showScrollHint, setShowScrollHint] = useState(false)
+  const [isShiftHeld, setIsShiftHeld] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<{
     card: HandBarCard
     left: number
@@ -112,6 +114,28 @@ export function HandBar(props: HandBarProps) {
       window.removeEventListener('resize', updateScrollHint)
     }
   }, [cards])
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        setIsShiftHeld(true)
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        setIsShiftHeld(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
 
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
@@ -234,7 +258,12 @@ export function HandBar(props: HandBarProps) {
                 />
               </div>
             </div>
-            <p className="hand-card-tooltip-summary">{hoveredCard.card.summaryText?.trim() ? hoveredCard.card.summaryText : 'No text available.'}</p>
+            <p className="hand-card-tooltip-summary">
+              {hoveredCard.card.summaryText?.trim() ? hoveredCard.card.summaryText : 'No text available.'}
+            </p>
+            {isShiftHeld && hoveredCard.card.summaryDetailText ? (
+              <p className="hand-card-tooltip-detail">{renderTextWithHighlightedNumbers(hoveredCard.card.summaryDetailText)}</p>
+            ) : null}
             {hoveredCard.card.castConditionText ? (
               <div className="hand-card-tooltip-note">{hoveredCard.card.castConditionText}</div>
             ) : null}

@@ -11,8 +11,11 @@ export const IRON_SKIN_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "static",
-    text: "Gain 1 armor.",
+    mode: "template",
+    template: "Gain {amount} armor.",
+    params: {
+      amount: 1,
+    },
   },
   effects: [
     {
@@ -23,8 +26,11 @@ export const IRON_SKIN_CARD = {
         amount: 1,
       },
       displayText: {
-        mode: "static",
-        text: "Gain 1 armor.",
+        mode: "template",
+        template: "Gain {amount} armor.",
+        params: {
+          amount: 1,
+        },
       },
     },
   ],

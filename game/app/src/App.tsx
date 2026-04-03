@@ -12,6 +12,7 @@ import {
   resolveSessionUseEntityActive,
 } from './game-client.ts'
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from './data/game-bootstrap.ts'
+import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from './utils/render-numeric-text.tsx'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 
@@ -140,6 +141,26 @@ function App() {
   const [resetEpoch, setResetEpoch] = useState(0)
 
   useEffect(() => {
+    const root = document.documentElement
+    const markShift = (held: boolean) => {
+      root.dataset.shiftHeld = held ? 'true' : 'false'
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        markShift(true)
+      }
+    }
+
+    const onKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        markShift(false)
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+    window.addEventListener('keyup', onKeyUp)
+
     const updateActiveHoverCards = () => {
       document.querySelectorAll<HTMLElement>('.hint-wrap').forEach((wrap) => {
         if (wrap.matches(':hover, :focus-within')) {
@@ -170,6 +191,9 @@ function App() {
     updateActiveHoverCards()
 
     return () => {
+      delete root.dataset.shiftHeld
+      window.removeEventListener('keydown', onKeyDown)
+      window.removeEventListener('keyup', onKeyUp)
       window.removeEventListener('pointerover', handlePointerOver, true)
       window.removeEventListener('focusin', handleFocusIn)
       window.removeEventListener('resize', updateActiveHoverCards)
@@ -195,19 +219,79 @@ function App() {
     })
   }
 
-  const showActionSuccessToast = (message: string) => {
-    toast.success(message, {
+  const renderStructuredToast = (summary: string, detail: string | null) => {
+    return (
+      <span className="game-toast-body">
+        <span className="game-toast-summary">{renderTextWithHighlightedNumbers(summary, 'game-toast-number')}</span>
+        {detail ? (
+          <span className="game-toast-detail">{renderTextWithHighlightedNumbers(detail, 'game-toast-number')}</span>
+        ) : null}
+      </span>
+    )
+  }
+
+  const showActionSuccessToast = (message: string, events: BattleEvent[]) => {
+    const split = splitSummaryAndDetail(message)
+    const damageEvent = events.find(
+      (event): event is Extract<BattleEvent, { kind: 'damageApplied' }> => event.kind === 'damageApplied',
+    )
+    const luckEvent = events.find(
+      (event): event is Extract<BattleEvent, { kind: 'luckBalanceChanged' }> =>
+        event.kind === 'luckBalanceChanged',
+    )
+
+    let detail = split.detail
+    if (damageEvent) {
+      const detailParts = [
+        damageEvent.rngRawRoll !== undefined ? `raw ${damageEvent.rngRawRoll.toFixed(2)}` : null,
+        damageEvent.rngAdjustedRoll !== undefined
+          ? `luck-adjusted ${damageEvent.rngAdjustedRoll.toFixed(2)}`
+          : null,
+        damageEvent.rngFinalRoll !== undefined ? `final ${damageEvent.rngFinalRoll.toFixed(2)}` : null,
+        damageEvent.rngDodgeRoll !== undefined ? `dodge ${damageEvent.rngDodgeRoll.toFixed(2)}` : null,
+      ].filter((part): part is string => !!part)
+      detail = detailParts.length > 0 ? `Roll detail: ${detailParts.join(' -> ')}.` : detail
+    } else if (luckEvent) {
+      detail = `Luck balance ${luckEvent.previousBalance} -> ${luckEvent.nextBalance}.`
+    }
+
+    toast.success(renderStructuredToast(split.summary, detail), {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
     })
   }
 
   const showBattleEventToast = (event: BattleEvent) => {
-    if (event.kind !== 'listenerTriggered') {
+    let summary: string | null = null
+    let detail: string | null = null
+
+    if (event.kind === 'listenerTriggered') {
+      const split = splitSummaryAndDetail(event.message)
+      summary = split.summary
+      detail = split.detail
+    } else if (event.kind === 'damageApplied') {
+      summary = event.wasDodged
+        ? `${event.damageType} attack was dodged.`
+        : `${event.amount} ${event.damageType} damage applied.`
+      const detailParts = [
+        event.rngRawRoll !== undefined ? `raw ${event.rngRawRoll.toFixed(2)}` : null,
+        event.rngAdjustedRoll !== undefined ? `luck-adjusted ${event.rngAdjustedRoll.toFixed(2)}` : null,
+        event.rngFinalRoll !== undefined ? `final ${event.rngFinalRoll.toFixed(2)}` : null,
+        event.rngDodgeRoll !== undefined ? `dodge ${event.rngDodgeRoll.toFixed(2)}` : null,
+      ].filter((part): part is string => !!part)
+      detail = detailParts.length > 0 ? `Roll detail: ${detailParts.join(' -> ')}.` : null
+    } else if (event.kind === 'healApplied') {
+      summary = `Restored ${event.amount} HP.`
+    } else if (event.kind === 'luckBalanceChanged') {
+      summary = `Luck shifted to ${event.nextBalance}.`
+      detail = `Balance changed from ${event.previousBalance} to ${event.nextBalance}.`
+    }
+
+    if (!summary) {
       return
     }
 
-    toast(event.message, {
+    toast(renderStructuredToast(summary, detail), {
       id: `battle-event-${event.sequence}`,
       duration: EVENT_TOAST_DURATION_MS,
     })
@@ -293,7 +377,7 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`Basic attack failed: ${failureReason}`)
       } else if (resultMessage) {
-        showActionSuccessToast(resultMessage)
+        showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
         }
@@ -335,7 +419,7 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`Entity active failed: ${failureReason}`)
       } else if (resultMessage) {
-        showActionSuccessToast(resultMessage)
+        showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
         }
@@ -382,7 +466,7 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`Play card failed: ${failureReason}`)
       } else if (resultMessage) {
-        showActionSuccessToast(resultMessage)
+        showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
         }
@@ -423,7 +507,7 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`${kind} failed: ${failureReason}`)
       } else if (resultMessage) {
-        showActionSuccessToast(resultMessage)
+        showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
         }

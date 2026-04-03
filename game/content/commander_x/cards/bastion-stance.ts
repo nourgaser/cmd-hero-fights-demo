@@ -11,8 +11,11 @@ export const BASTION_STANCE_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "static",
-    text: "Gain +1 armor and +1 magic resist until your next turn.",
+    mode: "template",
+    template: "Gain +{amount} armor and +{amount} magic resist until your next turn.",
+    params: {
+      amount: 1,
+    },
   },
   effects: [
     {
@@ -23,8 +26,11 @@ export const BASTION_STANCE_CARD = {
         amount: 1,
       },
       displayText: {
-        mode: "static",
-        text: "Gain 1 armor.",
+        mode: "template",
+        template: "Gain {amount} armor.",
+        params: {
+          amount: 1,
+        },
       },
     },
     {
@@ -35,8 +41,11 @@ export const BASTION_STANCE_CARD = {
         amount: 1,
       },
       displayText: {
-        mode: "static",
-        text: "Gain 1 magic resist.",
+        mode: "template",
+        template: "Gain {amount} magic resist.",
+        params: {
+          amount: 1,
+        },
       },
     },
     {

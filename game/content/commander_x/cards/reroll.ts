@@ -9,8 +9,11 @@ export const REROLL_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "static",
-    text: "Draw a card.",
+    mode: "template",
+    template: "Draw {amount} card.",
+    params: {
+      amount: 1,
+    },
   },
   effects: [
     {
@@ -21,8 +24,11 @@ export const REROLL_CARD = {
         amount: 1,
       },
       displayText: {
-        mode: "static",
-        text: "Draw 1 card.",
+        mode: "template",
+        template: "Draw {amount} card.",
+        params: {
+          amount: 1,
+        },
       },
     },
   ],

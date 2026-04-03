@@ -14,6 +14,32 @@
   font-weight: 600;
 }
 
+.game-toast-body {
+  display: grid;
+  gap: 4px;
+}
+
+.game-toast-summary {
+  color: #241d14;
+}
+
+.game-toast-detail {
+  display: none;
+  font-size: 12px;
+  line-height: 1.25;
+  color: color-mix(in srgb, #241d14 84%, #ffffff 16%);
+  opacity: 0.9;
+}
+
+html[data-shift-held='true'] .game-toast-detail {
+  display: block;
+}
+
+.game-toast-number {
+  color: #734f00;
+  font-weight: 800;
+}
+
 .debug-panel {
   z-index: 90;
   border: 1px solid var(--border);
@@ -599,6 +625,11 @@ h2.luck-title > * {
 
 .battle-action-hover-card span {
   line-height: 1.25;
+}
+
+.battle-tooltip-detail {
+  line-height: 1.25;
+  color: #4f4735;
 }
 
 .battle-grid {
@@ -1543,7 +1574,22 @@ h2.luck-title > * {
 .hand-card-tooltip-summary {
   font-size: 11px;
   line-height: 1.25;
-  opacity: 0.9;
+  color: #5a523f;
+}
+
+.hand-card-tooltip-detail {
+  margin-top: 6px;
+  padding-top: 6px;
+  border-top: 1px solid color-mix(in srgb, #ffffff 18%, transparent);
+  font-size: 10px;
+  line-height: 1.3;
+  color: #5a523f;
+  opacity: 0.88;
+}
+
+.hand-card-tooltip-number {
+  color: #8f6a12;
+  font-weight: 700;
 }
 
 .hand-card-tooltip-note {

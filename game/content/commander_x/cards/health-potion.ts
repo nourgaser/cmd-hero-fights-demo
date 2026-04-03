@@ -11,8 +11,12 @@ export const HEALTH_POTION_CARD = {
   targeting: "none",
   tags: ["heal"],
   summaryText: {
-    mode: "static",
-    text: "Restore 2-4 HP to your hero.",
+    mode: "template",
+    template: "Restore {minimum}-{maximum} HP to your hero.",
+    params: {
+      minimum: 2,
+      maximum: 4,
+    },
   },
   effects: [
     {
@@ -24,8 +28,12 @@ export const HEALTH_POTION_CARD = {
         maximum: 4,
       },
       displayText: {
-        mode: "static",
-        text: "Restore 2-4 HP.",
+        mode: "template",
+        template: "Restore {minimum}-{maximum} HP.",
+        params: {
+          minimum: 2,
+          maximum: 4,
+        },
       },
     },
   ],

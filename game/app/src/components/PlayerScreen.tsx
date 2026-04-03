@@ -1,7 +1,8 @@
-import { useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
+import { renderTextWithHighlightedNumbers } from '../utils/render-numeric-text.tsx'
 import { LuckBar } from './LuckBar.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
@@ -59,6 +60,29 @@ export function PlayerScreen(props: PlayerScreenProps) {
   } | null>(null)
   const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null>(null)
   const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
+  const [isShiftHeld, setIsShiftHeld] = useState(false)
+
+  useEffect(() => {
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        setIsShiftHeld(true)
+      }
+    }
+
+    const handleKeyUp = (event: KeyboardEvent) => {
+      if (event.key === 'Shift') {
+        setIsShiftHeld(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    window.addEventListener('keyup', handleKeyUp)
+
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+      window.removeEventListener('keyup', handleKeyUp)
+    }
+  }, [])
 
   const focusedCard = useMemo(() => {
     if (!focusedHandCardId) {
@@ -393,7 +417,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
               <span className="hover-card battle-action-hover-card" role="tooltip">
                 <strong>Basic Attack</strong>
                 <span>{selfHeroDetails?.basicAttack.summaryText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
-                <span>{selfHeroDetails?.basicAttack.currentRangeText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
+                {isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
+                  <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(selfHeroDetails.basicAttack.summaryDetailText)}</span>
+                ) : (
+                  <span>{selfHeroDetails?.basicAttack.currentRangeText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
+                )}
                 <span>{selfHeroDetails?.passiveText ?? 'Passive unavailable.'}</span>
                 <span>Click once to arm it, then click the badge again to confirm.</span>
               </span>
@@ -409,6 +437,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
             selectedTargetEntityId={selectedTargetEntityId}
             onSelectTargetEntityId={isActivePlayer ? handleSelectTarget : undefined}
             onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
+            isShiftHeld={isShiftHeld}
             highlightedPlacementPositions={
               isActivePlayer && pendingActionMode !== 'basicAttack' ? highlightedPlacementPositions : []
             }

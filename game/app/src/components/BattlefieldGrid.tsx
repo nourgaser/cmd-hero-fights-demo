@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { ENTITY_ICON_META } from '../data/visual-metadata.ts'
+import { renderTextWithHighlightedNumbers } from '../utils/render-numeric-text.tsx'
 
 type BattlefieldGridProps = {
   preview: AppBattlePreview
@@ -11,6 +12,7 @@ type BattlefieldGridProps = {
   selectedTargetEntityId?: string | null
   onSelectTargetEntityId?: (entityId: string) => void
   onSelectEntityId?: (entityId: string) => void
+  isShiftHeld?: boolean
   highlightedPlacementPositions?: Array<{ row: number; column: number }>
   selectedPlacementPosition?: { row: number; column: number } | null
   onSelectPlacementPosition?: (position: { row: number; column: number }) => void
@@ -26,6 +28,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     selectedTargetEntityId,
     onSelectTargetEntityId,
     onSelectEntityId,
+    isShiftHeld = false,
     highlightedPlacementPositions = [],
     selectedPlacementPosition,
     onSelectPlacementPosition,
@@ -259,7 +262,11 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <div className="battlefield-hover-section">
                           <span className="hover-group-title">Basic Attack</span>
                           <span>{heroDetails.basicAttack.summaryText}</span>
-                          <span>{heroDetails.basicAttack.currentRangeText}</span>
+                          {isShiftHeld && heroDetails.basicAttack.summaryDetailText ? (
+                            <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(heroDetails.basicAttack.summaryDetailText)}</span>
+                          ) : (
+                            <span>{heroDetails.basicAttack.currentRangeText}</span>
+                          )}
                           <span className="battlefield-hover-note">
                             Costs {heroDetails.basicAttack.moveCost} moves. Damage type: {heroDetails.basicAttack.damageType}.
                           </span>
@@ -270,12 +277,19 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <div className="battlefield-hover-section">
                           <span>{meta.description ?? 'Unit on battlefield.'}</span>
                           {entityStats?.sourceCardSummary ? <span>{entityStats.sourceCardSummary}</span> : null}
+                          {isShiftHeld && entityStats?.sourceCardSummaryDetailText ? (
+                            <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(entityStats.sourceCardSummaryDetailText)}</span>
+                          ) : null}
                         </div>
                         {entityStats?.activeAbility ? (
                           <div className="battlefield-hover-section">
                             <span className="hover-group-title">Active</span>
                             <span>{entityStats.activeAbility.summaryText}</span>
-                            <span>{entityStats.activeAbility.currentRangeText}</span>
+                            {isShiftHeld && entityStats.activeAbility.summaryDetailText ? (
+                              <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(entityStats.activeAbility.summaryDetailText)}</span>
+                            ) : (
+                              <span>{entityStats.activeAbility.currentRangeText}</span>
+                            )}
                             <span className="battlefield-hover-note">
                               Costs {entityStats.activeAbility.moveCost} unit move{entityStats.activeAbility.moveCost === 1 ? '' : 's'}. {entityStats.activeAbility.canBeDodged ? 'Can be dodged.' : 'Cannot be dodged.'}
                             </span>
