@@ -61,7 +61,7 @@ export function resolveAction(options: {
     sequence: number;
   }) => string;
   resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
-  resolveSummonedEntityBlueprint?: (
+  resolveSummonedEntityBlueprint: (
     entityDefinitionId: string,
     kind: SummonedEntityKind,
   ) => SummonedEntityBlueprint | undefined;

@@ -55,7 +55,7 @@ export type EffectExecutionContext = {
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonedEntityBlueprint?: (
+  resolveSummonedEntityBlueprint: (
     entityDefinitionId: string,
     kind: SummonedEntityKind,
   ) => SummonedEntityBlueprint | undefined;

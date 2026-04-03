@@ -67,15 +67,16 @@ export function handleRefundMoveCostEffect(
 export function handleModifyAttackDamageWhileSourcePresentEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, sequence, lastDamageWasDodged, lastSummonedEntityId } = context;
+  if (context.effect.payload.kind !== "modifyAttackDamageWhileSourcePresent") {
+    return {
+      ok: false,
+      reason: "handleModifyAttackDamageWhileSourcePresentEffect received unsupported payload.",
+    };
+  }
 
   return {
-    ok: true,
-    state,
-    events: [],
-    nextSequence: sequence,
-    lastDamageWasDodged,
-    lastSummonedEntityId,
+    ok: false,
+    reason: "modifyAttackDamageWhileSourcePresent is not implemented yet.",
   };
 }
 

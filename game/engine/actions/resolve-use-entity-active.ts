@@ -8,6 +8,7 @@ import { roundWhole, toAppliedDamage } from "../core/combat";
 import { applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import { computeScaledDamageRange } from "./damage-range";
 
 export type EntityActiveProfile = {
   moveCost: number;
@@ -132,14 +133,14 @@ export function resolveUseEntityActiveAction(options: {
     };
   }
 
-  const minimum =
-    profile.minimumDamage +
-    source.attackDamage * profile.attackDamageScaling +
-    source.abilityPower * profile.abilityPowerScaling;
-  const maximum =
-    profile.maximumDamage +
-    source.attackDamage * profile.attackDamageScaling +
-    source.abilityPower * profile.abilityPowerScaling;
+  const { minimum, maximum } = computeScaledDamageRange({
+    minimum: profile.minimumDamage,
+    maximum: profile.maximumDamage,
+    attackDamage: source.attackDamage,
+    abilityPower: source.abilityPower,
+    attackDamageScaling: profile.attackDamageScaling,
+    abilityPowerScaling: profile.abilityPowerScaling,
+  });
 
   const rawRoll = rollRange(battleRng, minimum, maximum);
   const adjustedRoll = applyLuckToRoll({

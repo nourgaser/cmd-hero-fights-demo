@@ -8,6 +8,7 @@ import { roundWhole, toAppliedDamage } from "../core/combat";
 import { applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import { computeScaledDamageRange } from "./damage-range";
 
 export type ResolveBasicAttackResult =
   | {
@@ -99,14 +100,14 @@ export function resolveBasicAttackAction(options: {
     };
   }
 
-  const minimum =
-    attack.minimumDamage +
-    attacker.attackDamage * attack.attackDamageScaling +
-    attacker.abilityPower * attack.abilityPowerScaling;
-  const maximum =
-    attack.maximumDamage +
-    attacker.attackDamage * attack.attackDamageScaling +
-    attacker.abilityPower * attack.abilityPowerScaling;
+  const { minimum, maximum } = computeScaledDamageRange({
+    minimum: attack.minimumDamage,
+    maximum: attack.maximumDamage,
+    attackDamage: attacker.attackDamage,
+    abilityPower: attacker.abilityPower,
+    attackDamageScaling: attack.attackDamageScaling,
+    abilityPowerScaling: attack.abilityPowerScaling,
+  });
 
   const rawRoll = rollRange(battleRng, minimum, maximum);
   const adjustedRoll = applyLuckToRoll({

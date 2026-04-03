@@ -6,6 +6,7 @@ import {
   type ExecuteCardEffectResult,
 } from "../context";
 import { targetEntityIdFromSelector } from "../targeting";
+import { computeScaledDamageRange } from "../../damage-range";
 
 export function handleHealEffect(
   context: EffectExecutionContext,
@@ -137,16 +138,16 @@ export function handleDealDamageEffect(
     return { ok: false, reason: "dealDamage source entity was not found." };
   }
 
-  const minimum =
-    effect.payload.minimum +
-    sourceEntity.attackDamage * effect.payload.attackDamageScaling +
-    sourceEntity.abilityPower * effect.payload.abilityPowerScaling +
-    sourceEntity.armor * effect.payload.armorScaling;
-  const maximum =
-    effect.payload.maximum +
-    sourceEntity.attackDamage * effect.payload.attackDamageScaling +
-    sourceEntity.abilityPower * effect.payload.abilityPowerScaling +
-    sourceEntity.armor * effect.payload.armorScaling;
+  const { minimum, maximum } = computeScaledDamageRange({
+    minimum: effect.payload.minimum,
+    maximum: effect.payload.maximum,
+    attackDamage: sourceEntity.attackDamage,
+    abilityPower: sourceEntity.abilityPower,
+    armor: sourceEntity.armor,
+    attackDamageScaling: effect.payload.attackDamageScaling,
+    abilityPowerScaling: effect.payload.abilityPowerScaling,
+    armorScaling: effect.payload.armorScaling,
+  });
 
   const rawRoll = rollRange(battleRng, minimum, maximum);
   const adjustedRoll = applyLuckToRoll({
