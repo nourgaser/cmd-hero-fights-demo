@@ -368,26 +368,28 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
         <section className="battle-overlay-layer">
           <aside className="battle-action-overlay action-overlay-left" aria-label="Basic attack action">
-            <button
-              type="button"
-              className="battle-action-stack basic hint-wrap"
-              onClick={handleBasicAttackOverlayClick}
-              disabled={!canBeginBasicAttack}
-              aria-label={
-                pendingActionMode === 'basicAttack'
-                  ? `Basic attack selected. Confirm by clicking again.`
-                  : `Basic attack. Costs ${basicAttackMoveCost} moves.`
-              }
-            >
-              <Icon icon="game-icons:crossed-swords" className="battle-action-icon" aria-hidden="true" />
-              <span className="battle-action-label">Attack</span>
-              <span className="battle-action-cost">{basicAttackMoveCost}</span>
-              <span className="sr-only">Basic attack</span>
-              {pendingActionMode === 'basicAttack' ? (
-                <span className="battle-action-check" aria-hidden="true">
-                  <Icon icon="game-icons:check-mark" />
-                </span>
-              ) : null}
+            <span className="battle-action-shell hint-wrap" tabIndex={0}>
+              <button
+                type="button"
+                className="battle-action-stack basic"
+                onClick={handleBasicAttackOverlayClick}
+                disabled={!canBeginBasicAttack}
+                aria-label={
+                  pendingActionMode === 'basicAttack'
+                    ? `Basic attack selected. Confirm by clicking again.`
+                    : `Basic attack. Costs ${basicAttackMoveCost} moves.`
+                }
+              >
+                <Icon icon="game-icons:crossed-swords" className="battle-action-icon" aria-hidden="true" />
+                <span className="battle-action-label">Attack</span>
+                <span className="battle-action-cost">{basicAttackMoveCost}</span>
+                <span className="sr-only">Basic attack</span>
+                {pendingActionMode === 'basicAttack' ? (
+                  <span className="battle-action-check" aria-hidden="true">
+                    <Icon icon="game-icons:check-mark" />
+                  </span>
+                ) : null}
+              </button>
               <span className="hover-card battle-action-hover-card" role="tooltip">
                 <strong>Basic Attack</strong>
                 <span>{selfHeroDetails?.basicAttack.summaryText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
@@ -395,7 +397,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 <span>{selfHeroDetails?.passiveText ?? 'Passive unavailable.'}</span>
                 <span>Click once to arm it, then click the badge again to confirm.</span>
               </span>
-            </button>
+            </span>
           </aside>
 
           <BattlefieldGrid
