@@ -1,12 +1,12 @@
 import { applyLuckToRoll } from "../../../core/luck";
 import { rollRange } from "../../../core/rng";
 import { roundWhole, toAppliedDamage, toHealAmount } from "../../../core/combat";
+import { computeScaledDamageRange } from "../../../core/damage-range";
 import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../context";
 import { targetEntityIdFromSelector } from "../targeting";
-import { computeScaledDamageRange } from "../../damage-range";
 
 export function handleHealEffect(
   context: EffectExecutionContext,

@@ -10,7 +10,6 @@ import { handleDealDamageEffect, handleHealEffect } from "./handlers/combat";
 import {
   handleAddListenerEffect,
   handleDrawCardsEffect,
-  handleModifyAttackDamageWhileSourcePresentEffect,
   handleRemoveListenerEffect,
   handleRefundMoveCostEffect,
 } from "./handlers/economy";
@@ -31,7 +30,6 @@ const effectHandlers = {
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,
   refundMoveCost: handleRefundMoveCostEffect,
-  modifyAttackDamageWhileSourcePresent: handleModifyAttackDamageWhileSourcePresentEffect,
   addListener: handleAddListenerEffect,
   removeListener: handleRemoveListenerEffect,
 } satisfies Record<string, EffectHandler>;

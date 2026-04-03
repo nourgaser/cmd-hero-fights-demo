@@ -23,5 +23,5 @@ export {
   resolveCommanderXEntityActiveProfile,
   resolveCommanderXSummonedBlueprint,
   resolveCommanderXSummonFootprint,
-} from "./summoned";
+} from "./summons";
 

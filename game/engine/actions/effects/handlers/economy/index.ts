@@ -4,4 +4,3 @@ export {
   handleAddListenerEffect,
   handleRemoveListenerEffect,
 } from "./listener-management";
-export { handleModifyAttackDamageWhileSourcePresentEffect } from "./modify-attack-damage-while-source-present";

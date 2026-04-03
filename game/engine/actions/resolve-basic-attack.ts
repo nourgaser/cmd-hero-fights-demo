@@ -5,10 +5,10 @@ import {
   type HeroDefinition,
 } from "../../shared/models";
 import { roundWhole, toAppliedDamage } from "../core/combat";
+import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
-import { computeScaledDamageRange } from "./damage-range";
 
 export type ResolveBasicAttackResult =
   | {
