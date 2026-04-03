@@ -1,7 +1,7 @@
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { ENTITY_ICON_META } from '../data/visual-metadata.ts'
-import { renderTextWithHighlightedNumbers } from '../utils/render-numeric-text.tsx'
+import { renderTextWithHighlightedNumbers, splitDetailTextIntoLines } from '../utils/render-numeric-text.tsx'
 
 type BattlefieldGridProps = {
   preview: AppBattlePreview
@@ -263,7 +263,13 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           <span className="hover-group-title">Basic Attack</span>
                           <span>{heroDetails.basicAttack.summaryText}</span>
                           {isShiftHeld && heroDetails.basicAttack.summaryDetailText ? (
-                            <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(heroDetails.basicAttack.summaryDetailText)}</span>
+                            <span className="battle-tooltip-detail">
+                              {splitDetailTextIntoLines(heroDetails.basicAttack.summaryDetailText).map((line, index) => (
+                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
+                                  {renderTextWithHighlightedNumbers(line)}
+                                </span>
+                              ))}
+                            </span>
                           ) : (
                             <span>{heroDetails.basicAttack.currentRangeText}</span>
                           )}
@@ -278,7 +284,13 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           <span>{meta.description ?? 'Unit on battlefield.'}</span>
                           {entityStats?.sourceCardSummary ? <span>{entityStats.sourceCardSummary}</span> : null}
                           {isShiftHeld && entityStats?.sourceCardSummaryDetailText ? (
-                            <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(entityStats.sourceCardSummaryDetailText)}</span>
+                            <span className="battle-tooltip-detail">
+                              {splitDetailTextIntoLines(entityStats.sourceCardSummaryDetailText).map((line, index) => (
+                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
+                                  {renderTextWithHighlightedNumbers(line)}
+                                </span>
+                              ))}
+                            </span>
                           ) : null}
                         </div>
                         {entityStats?.activeAbility ? (
@@ -286,7 +298,13 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             <span className="hover-group-title">Active</span>
                             <span>{entityStats.activeAbility.summaryText}</span>
                             {isShiftHeld && entityStats.activeAbility.summaryDetailText ? (
-                              <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(entityStats.activeAbility.summaryDetailText)}</span>
+                              <span className="battle-tooltip-detail">
+                                {splitDetailTextIntoLines(entityStats.activeAbility.summaryDetailText).map((line, index) => (
+                                  <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
+                                    {renderTextWithHighlightedNumbers(line)}
+                                  </span>
+                                ))}
+                              </span>
                             ) : (
                               <span>{entityStats.activeAbility.currentRangeText}</span>
                             )}

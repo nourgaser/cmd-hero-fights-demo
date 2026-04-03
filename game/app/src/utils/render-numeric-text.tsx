@@ -25,14 +25,20 @@ export function renderTextWithHighlightedNumbers(
   }
 
   return segments.map((segment, index) =>
-    typeof segment === 'string' ? (
-      <span key={`${index}-${segment}`}>{segment}</span>
-    ) : (
-      <span key={`${index}-${segment.value}`} className={numberClassName}>
-        {segment.value}
-      </span>
-    ),
+    typeof segment === 'string' ? segment : <b key={`${index}-${segment.value}`} className={numberClassName}>{segment.value}</b>,
   )
+}
+
+export function splitDetailTextIntoLines(text: string): string[] {
+  const normalized = text.replace(/\s+/g, ' ').trim()
+  if (!normalized) {
+    return []
+  }
+
+  return normalized
+    .split(/(?<=[.!?])\s+/)
+    .map((line) => line.trim())
+    .filter((line) => line.length > 0)
 }
 
 export function splitSummaryAndDetail(message: string): { summary: string; detail: string | null } {

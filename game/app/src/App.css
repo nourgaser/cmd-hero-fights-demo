@@ -368,14 +368,6 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .hint-wrap[data-hover-align='right'] {
   --hover-offset-x: -100%;
-.hand-card.unplayable:hover,
-.hand-card.unplayable:focus-visible,
-.hand-card.unplayable.focused {
-  transform: none;
-  box-shadow:
-    inset 0 0 0 1px color-mix(in srgb, #000000 10%, transparent),
-    0 1px 0 rgba(255, 255, 255, 0.2);
-}
 }
 
 .hint-wrap[data-hover-align='right'] .hover-card {
@@ -628,8 +620,24 @@ h2.luck-title > * {
 }
 
 .battle-tooltip-detail {
+  margin-top: 2px;
+  display: grid;
+  gap: 3px;
   line-height: 1.25;
   color: #4f4735;
+}
+
+.battle-tooltip-detail-line {
+  position: relative;
+  padding-left: 10px;
+}
+
+.battle-tooltip-detail-line::before {
+  content: '\2022';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: color-mix(in srgb, #7a5a19 70%, #ffffff 30%);
 }
 
 .battle-grid {
@@ -1581,10 +1589,25 @@ h2.luck-title > * {
   margin-top: 6px;
   padding-top: 6px;
   border-top: 1px solid color-mix(in srgb, #ffffff 18%, transparent);
+  display: grid;
+  gap: 3px;
   font-size: 10px;
   line-height: 1.3;
   color: #5a523f;
   opacity: 0.88;
+}
+
+.hand-card-tooltip-detail-line {
+  position: relative;
+  padding-left: 10px;
+}
+
+.hand-card-tooltip-detail-line::before {
+  content: '\2022';
+  position: absolute;
+  left: 0;
+  top: 0;
+  color: color-mix(in srgb, #7a5a19 70%, #ffffff 30%);
 }
 
 .hand-card-tooltip-number {

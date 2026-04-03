@@ -2,7 +2,7 @@ import { useEffect, useRef, useState } from 'react'
 import { Icon } from '@iconify/react/offline'
 import { CARD_ICON_META } from '../data/visual-metadata.ts'
 import type { AppBattlePreview } from '../game-client.ts'
-import { renderTextWithHighlightedNumbers } from '../utils/render-numeric-text.tsx'
+import { renderTextWithHighlightedNumbers, splitDetailTextIntoLines } from '../utils/render-numeric-text.tsx'
 
 type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 
@@ -262,7 +262,13 @@ export function HandBar(props: HandBarProps) {
               {hoveredCard.card.summaryText?.trim() ? hoveredCard.card.summaryText : 'No text available.'}
             </p>
             {isShiftHeld && hoveredCard.card.summaryDetailText ? (
-              <p className="hand-card-tooltip-detail">{renderTextWithHighlightedNumbers(hoveredCard.card.summaryDetailText)}</p>
+              <p className="hand-card-tooltip-detail">
+                {splitDetailTextIntoLines(hoveredCard.card.summaryDetailText).map((line, index) => (
+                  <span key={`${index}-${line}`} className="hand-card-tooltip-detail-line">
+                    {renderTextWithHighlightedNumbers(line)}
+                  </span>
+                ))}
+              </p>
             ) : null}
             {hoveredCard.card.castConditionText ? (
               <div className="hand-card-tooltip-note">{hoveredCard.card.castConditionText}</div>

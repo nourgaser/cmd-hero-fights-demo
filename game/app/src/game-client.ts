@@ -1,4 +1,5 @@
 import { createGameApi } from '../../index.ts'
+import { LUCK_STEP_RATIO } from '../../shared/game-constants.ts'
 import type { BattleEvent } from '../../shared/models'
 import { luckBiasForHero } from '../../engine/core/luck.ts'
 import {
@@ -156,12 +157,20 @@ function summarizeLuckAdjustedRange(options: {
   }
 
   const bias = luckBiasForHero({ anchorHeroEntityId, balance: luckBalance }, rollingHeroEntityId)
-  const shift = Math.round((maximum - minimum) * 0.25 * Math.abs(bias))
-  const direction = Math.sign(bias)
+  const luckPercent = clamp(bias * LUCK_STEP_RATIO, -1, 1)
+  if (luckPercent === 0) {
+    return { minimum, maximum, shift: 0, bias }
+  }
+
+  const adjustedMinimum =
+    luckPercent > 0 ? minimum + (maximum - minimum) * luckPercent : minimum
+  const adjustedMaximum =
+    luckPercent > 0 ? maximum : maximum - (maximum - minimum) * Math.abs(luckPercent)
+  const shift = luckPercent > 0 ? adjustedMinimum - minimum : adjustedMaximum - maximum
 
   return {
-    minimum: clamp(minimum + direction * shift, minimum, maximum),
-    maximum: clamp(maximum + direction * shift, minimum, maximum),
+    minimum: clamp(adjustedMinimum, minimum, maximum),
+    maximum: clamp(adjustedMaximum, minimum, maximum),
     shift,
     bias,
   }
@@ -275,13 +284,18 @@ function describeNumericCardText(options: {
       damagePayload.attackDamageScaling > 0 ? `${formatPreviewNumber(damagePayload.attackDamageScaling * 100)}% AD` : null,
       damagePayload.abilityPowerScaling > 0 ? `${formatPreviewNumber(damagePayload.abilityPowerScaling * 100)}% AP` : null,
       damagePayload.armorScaling > 0 ? `${formatPreviewNumber(damagePayload.armorScaling * 100)}% armor` : null,
-      adjusted.shift > 0 ? `Luck shift ${formatSignedDelta(adjusted.shift)} (${adjusted.bias >= 0 ? 'favored' : 'unfavored'})` : 'No luck shift',
+      adjusted.shift !== 0 ? `Luck shift ${formatSignedDelta(adjusted.shift)} (${adjusted.bias >= 0 ? 'favored' : 'unfavored'})` : 'No luck shift',
     ].filter((part): part is string => !!part)
 
     return {
       summaryText,
       summaryDetailText: `Formula: ${detailParts.join(' + ')}.`,
-      summaryTone: adjusted.maximum > maximum ? 'positive' : adjusted.maximum < maximum ? 'negative' : 'neutral',
+      summaryTone:
+        adjusted.minimum > minimum || adjusted.maximum > maximum
+          ? 'positive'
+          : adjusted.minimum < minimum || adjusted.maximum < maximum
+            ? 'negative'
+            : 'neutral',
     }
   }
 
@@ -424,8 +438,13 @@ function buildHeroBasicAttackSummary(options: {
       adjusted.minimum === adjusted.maximum
         ? `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType} damage.`
         : `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage.`,
-    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift > 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
-    summaryTone: adjusted.maximum > maximum ? 'positive' : adjusted.maximum < maximum ? 'negative' : 'neutral',
+    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryTone:
+      adjusted.minimum > minimum || adjusted.maximum > maximum
+        ? 'positive'
+        : adjusted.minimum < minimum || adjusted.maximum < maximum
+          ? 'negative'
+          : 'neutral',
     currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage before dodge and resistance.`,
   }
 }
@@ -495,8 +514,13 @@ function buildEntityActiveSummary(options: {
       adjusted.minimum === adjusted.maximum
         ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType}.`
         : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType}.`,
-    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift > 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
-    summaryTone: adjusted.maximum > maximum ? 'positive' : adjusted.maximum < maximum ? 'negative' : 'neutral',
+    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryTone:
+      adjusted.minimum > minimum || adjusted.maximum > maximum
+        ? 'positive'
+        : adjusted.minimum < minimum || adjusted.maximum < maximum
+          ? 'negative'
+          : 'neutral',
     currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
   }
 }

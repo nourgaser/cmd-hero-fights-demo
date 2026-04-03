@@ -2,7 +2,7 @@ import { useEffect, useMemo, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
-import { renderTextWithHighlightedNumbers } from '../utils/render-numeric-text.tsx'
+import { renderTextWithHighlightedNumbers, splitDetailTextIntoLines } from '../utils/render-numeric-text.tsx'
 import { LuckBar } from './LuckBar.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
@@ -363,6 +363,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
     '--enemy-side-color': `var(${SIDE_VISUALS[enemySideKey].sideColorVar})`,
   } as CSSProperties
 
+  const basicAttackDetailLines = selfHeroDetails?.basicAttack.summaryDetailText
+    ? splitDetailTextIntoLines(selfHeroDetails.basicAttack.summaryDetailText)
+    : []
+
   return (
     <section className="screen" style={screenStyle} aria-label={`${SIDE_VISUALS[selfSideKey].name} game screen`}>
       <header className="screen-head">
@@ -418,7 +422,13 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 <strong>Basic Attack</strong>
                 <span>{selfHeroDetails?.basicAttack.summaryText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
                 {isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
-                  <span className="battle-tooltip-detail">{renderTextWithHighlightedNumbers(selfHeroDetails.basicAttack.summaryDetailText)}</span>
+                  <span className="battle-tooltip-detail">
+                    {basicAttackDetailLines.map((line, index) => (
+                      <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
+                        {renderTextWithHighlightedNumbers(line)}
+                      </span>
+                    ))}
+                  </span>
                 ) : (
                   <span>{selfHeroDetails?.basicAttack.currentRangeText ?? `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}</span>
                 )}
