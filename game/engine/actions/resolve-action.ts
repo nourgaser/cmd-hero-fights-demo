@@ -31,7 +31,7 @@ import {
 import { type SummonedEntityBlueprint } from "./effects/execute-card-effect";
 import { type HeroDefinition } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
-import { resolveTriggeredListeners } from "./resolve-listeners";
+import { resolveTriggeredListeners } from "./listeners";
 import { annotateBattleStateWithActionOptions } from "./annotate-action-options";
 
 export type ResolveActionResult =

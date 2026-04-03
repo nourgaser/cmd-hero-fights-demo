@@ -3,9 +3,11 @@ import {
   type CardDefinition,
   type EntityFootprint,
 } from "../../shared/models";
-import { annotateHeroHandCards } from "./action-options/annotate-hand-cards";
-import { resolveBasicAttackTargetEntityIds } from "./action-options/resolve-basic-attack-target-ids";
-import { resolveEntityActiveOptions } from "./action-options/resolve-entity-active-options";
+import {
+  annotateHeroHandCards,
+  resolveBasicAttackTargetEntityIds,
+  resolveEntityActiveOptions,
+} from "./action-options";
 
 export function annotateBattleStateWithActionOptions(options: {
   state: BattleState;

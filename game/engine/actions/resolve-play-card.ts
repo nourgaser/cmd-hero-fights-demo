@@ -3,16 +3,12 @@ import {
   type BattleState,
   type CardDefinition,
   type EntityFootprint,
-  type EffectDefinition,
   type PlayCardAction,
   type SummonedEntityKind,
 } from "../../shared/models";
 import { type BattleRng } from "../core/rng";
-import {
-  executeCardEffect,
-  resolveActorHeroForEffect,
-  type SummonedEntityBlueprint,
-} from "./effects/execute-card-effect";
+import { type SummonedEntityBlueprint } from "./effects/execute-card-effect";
+import { applyPlayCardCostAndMoveToDiscard, executePlayCardEffects } from "./play-card";
 import { validatePlayCardAction } from "./validate-play-card";
 
 export type ResolvePlayCardResult =
@@ -94,24 +90,12 @@ export function resolvePlayCardAction(options: {
 
   let sequence = nextSequence;
   const events: BattleEvent[] = [];
-  let lastDamageWasDodged: boolean | undefined;
-  let lastSummonedEntityId: string | undefined;
-
-  // Stage 2: apply card cost and move card from hand to discard.
-  const actorAfterCost = {
-    ...actorHero,
-    movePoints: actorHero.movePoints - card.moveCost,
-    handCards: actorHero.handCards.filter((entry) => entry.id !== action.handCardId),
-    discardCardIds: [...actorHero.discardCardIds, handCard.cardDefinitionId],
-  };
-
-  let nextState: BattleState = {
-    ...state,
-    entitiesById: {
-      ...state.entitiesById,
-      [actorHero.entityId]: actorAfterCost,
-    },
-  };
+  let nextState = applyPlayCardCostAndMoveToDiscard({
+    state,
+    actorHero,
+    handCard,
+    card,
+  });
 
   events.push({
     kind: "cardPlayed",
@@ -122,49 +106,27 @@ export function resolvePlayCardAction(options: {
   });
   sequence += 1;
 
-  // Stage 3: execute card effects through dedicated handler module.
-  for (const effect of card.effects as EffectDefinition[]) {
-    const actorResolution = resolveActorHeroForEffect({
-      state: nextState,
-      actorHeroEntityId: actorHero.entityId,
-    });
-    if (!actorResolution.ok) {
-      return {
-        ok: false,
-        state,
-        reason: actorResolution.reason,
-      };
-    }
-
-    const execution = executeCardEffect({
-      state: nextState,
-      effect,
-      action,
-      actorHero: actorResolution.actorHero,
-      sequence,
-      battleRng,
-      triggerEvent: undefined,
-      lastDamageWasDodged,
-      lastSummonedEntityId,
-      effectSourceEntityId: actorHero.entityId,
-      createSummonedEntityId,
-      resolveSummonedEntityBlueprint,
-    });
-
-    if (!execution.ok) {
-      return {
-        ok: false,
-        state,
-        reason: execution.reason,
-      };
-    }
-
-    nextState = execution.state;
-    events.push(...execution.events);
-    sequence = execution.nextSequence;
-    lastDamageWasDodged = execution.lastDamageWasDodged;
-    lastSummonedEntityId = execution.lastSummonedEntityId;
+  const effectsExecution = executePlayCardEffects({
+    state: nextState,
+    action,
+    card,
+    actorHeroEntityId: actorHero.entityId,
+    nextSequence: sequence,
+    battleRng,
+    createSummonedEntityId,
+    resolveSummonedEntityBlueprint,
+  });
+  if (!effectsExecution.ok) {
+    return {
+      ok: false,
+      state,
+      reason: effectsExecution.reason,
+    };
   }
+
+  nextState = effectsExecution.state;
+  events.push(...effectsExecution.events);
+  sequence = effectsExecution.nextSequence;
 
   // Stage 4: emit action resolved event.
   events.push({
