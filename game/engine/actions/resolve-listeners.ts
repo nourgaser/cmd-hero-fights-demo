@@ -1,5 +1,6 @@
 import {
   type BattleEvent,
+  type PlayCardAction,
   type BattleState,
   type ListenerCondition,
   type ListenerDefinition,
@@ -13,6 +14,17 @@ import {
 } from "./effects/execute-card-effect";
 import { renderEffectDisplayText } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
+
+const SYNTHETIC_LISTENER_HAND_CARD_ID = "__listener__";
+
+function createListenerTriggeredSyntheticAction(ownerHeroEntityId: string): PlayCardAction {
+  return {
+    kind: "playCard",
+    actorHeroEntityId: ownerHeroEntityId,
+    handCardId: SYNTHETIC_LISTENER_HAND_CARD_ID,
+    selection: {},
+  };
+}
 
 function listenerMatchesEvent(listener: ListenerDefinition, event: BattleEvent): boolean {
   return listener.eventKind === event.kind;
@@ -131,12 +143,7 @@ export function resolveTriggeredListeners(options: {
         const execution = executeCardEffect({
           state: listenerLocalState,
           effect,
-          action: {
-            kind: "playCard",
-            actorHeroEntityId: listener.ownerHeroEntityId,
-            handCardId: "__listener__",
-            selection: {},
-          },
+          action: createListenerTriggeredSyntheticAction(listener.ownerHeroEntityId),
           actorHero: actorResolution.actorHero,
           sequence,
           battleRng,

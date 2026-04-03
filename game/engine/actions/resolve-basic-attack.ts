@@ -7,6 +7,7 @@ import {
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
+import { resolveActiveActorHeroForAction } from "./shared-validation";
 
 export type ResolveBasicAttackResult =
   | {
@@ -31,22 +32,20 @@ export function resolveBasicAttackAction(options: {
 }): ResolveBasicAttackResult {
   const { state, action, nextSequence, battleRng, heroDefinitionsById } = options;
 
-  const actorHero = state.entitiesById[action.actorHeroEntityId];
-  if (!actorHero || actorHero.kind !== "hero") {
+  const actorResolution = resolveActiveActorHeroForAction({
+    state,
+    actorHeroEntityId: action.actorHeroEntityId,
+    notFoundReason: "Acting hero was not found.",
+    inactiveReason: "Only the active hero can perform a basic attack.",
+  });
+  if (!actorResolution.ok) {
     return {
       ok: false,
       state,
-      reason: "Acting hero was not found.",
+      reason: actorResolution.reason,
     };
   }
-
-  if (state.turn.activeHeroEntityId !== actorHero.entityId) {
-    return {
-      ok: false,
-      state,
-      reason: "Only the active hero can perform a basic attack.",
-    };
-  }
+  const actorHero = actorResolution.actorHero;
 
   const attacker = state.entitiesById[action.attackerEntityId];
   if (!attacker || attacker.kind !== "hero") {

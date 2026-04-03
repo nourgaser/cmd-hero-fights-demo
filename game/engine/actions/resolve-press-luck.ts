@@ -3,10 +3,12 @@ import {
   type BattleState,
   type PressLuckAction,
 } from "../../shared/models";
-
-const LUCK_BALANCE_STEP = 1;
-const LUCK_BALANCE_LIMIT = 4;
-const PRESS_LUCK_MOVE_COST = 3;
+import {
+  LUCK_BALANCE_LIMIT,
+  LUCK_BALANCE_STEP,
+  PRESS_LUCK_MOVE_COST,
+} from "../../shared/game-constants";
+import { resolveActiveActorHeroForAction } from "./shared-validation";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));
@@ -33,22 +35,20 @@ export function resolvePressLuckAction(options: {
 }): ResolvePressLuckResult {
   const { state, action, nextSequence } = options;
 
-  const actor = state.entitiesById[action.actorHeroEntityId];
-  if (!actor || actor.kind !== "hero") {
+  const actorResolution = resolveActiveActorHeroForAction({
+    state,
+    actorHeroEntityId: action.actorHeroEntityId,
+    notFoundReason: "Press-luck actor hero was not found.",
+    inactiveReason: "Only the active hero can press luck.",
+  });
+  if (!actorResolution.ok) {
     return {
       ok: false,
       state,
-      reason: "Press-luck actor hero was not found.",
+      reason: actorResolution.reason,
     };
   }
-
-  if (state.turn.activeHeroEntityId !== actor.entityId) {
-    return {
-      ok: false,
-      state,
-      reason: "Only the active hero can press luck.",
-    };
-  }
+  const actor = actorResolution.actorHero;
 
   if (state.turn.pressLuckUsedThisTurn) {
     return {

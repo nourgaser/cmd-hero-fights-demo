@@ -2,6 +2,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../context";
+import { HARD_HAND_SIZE_LIMIT } from "../../../../shared/game-constants";
 
 export function handleRefundMoveCostEffect(
   context: EffectExecutionContext,
@@ -77,8 +78,6 @@ export function handleModifyAttackDamageWhileSourcePresentEffect(
     lastSummonedEntityId,
   };
 }
-
-const HARD_HAND_SIZE_LIMIT = 7;
 
 export function handleDrawCardsEffect(
   context: EffectExecutionContext,

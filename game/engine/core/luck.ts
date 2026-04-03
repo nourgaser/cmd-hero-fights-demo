@@ -1,6 +1,5 @@
 import type { BattleLuckState, EntityId } from "../../shared/models";
-
-const LUCK_STEP_RATIO = 0.25;
+import { LUCK_STEP_RATIO } from "../../shared/game-constants";
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value));

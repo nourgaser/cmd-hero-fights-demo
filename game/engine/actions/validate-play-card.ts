@@ -7,6 +7,7 @@ import {
     isCardCastConditionMet,
 } from "../../shared/models";
 import { validatePlacementForHeroSide, type PlacementValidationResult } from "../battlefield/placement";
+import { resolveActiveActorHeroForAction } from "./shared-validation";
 
 export type PlayCardValidationResult =
     | { ok: true; card: CardDefinition }
@@ -20,14 +21,16 @@ export function validatePlayCardAction(options: {
 }): PlayCardValidationResult {
     const { state, action, cardDefinitionsById, resolveSummonFootprint } = options;
 
-    const actor = state.entitiesById[action.actorHeroEntityId];
-    if (!actor || actor.kind !== "hero") {
-        return { ok: false, reason: "Acting hero was not found." };
+    const actorResolution = resolveActiveActorHeroForAction({
+        state,
+        actorHeroEntityId: action.actorHeroEntityId,
+        notFoundReason: "Acting hero was not found.",
+        inactiveReason: "Only the active hero can play a card.",
+    });
+    if (!actorResolution.ok) {
+        return { ok: false, reason: actorResolution.reason };
     }
-
-    if (state.turn.activeHeroEntityId !== actor.entityId) {
-        return { ok: false, reason: "Only the active hero can play a card." };
-    }
+    const actor = actorResolution.actorHero;
 
     const handCard = actor.handCards.find((entry) => entry.id === action.handCardId);
     if (!handCard) {

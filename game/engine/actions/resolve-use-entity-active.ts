@@ -7,6 +7,7 @@ import {
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
+import { resolveActiveActorHeroForAction } from "./shared-validation";
 
 export type EntityActiveProfile = {
   moveCost: number;
@@ -44,22 +45,20 @@ export function resolveUseEntityActiveAction(options: {
 }): ResolveUseEntityActiveResult {
   const { state, action, nextSequence, battleRng, resolveEntityActiveProfile } = options;
 
-  const actorHero = state.entitiesById[action.actorHeroEntityId];
-  if (!actorHero || actorHero.kind !== "hero") {
+  const actorResolution = resolveActiveActorHeroForAction({
+    state,
+    actorHeroEntityId: action.actorHeroEntityId,
+    notFoundReason: "Acting hero was not found.",
+    inactiveReason: "Only the active hero can use an entity active.",
+  });
+  if (!actorResolution.ok) {
     return {
       ok: false,
       state,
-      reason: "Acting hero was not found.",
+      reason: actorResolution.reason,
     };
   }
-
-  if (state.turn.activeHeroEntityId !== actorHero.entityId) {
-    return {
-      ok: false,
-      state,
-      reason: "Only the active hero can use an entity active.",
-    };
-  }
+  const actorHero = actorResolution.actorHero;
 
   const source = state.entitiesById[action.sourceEntityId];
   if (!source || source.kind === "hero") {

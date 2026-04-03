@@ -3,9 +3,11 @@ import {
   type BattleState,
   type EndTurnAction,
 } from "../../shared/models";
-
-const TURN_START_SOFT_HAND_SIZE = 4;
-const HARD_HAND_SIZE_LIMIT = 7;
+import {
+  HARD_HAND_SIZE_LIMIT,
+  TURN_START_SOFT_HAND_SIZE,
+} from "../../shared/game-constants";
+import { resolveActiveActorHeroForAction } from "./shared-validation";
 
 export type ResolveEndTurnResult =
   | {
@@ -21,7 +23,7 @@ export type ResolveEndTurnResult =
       reason: string;
     };
 
-function otherHeroEntityId(state: BattleState, heroEntityId: string): string | undefined {
+function getOtherHeroEntityId(state: BattleState, heroEntityId: string): string | undefined {
   const [firstHeroId, secondHeroId] = state.heroEntityIds;
   if (firstHeroId === heroEntityId) {
     return secondHeroId;
@@ -40,24 +42,22 @@ export function resolveEndTurnAction(options: {
 }): ResolveEndTurnResult {
   const { state, action, nextSequence } = options;
 
-  const endingHero = state.entitiesById[action.actorHeroEntityId];
-  if (!endingHero || endingHero.kind !== "hero") {
+  const endingHeroResolution = resolveActiveActorHeroForAction({
+    state,
+    actorHeroEntityId: action.actorHeroEntityId,
+    notFoundReason: "Ending hero was not found.",
+    inactiveReason: "Only the active hero can end the turn.",
+  });
+  if (!endingHeroResolution.ok) {
     return {
       ok: false,
       state,
-      reason: "Ending hero was not found.",
+      reason: endingHeroResolution.reason,
     };
   }
+  const endingHero = endingHeroResolution.actorHero;
 
-  if (state.turn.activeHeroEntityId !== endingHero.entityId) {
-    return {
-      ok: false,
-      state,
-      reason: "Only the active hero can end the turn.",
-    };
-  }
-
-  const nextHeroEntityId = otherHeroEntityId(state, endingHero.entityId);
+  const nextHeroEntityId = getOtherHeroEntityId(state, endingHero.entityId);
   if (!nextHeroEntityId) {
     return {
       ok: false,
