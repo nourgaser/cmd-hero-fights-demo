@@ -498,10 +498,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
             </span>
           </aside>
 
-          <aside className="battle-action-overlay action-overlay-right" aria-label="Press luck action">
+          <aside className="battle-action-overlay action-overlay-right hint-wrap" aria-label="Press luck action" tabIndex={0}>
             <button
               type="button"
-              className="battle-action-stack luck hint-wrap"
+              className="battle-action-stack luck"
               onClick={handlePressLuckOverlayClick}
               disabled={!canBeginPressLuck}
               aria-label={
@@ -521,22 +521,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
                   <Icon icon="game-icons:check-mark" />
                 </span>
               ) : null}
-              <span className="hover-card battle-action-hover-card" role="tooltip">
-                <strong>Press Luck</strong>
-                <span className="tooltip-main-line">Spend {pressLuckMoveCost} moves to shift the luck track.</span>
-                {pressLuckUsedThisTurn ? (
-                  <span className="tooltip-row">
-                    <strong className="tooltip-inline-label">Limit:</strong>
-                    You can only press luck once per turn.
-                  </span>
-                ) : null}
-                <span className="tooltip-divider" aria-hidden="true" />
-                <span className="tooltip-row tooltip-row-muted">
-                  <strong className="tooltip-inline-label">Use:</strong>
-                  Click once to arm it, then click the badge again to confirm.
-                </span>
-              </span>
             </button>
+            <span className="hover-card battle-action-hover-card" role="tooltip">
+              <strong>Luck</strong>
+              <span>Shift luck in your favor by 1 point.</span>
+            </span>
           </aside>
         </section>
 
