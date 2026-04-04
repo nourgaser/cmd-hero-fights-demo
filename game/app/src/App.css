@@ -305,9 +305,16 @@ html[data-shift-held='true'] .game-toast-detail {
   --hover-offset-x: -50%;
   --hover-offset-y: -4px;
   position: relative;
+  z-index: 1;
   display: inline-flex;
   align-items: center;
   justify-content: center;
+}
+
+.hint-wrap:hover,
+.hint-wrap:focus-visible,
+.hint-wrap:focus-within {
+  z-index: 120;
 }
 
 .hover-card {
@@ -327,7 +334,7 @@ html[data-shift-held='true'] .game-toast-detail {
   color: #1f1b16;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   text-align: center;
-  z-index: 50;
+  z-index: 130;
 }
 
 .hover-card strong {
