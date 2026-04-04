@@ -21,7 +21,7 @@
     rgba(17, 12, 4, 0.08) 0 12px 24px -12px, rgba(17, 12, 4, 0.16) 0 4px 12px -8px;
 
   --sans: 'Trebuchet MS', 'Gill Sans', 'Segoe UI', sans-serif;
-  --heading: 'Trebuchet MS', 'Gill Sans', 'Segoe UI', sans-serif;
+  --heading: 'The Girl Next Door', cursive;
   --display: 'The Girl Next Door', cursive;
   --mono: ui-monospace, Consolas, monospace;
 
@@ -82,7 +82,8 @@ h1 {
 h2 {
   font-size: 22px;
   line-height: 118%;
-  letter-spacing: -0.1px;
+  letter-spacing: 0.3px;
+  font-weight: 400;
   margin: 0 0 8px;
   @media (max-width: 1024px) {
     font-size: 18px;

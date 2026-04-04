@@ -555,7 +555,7 @@ function App() {
           duration: ACTION_TOAST_DURATION_MS,
         }}
       />
-      <div key={liveAnnouncement.id} className="sr-only" aria-live="polite" aria-atomic="true">
+      <div key={`announcement-${liveAnnouncement.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
         {liveAnnouncement.text}
       </div>
       <DebugStatePanel
@@ -567,8 +567,9 @@ function App() {
         onHardReset={handleHardReset}
       />
 
-      <main key={resetEpoch} className="dual-screens">
+      <main key={`battle-${resetEpoch}`} className="dual-screens">
         <PlayerScreen
+          key="screen-a"
           title="CMD Hero Fights"
           selfId={heroAId}
           enemyId={heroBId}
@@ -584,6 +585,7 @@ function App() {
           onPlayCard={createPlayCardHandler(heroAId)}
         />
         <PlayerScreen
+          key="screen-b"
           title="CMD Hero Fights"
           selfId={heroBId}
           enemyId={heroAId}

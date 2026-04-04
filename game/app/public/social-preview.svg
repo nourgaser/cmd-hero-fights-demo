@@ -1,0 +1,53 @@
+<svg width="1200" height="630" viewBox="0 0 1200 630" xmlns="http://www.w3.org/2000/svg" role="img" aria-labelledby="title desc">
+  <title id="title">CMD Hero Fights Demo</title>
+  <desc id="desc">Tactical card battle board preview art for social sharing.</desc>
+  <defs>
+    <linearGradient id="bg" x1="0" y1="0" x2="1" y2="1">
+      <stop offset="0%" stop-color="#0f1714" />
+      <stop offset="100%" stop-color="#22342c" />
+    </linearGradient>
+    <linearGradient id="panel" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f6e7b6" stop-opacity="0.95" />
+      <stop offset="100%" stop-color="#ddbe76" stop-opacity="0.95" />
+    </linearGradient>
+    <linearGradient id="cardA" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#f8f1d9" />
+      <stop offset="100%" stop-color="#e6cea0" />
+    </linearGradient>
+    <linearGradient id="cardB" x1="0" y1="0" x2="0" y2="1">
+      <stop offset="0%" stop-color="#dde7f6" />
+      <stop offset="100%" stop-color="#95b5e8" />
+    </linearGradient>
+  </defs>
+
+  <rect width="1200" height="630" fill="url(#bg)" />
+  <circle cx="1030" cy="120" r="220" fill="#2e503f" opacity="0.32" />
+  <circle cx="140" cy="590" r="220" fill="#3a5b4a" opacity="0.28" />
+
+  <rect x="72" y="56" width="1056" height="518" rx="24" fill="url(#panel)" />
+  <rect x="108" y="184" width="984" height="286" rx="18" fill="#1a2a23" opacity="0.93" />
+
+  <rect x="138" y="214" width="192" height="226" rx="14" fill="url(#cardA)" />
+  <rect x="352" y="214" width="192" height="226" rx="14" fill="url(#cardB)" />
+  <rect x="566" y="214" width="192" height="226" rx="14" fill="url(#cardA)" />
+
+  <rect x="800" y="214" width="262" height="102" rx="12" fill="#f7f2df" />
+  <rect x="800" y="338" width="262" height="102" rx="12" fill="#e9d3a6" />
+
+  <text x="112" y="126" fill="#1a231f" font-family="Georgia, 'Times New Roman', serif" font-size="52" font-weight="700">
+    CMD Hero Fights
+  </text>
+  <text x="112" y="162" fill="#2e3a35" font-family="Verdana, Geneva, sans-serif" font-size="24">
+    Deterministic Tactical Card Battle Demo
+  </text>
+
+  <text x="156" y="264" fill="#43311f" font-family="Verdana, Geneva, sans-serif" font-size="26" font-weight="700">Hero</text>
+  <text x="370" y="264" fill="#1f3658" font-family="Verdana, Geneva, sans-serif" font-size="26" font-weight="700">Weapon</text>
+  <text x="584" y="264" fill="#43311f" font-family="Verdana, Geneva, sans-serif" font-size="26" font-weight="700">Companion</text>
+
+  <text x="820" y="272" fill="#2b2b2b" font-family="Verdana, Geneva, sans-serif" font-size="22" font-weight="700">Basic Attack</text>
+  <text x="820" y="300" fill="#4a4a4a" font-family="Verdana, Geneva, sans-serif" font-size="16">Target, confirm, resolve.</text>
+
+  <text x="820" y="396" fill="#2b2b2b" font-family="Verdana, Geneva, sans-serif" font-size="22" font-weight="700">Press Luck</text>
+  <text x="820" y="424" fill="#4a4a4a" font-family="Verdana, Geneva, sans-serif" font-size="16">Shift balance, swing outcomes.</text>
+</svg>

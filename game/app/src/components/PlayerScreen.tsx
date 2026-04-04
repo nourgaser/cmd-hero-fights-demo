@@ -474,8 +474,13 @@ export function PlayerScreen(props: PlayerScreenProps) {
   return (
     <section ref={screenRef} className="screen" style={screenStyle} aria-label={`${SIDE_VISUALS[selfSideKey].name} game screen`}>
       <header className="screen-head">
-        <h1>{title}</h1>
-        <p>{SIDE_VISUALS[selfSideKey].name}</p>
+        <div className="screen-head-brand">
+          <img className="screen-head-logo" src="/logo.png" alt="CMD Hero Fights logo" />
+          <div className="screen-head-copy">
+            <h1>{title}</h1>
+            <p>{SIDE_VISUALS[selfSideKey].name}</p>
+          </div>
+        </div>
       </header>
 
         <section className="luck-strip" aria-label="Luck track">

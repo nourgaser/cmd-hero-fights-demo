@@ -1,0 +1,17 @@
+{
+  "name": "CMD Hero Fights Demo",
+  "short_name": "CMD Hero",
+  "description": "Deterministic tactical card battles with heroes, companions, weapons, and totems.",
+  "start_url": "/",
+  "display": "standalone",
+  "background_color": "#1d2a24",
+  "theme_color": "#1d2a24",
+  "icons": [
+    {
+      "src": "/logo.png",
+      "sizes": "1024x1024",
+      "type": "image/png",
+      "purpose": "any"
+    }
+  ]
+}
