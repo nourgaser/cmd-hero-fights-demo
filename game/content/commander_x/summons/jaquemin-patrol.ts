@@ -21,8 +21,8 @@ export const JAQUEMIN_PATROL_BLUEPRINT: SummonedEntityBlueprint = {
 
 export const JAQUEMIN_PATROL_ACTIVE: EntityActiveProfile = {
   moveCost: 1,
-  minimumDamage: 1,
-  maximumDamage: 2,
+  minimumDamage: 2,
+  maximumDamage: 4,
   damageType: "physical",
   attackDamageScaling: 0.25,
   abilityPowerScaling: 0,
