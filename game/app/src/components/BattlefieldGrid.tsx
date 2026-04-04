@@ -202,6 +202,11 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const meta = ENTITY_ICON_META[occupier.kind]
             const entityStats = preview.battlefield.entitiesById[occupier.entityId]
             const heroDetails = preview.heroDetailsByEntityId[occupier.entityId] ?? null
+            const hasMovesRemaining =
+              !!entityStats &&
+              entityStats.ownerHeroEntityId === selfId &&
+              entityStats.kind !== 'hero' &&
+              entityStats.movePoints > 0
             const ariaLabel = `${meta.label ?? occupier.kind} occupying ${occupier.rowSpan} by ${occupier.columnSpan} cells from row ${occupier.minRow + 1}, column ${occupier.minColumn + 1}`
             const healthPercent = entityStats
               ? Math.max(0, Math.min(100, (entityStats.currentHealth / Math.max(1, entityStats.maxHealth)) * 100))
@@ -211,7 +216,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             return (
               <div
                 key={`occupier:${occupier.entityId}`}
-                className={`battle-slot occupied ${sideClass} ${ownerClass} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedTarget ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
+                className={`battle-slot occupied ${sideClass} ${ownerClass} ${hasMovesRemaining ? 'moves-remaining' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedTarget ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
                 role="gridcell"
                 aria-label={isSelectableTarget ? `${ariaLabel}. Selectable target.` : ariaLabel}
                 style={{
@@ -244,6 +249,12 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 {isSelectedTarget && isSelectableTarget ? (
                   <span className="target-check-icon" aria-hidden="true">
                     <Icon icon="game-icons:check-mark" />
+                  </span>
+                ) : null}
+
+                {hasMovesRemaining && entityStats ? (
+                  <span className="entity-moves-badge" aria-hidden="true">
+                    Moves {entityStats.movePoints}
                   </span>
                 ) : null}
 

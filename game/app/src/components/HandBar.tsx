@@ -76,6 +76,8 @@ export function HandBar(props: HandBarProps) {
   const handWrapRef = useRef<HTMLDivElement | null>(null)
   const [showScrollHint, setShowScrollHint] = useState(false)
   const [isShiftHeld, setIsShiftHeld] = useState(false)
+  const [showExtendedDetails, setShowExtendedDetails] = useState(false)
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<{
     card: HandBarCard
     left: number
@@ -120,6 +122,24 @@ export function HandBar(props: HandBarProps) {
   }, [cards])
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
+    }
+
+    const mediaQuery = window.matchMedia('(pointer: coarse)')
+    const syncPointerMode = () => {
+      setIsCoarsePointer(mediaQuery.matches)
+    }
+
+    syncPointerMode()
+    mediaQuery.addEventListener('change', syncPointerMode)
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncPointerMode)
+    }
+  }, [])
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Shift') {
         setIsShiftHeld(true)
@@ -140,6 +160,31 @@ export function HandBar(props: HandBarProps) {
       window.removeEventListener('keyup', handleKeyUp)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isCoarsePointer || !hoveredCard) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const wrap = handWrapRef.current
+      if (!wrap) {
+        return
+      }
+
+      const target = event.target
+      if (target instanceof Node && !wrap.contains(target)) {
+        setHoveredCard(null)
+      }
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [hoveredCard, isCoarsePointer])
+
+  const shouldShowDetails = isShiftHeld || showExtendedDetails
 
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
@@ -163,13 +208,23 @@ export function HandBar(props: HandBarProps) {
             <span>{movePoints} / {maxMovePoints}</span>
           </span>
         </span>
-        {isActivePlayer ? (
-          <button type="button" className="hand-pill hand-pill-button" onClick={onEndTurn}>
-            End turn
+        <div className="hand-header-actions">
+          <button
+            type="button"
+            className={`hand-pill hand-pill-button hand-details-toggle ${showExtendedDetails ? 'active' : ''}`.trim()}
+            aria-pressed={showExtendedDetails}
+            onClick={() => setShowExtendedDetails((current) => !current)}
+          >
+            Details
           </button>
-        ) : (
-          <span className="hand-pill">Waiting turn</span>
-        )}
+          {isActivePlayer ? (
+            <button type="button" className="hand-pill hand-pill-button" onClick={onEndTurn}>
+              End turn
+            </button>
+          ) : (
+            <span className="hand-pill">Waiting turn</span>
+          )}
+        </div>
       </div>
 
       <div className="hand-scroll-wrap" ref={handWrapRef}>
@@ -235,6 +290,39 @@ export function HandBar(props: HandBarProps) {
                   </span>
                 ) : null}
               </button>
+              <button
+                type="button"
+                className="hand-card-info"
+                aria-label={`Show ${card.cardName} details`}
+                onClick={(event) => {
+                  event.stopPropagation()
+                  const anchor = event.currentTarget.closest('.hand-card-item')
+                  if (!(anchor instanceof HTMLElement)) {
+                    return
+                  }
+
+                  setHoveredCard((current) => {
+                    if (current?.card.handCardId === card.handCardId) {
+                      return null
+                    }
+
+                    const wrap = handWrapRef.current
+                    if (!wrap) {
+                      return null
+                    }
+
+                    const anchorRect = anchor.getBoundingClientRect()
+                    const wrapRect = wrap.getBoundingClientRect()
+                    return {
+                      card,
+                      left: anchorRect.left - wrapRect.left + anchorRect.width / 2,
+                      top: anchorRect.top - wrapRect.top,
+                    }
+                  })
+                }}
+              >
+                <Icon icon="game-icons:info" aria-hidden="true" />
+              </button>
             </li>
           )
           })}
@@ -267,7 +355,7 @@ export function HandBar(props: HandBarProps) {
                 ? simplifyTooltipSummaryText(hoveredCard.card.summaryText)
                 : 'No text available.'}
             </p>
-            {isShiftHeld && hoveredCard.card.summaryDetailText ? (
+            {shouldShowDetails && hoveredCard.card.summaryDetailText ? (
               <p className="hand-card-tooltip-detail">
                 {splitDetailTextIntoLines(hoveredCard.card.summaryDetailText).map((line, index) => (
                   <span key={`${index}-${line}`} className="hand-card-tooltip-detail-line">
@@ -276,7 +364,7 @@ export function HandBar(props: HandBarProps) {
                 ))}
               </p>
             ) : null}
-            {!isShiftHeld && hoveredCard.card.summaryDetailText ? (
+            {!shouldShowDetails && hoveredCard.card.summaryDetailText ? (
               <span className="tooltip-shift-hint">Hold Shift for details.</span>
             ) : null}
             {hoveredCard.card.castConditionText ? (
@@ -338,7 +426,7 @@ export function HandBar(props: HandBarProps) {
                     <span className="tooltip-main-line">
                       {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.passiveSummaryText)}
                     </span>
-                    {isShiftHeld && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
+                    {shouldShowDetails && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
                       <span className="battle-tooltip-detail">
                         {splitDetailTextIntoLines(hoveredCard.card.summonPreview.passiveSummaryDetailText).map((line, index) => (
                           <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -356,7 +444,7 @@ export function HandBar(props: HandBarProps) {
                     <span className="tooltip-main-line">
                       {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.activeAbilitySummaryText)}
                     </span>
-                    {isShiftHeld && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
+                    {shouldShowDetails && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
                       <span className="battle-tooltip-detail">
                         {splitDetailTextIntoLines(hoveredCard.card.summonPreview.activeAbilitySummaryDetailText).map((line, index) => (
                           <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -368,7 +456,7 @@ export function HandBar(props: HandBarProps) {
                   </div>
                 ) : null}
 
-                {!isShiftHeld && (hoveredCard.card.summonPreview.passiveSummaryDetailText || hoveredCard.card.summonPreview.activeAbilitySummaryDetailText) ? (
+                {!shouldShowDetails && (hoveredCard.card.summonPreview.passiveSummaryDetailText || hoveredCard.card.summonPreview.activeAbilitySummaryDetailText) ? (
                   <span className="tooltip-shift-hint">Hold Shift for details.</span>
                 ) : null}
               </aside>

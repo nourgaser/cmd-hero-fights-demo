@@ -355,7 +355,7 @@ html[data-shift-held='true'] .game-toast-detail {
 .hint-wrap:hover,
 .hint-wrap:focus-visible,
 .hint-wrap:focus-within {
-  z-index: 120;
+  z-index: 1800;
 }
 
 .hover-card {
@@ -375,7 +375,7 @@ html[data-shift-held='true'] .game-toast-detail {
   color: #1f1b16;
   box-shadow: 0 6px 16px rgba(0, 0, 0, 0.2);
   text-align: center;
-  z-index: 130;
+  z-index: 1810;
 }
 
 .hover-card strong {
@@ -450,8 +450,8 @@ h2.luck-title > * {
 
 .help-chip {
   margin-left: 10px;
-  width: 26px;
-  height: 26px;
+  width: 44px;
+  height: 44px;
   border-radius: 999px;
   border: 1px solid var(--border);
   background: color-mix(in srgb, var(--code-bg) 70%, #ffffff 30%);
@@ -765,6 +765,50 @@ h2.luck-title > * {
   box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--enemy-side-color) 62%, transparent);
 }
 
+.battle-slot.moves-remaining {
+  isolation: isolate;
+  box-shadow:
+    inset 0 0 0 3px color-mix(in srgb, #f0cb58 82%, #ffffff 18%),
+    0 0 0 2px color-mix(in srgb, #8a691b 22%, transparent),
+    0 0 16px color-mix(in srgb, #f0cb58 28%, transparent);
+}
+
+.battle-slot.moves-remaining::after {
+  content: '';
+  position: absolute;
+  inset: -2px;
+  border-radius: 10px;
+  border: 3px solid color-mix(in srgb, #f0cb58 86%, #ffffff 14%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #3d2e12 52%, transparent),
+    0 0 18px color-mix(in srgb, #f0cb58 34%, transparent);
+  opacity: 0.58;
+  animation: moves-remaining-pulse 1.4s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.entity-moves-badge {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  z-index: 3;
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #5e4510 42%, #ffffff 58%);
+  background: linear-gradient(180deg, #fff3bf, #f0cb58);
+  color: #2c220f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.65);
+}
+
 .battle-slot.target-highlighted {
   outline: 2px solid #f0cb58;
   outline-offset: -2px;
@@ -785,6 +829,24 @@ h2.luck-title > * {
   box-shadow:
     inset 0 0 0 2px color-mix(in srgb, #241d14 78%, transparent),
     0 0 0 3px color-mix(in srgb, #f0cb58 75%, transparent);
+}
+
+@keyframes moves-remaining-pulse {
+  0%,
+  100% {
+    opacity: 0.58;
+    transform: scale(1);
+  }
+  50% {
+    opacity: 0.95;
+    transform: scale(1.02);
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .battle-slot.moves-remaining::after {
+    animation: none;
+  }
 }
 
 .target-check-icon {
@@ -1127,21 +1189,28 @@ h2.luck-title > * {
   padding: 12px;
   min-width: 0;
   position: relative;
-  z-index: 200;
+  z-index: 120;
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, #ffffff 4%), color-mix(in srgb, var(--code-bg) 88%, #ffffff 12%));
 }
 
 .hand-bar:hover,
 .hand-bar:focus-within {
-  z-index: 1300;
+  z-index: 260;
 }
 
 .hand-bar-header {
   display: flex;
   align-items: center;
   justify-content: space-between;
+  gap: 8px;
   margin-bottom: 8px;
+}
+
+.hand-header-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
 }
 
 .move-meter {
@@ -1181,12 +1250,20 @@ h2.luck-title > * {
 .hand-pill-button {
   color: inherit;
   cursor: pointer;
+  min-height: 44px;
+  min-width: 44px;
+  padding: 6px 12px;
 }
 
 .hand-pill-button:hover,
 .hand-pill-button:focus-visible {
   border-color: var(--text-h);
   background: color-mix(in srgb, var(--code-bg) 88%, #ffffff 12%);
+}
+
+.hand-details-toggle.active {
+  border-color: color-mix(in srgb, #4d6f9e 62%, var(--border));
+  background: color-mix(in srgb, #d9ecff 72%, #ffffff 28%);
 }
 
 .hand-cards {
@@ -1246,6 +1323,26 @@ h2.luck-title > * {
 
 .hand-card-item.blocked {
   cursor: not-allowed;
+}
+
+.hand-card-info {
+  position: absolute;
+  right: 4px;
+  bottom: 4px;
+  width: 44px;
+  height: 44px;
+  border: 0;
+  border-radius: 999px;
+  background: transparent;
+  color: color-mix(in srgb, #1f1b16 70%, #ffffff 30%);
+  display: none;
+  place-items: center;
+  cursor: pointer;
+}
+
+.hand-card-info svg {
+  width: 18px;
+  height: 18px;
 }
 
 .hand-scroll-wrap {
@@ -1437,6 +1534,12 @@ h2.luck-title > * {
     0 1px 0 rgba(255, 255, 255, 0.2);
 }
 
+@media (pointer: coarse) {
+  .hand-card-info {
+    display: grid;
+  }
+}
+
 .hand-card-type-badge {
   position: absolute;
   top: 6px;
@@ -1576,7 +1679,7 @@ h2.luck-title > * {
   opacity: 1;
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 12px));
-  z-index: 1400;
+  z-index: 1900;
 }
 
 .hand-card-hover strong {
@@ -1713,7 +1816,7 @@ h2.luck-title > * {
 }
 
 .hand-card-hover.has-summon-preview {
-  z-index: 1500;
+  z-index: 2000;
 }
 
 .summon-preview-panel {
