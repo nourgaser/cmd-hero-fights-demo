@@ -397,6 +397,15 @@ html[data-shift-held='true'] .game-toast-detail {
   transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(1);
 }
 
+.hint-wrap.force-tooltip-open {
+  z-index: 1800;
+}
+
+.hint-wrap.force-tooltip-open .hover-card {
+  opacity: 1;
+  transform: translateX(var(--hover-offset-x)) translateY(var(--hover-offset-y)) scale(1);
+}
+
 .hint-wrap[data-hover-placement='bottom'] {
   --hover-offset-y: 4px;
 }
@@ -536,6 +545,48 @@ h2.luck-title > * {
   top: 65%;
   transform: translateY(-50%);
   z-index: 30;
+}
+
+.touch-tooltip-toggle {
+  display: none;
+}
+
+@media (pointer: coarse) {
+  .touch-tooltip-toggle {
+    width: 44px;
+    height: 44px;
+    border: 1px solid color-mix(in srgb, #5b4a2b 40%, var(--border));
+    border-radius: 999px;
+    background: color-mix(in srgb, var(--panel) 86%, #ffffff 14%);
+    color: #241d14;
+    display: grid;
+    place-items: center;
+    cursor: pointer;
+    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
+  }
+
+  .touch-tooltip-toggle svg {
+    width: 16px;
+    height: 16px;
+  }
+
+  .touch-tooltip-toggle.inline-toggle {
+    margin-left: 6px;
+  }
+
+  .touch-tooltip-toggle.battle-tooltip-toggle {
+    position: absolute;
+    top: -12px;
+    right: -12px;
+    z-index: 1810;
+  }
+
+  .touch-tooltip-toggle.deck-tooltip-toggle {
+    position: absolute;
+    top: -10px;
+    left: -10px;
+    z-index: 1810;
+  }
 }
 
 .battle-action-overlay.action-overlay-right {
@@ -1281,6 +1332,8 @@ h2.luck-title > * {
   scrollbar-gutter: stable;
   scrollbar-width: thin;
   scrollbar-color: color-mix(in srgb, #a48d57 70%, #ffffff 30%) transparent;
+  scroll-snap-type: x proximity;
+  -webkit-overflow-scrolling: touch;
 }
 
 .hand-cards::-webkit-scrollbar {
@@ -1315,6 +1368,8 @@ h2.luck-title > * {
   overflow: visible;
   width: 96px;
   min-height: 112px;
+  scroll-snap-align: start;
+  scroll-snap-stop: always;
 }
 
 .hand-card-item.playable {
@@ -1926,6 +1981,16 @@ h2.luck-title > * {
   cursor: pointer;
 }
 
+button:focus-visible,
+input:focus-visible,
+textarea:focus-visible,
+.hint-wrap:focus-visible,
+.battle-slot.target-selectable:focus-visible,
+.battle-slot.placement-selectable:focus-visible {
+  outline: 2px solid color-mix(in srgb, #2b5c8f 82%, #ffffff 18%);
+  outline-offset: 2px;
+}
+
 .confirm-play:disabled {
   opacity: 0.5;
   cursor: not-allowed;
@@ -1992,6 +2057,42 @@ h2.luck-title > * {
     min-width: 180px;
   }
 
+  .hand-cards {
+    gap: 10px;
+    padding-left: 8px;
+    padding-right: 8px;
+    scroll-snap-type: x mandatory;
+  }
+
+  .hand-cards > li {
+    width: 102px;
+  }
+
+  .hand-card {
+    width: 102px;
+    min-height: 118px;
+    flex: 0 0 102px;
+  }
+
+
+@media (prefers-reduced-motion: reduce) {
+  .hover-card,
+  .hint-wrap,
+  .battle-action-stack,
+  .hand-card,
+  .hand-card.rarity-ultimate::after {
+    transition: none !important;
+    animation: none !important;
+  }
+
+  .battle-action-stack:hover,
+  .battle-action-stack:focus-visible,
+  .hand-card:not(.unplayable):hover,
+  .hand-card:not(.unplayable):focus-visible,
+  .hand-card:not(.unplayable).focused {
+    transform: none;
+  }
+}
   .summon-preview-panel {
     position: static;
     width: 100%;

@@ -1,4 +1,4 @@
-import type { ReactNode } from 'react'
+import { Fragment, type ReactNode } from 'react'
 
 const NUMERIC_TOKEN_PATTERN = /([+-]?\d+(?:\.\d+)?%?)/g
 
@@ -24,9 +24,17 @@ export function renderTextWithHighlightedNumbers(
     segments.push(text.slice(lastIndex))
   }
 
-  return segments.map((segment, index) =>
-    typeof segment === 'string' ? segment : <b key={`${index}-${segment.value}`} className={numberClassName}>{segment.value}</b>,
-  )
+  return segments.map((segment, index) => {
+    if (typeof segment === 'string') {
+      return <Fragment key={`txt-${index}-${segment}`}>{segment}</Fragment>
+    }
+
+    return (
+      <b key={`num-${index}-${segment.value}`} className={numberClassName}>
+        {segment.value}
+      </b>
+    )
+  })
 }
 
 export function splitDetailTextIntoLines(text: string): string[] {

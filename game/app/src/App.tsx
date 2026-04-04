@@ -143,10 +143,25 @@ function App() {
     }
   })
   const [resetEpoch, setResetEpoch] = useState(0)
+  const [liveAnnouncement, setLiveAnnouncement] = useState<{ id: number; text: string }>({ id: 0, text: '' })
+  const [isShiftHeld, setIsShiftHeld] = useState(false)
+  const [showDetailedTooltips, setShowDetailedTooltips] = useState(false)
+
+  const announce = (text: string) => {
+    if (!text.trim()) {
+      return
+    }
+
+    setLiveAnnouncement((current) => ({
+      id: current.id + 1,
+      text,
+    }))
+  }
 
   useEffect(() => {
     const root = document.documentElement
     const markShift = (held: boolean) => {
+      setIsShiftHeld(held)
       root.dataset.shiftHeld = held ? 'true' : 'false'
     }
 
@@ -216,7 +231,14 @@ function App() {
     }
   }
 
+  const shouldShowDetailedTooltips = isShiftHeld || showDetailedTooltips
+
+  const handleToggleDetailedTooltips = () => {
+    setShowDetailedTooltips((current) => !current)
+  }
+
   const showActionErrorToast = (message: string) => {
+    announce(message)
     toast.error(message, {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
@@ -236,6 +258,7 @@ function App() {
 
   const showActionSuccessToast = (message: string, events: BattleEvent[]) => {
     const split = splitSummaryAndDetail(message)
+    announce(split.summary)
     const damageEvent = events.find(
       (event): event is Extract<BattleEvent, { kind: 'damageApplied' }> => event.kind === 'damageApplied',
     )
@@ -294,6 +317,8 @@ function App() {
     if (!summary) {
       return
     }
+
+    announce(summary)
 
     toast(renderStructuredToast(summary, detail), {
       id: `battle-event-${event.sequence}`,
@@ -530,6 +555,9 @@ function App() {
           duration: ACTION_TOAST_DURATION_MS,
         }}
       />
+      <div key={liveAnnouncement.id} className="sr-only" aria-live="polite" aria-atomic="true">
+        {liveAnnouncement.text}
+      </div>
       <DebugStatePanel
         state={runtime.session.state as Record<string, unknown>}
         bootstrapConfig={bootstrapConfig}
@@ -546,6 +574,9 @@ function App() {
           enemyId={heroBId}
           selfSideKey="a"
           preview={preview}
+          shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          showDetailedTooltipsToggle={showDetailedTooltips}
+          onToggleDetailedTooltips={handleToggleDetailedTooltips}
           onBasicAttack={createBasicAttackHandler(heroAId)}
           onUseEntityActive={createEntityActiveHandler(heroAId)}
           onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')}
@@ -558,6 +589,9 @@ function App() {
           enemyId={heroAId}
           selfSideKey="b"
           preview={preview}
+          shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          showDetailedTooltipsToggle={showDetailedTooltips}
+          onToggleDetailedTooltips={handleToggleDetailedTooltips}
           onBasicAttack={createBasicAttackHandler(heroBId)}
           onUseEntityActive={createEntityActiveHandler(heroBId)}
           onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')}

@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState } from 'react'
+import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Icon } from '@iconify/react/offline'
 import { CARD_ICON_META } from '../data/visual-metadata.ts'
 import type { AppBattlePreview } from '../game-client.ts'
@@ -16,6 +16,9 @@ type HandBarProps = {
   movePoints: number
   maxMovePoints: number
   pressLuckMoveCost: number
+  shouldShowDetailedTooltips: boolean
+  showDetailedTooltipsToggle: boolean
+  onToggleDetailedTooltips: () => void
   focusedHandCardId: string | null
   pendingActionMode: 'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null
   selectedTargetEntityId: string | null
@@ -63,6 +66,9 @@ export function HandBar(props: HandBarProps) {
     movePoints,
     maxMovePoints,
     pressLuckMoveCost,
+    shouldShowDetailedTooltips,
+    showDetailedTooltipsToggle,
+    onToggleDetailedTooltips,
     focusedHandCardId,
     pendingActionMode,
     selectedTargetEntityId,
@@ -75,8 +81,6 @@ export function HandBar(props: HandBarProps) {
   const scrollerRef = useRef<HTMLUListElement | null>(null)
   const handWrapRef = useRef<HTMLDivElement | null>(null)
   const [showScrollHint, setShowScrollHint] = useState(false)
-  const [isShiftHeld, setIsShiftHeld] = useState(false)
-  const [showExtendedDetails, setShowExtendedDetails] = useState(false)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [hoveredCard, setHoveredCard] = useState<{
     card: HandBarCard
@@ -140,28 +144,6 @@ export function HandBar(props: HandBarProps) {
   }, [])
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
-        setIsShiftHeld(true)
-      }
-    }
-
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
-        setIsShiftHeld(false)
-      }
-    }
-
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
-
-    return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
-    }
-  }, [])
-
-  useEffect(() => {
     if (!isCoarsePointer || !hoveredCard) {
       return
     }
@@ -184,8 +166,6 @@ export function HandBar(props: HandBarProps) {
     }
   }, [hoveredCard, isCoarsePointer])
 
-  const shouldShowDetails = isShiftHeld || showExtendedDetails
-
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
     : null
@@ -197,8 +177,22 @@ export function HandBar(props: HandBarProps) {
     (!focusedNeedsTarget || !!selectedTargetEntityId) &&
     (!focusedNeedsPlacement || !!selectedPlacementPosition)
 
+  const handleHandBackgroundClick = (event: MouseEvent<HTMLElement>) => {
+    const target = event.target
+    if (!(target instanceof Element)) {
+      return
+    }
+
+    if (target.closest('.hand-card-item, .hand-focus-panel, .hand-pill-button, .move-meter, .clear-focus, .confirm-play')) {
+      return
+    }
+
+    setHoveredCard(null)
+    onClearFocus()
+  }
+
   return (
-    <section className="card hand-bar" aria-label="Hand cards">
+    <section className="card hand-bar" aria-label="Hand cards" onClick={handleHandBackgroundClick}>
       <div className="hand-bar-header">
         <span className="move-meter hint-wrap" tabIndex={0} aria-label={`Moves ${movePoints} out of ${maxMovePoints}`}>
           <Icon icon="game-icons:boot-prints" className="move-meter-icon" aria-hidden="true" />
@@ -211,9 +205,9 @@ export function HandBar(props: HandBarProps) {
         <div className="hand-header-actions">
           <button
             type="button"
-            className={`hand-pill hand-pill-button hand-details-toggle ${showExtendedDetails ? 'active' : ''}`.trim()}
-            aria-pressed={showExtendedDetails}
-            onClick={() => setShowExtendedDetails((current) => !current)}
+            className={`hand-pill hand-pill-button hand-details-toggle ${showDetailedTooltipsToggle ? 'active' : ''}`.trim()}
+            aria-pressed={showDetailedTooltipsToggle}
+            onClick={onToggleDetailedTooltips}
           >
             Details
           </button>
@@ -355,7 +349,7 @@ export function HandBar(props: HandBarProps) {
                 ? simplifyTooltipSummaryText(hoveredCard.card.summaryText)
                 : 'No text available.'}
             </p>
-            {shouldShowDetails && hoveredCard.card.summaryDetailText ? (
+            {shouldShowDetailedTooltips && hoveredCard.card.summaryDetailText ? (
               <p className="hand-card-tooltip-detail">
                 {splitDetailTextIntoLines(hoveredCard.card.summaryDetailText).map((line, index) => (
                   <span key={`${index}-${line}`} className="hand-card-tooltip-detail-line">
@@ -364,8 +358,8 @@ export function HandBar(props: HandBarProps) {
                 ))}
               </p>
             ) : null}
-            {!shouldShowDetails && hoveredCard.card.summaryDetailText ? (
-              <span className="tooltip-shift-hint">Hold Shift for details.</span>
+            {!shouldShowDetailedTooltips && hoveredCard.card.summaryDetailText ? (
+              <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
             ) : null}
             {hoveredCard.card.castConditionText ? (
               <div className="hand-card-tooltip-note tooltip-row">
@@ -426,7 +420,7 @@ export function HandBar(props: HandBarProps) {
                     <span className="tooltip-main-line">
                       {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.passiveSummaryText)}
                     </span>
-                    {shouldShowDetails && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
+                    {shouldShowDetailedTooltips && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
                       <span className="battle-tooltip-detail">
                         {splitDetailTextIntoLines(hoveredCard.card.summonPreview.passiveSummaryDetailText).map((line, index) => (
                           <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -444,7 +438,7 @@ export function HandBar(props: HandBarProps) {
                     <span className="tooltip-main-line">
                       {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.activeAbilitySummaryText)}
                     </span>
-                    {shouldShowDetails && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
+                    {shouldShowDetailedTooltips && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
                       <span className="battle-tooltip-detail">
                         {splitDetailTextIntoLines(hoveredCard.card.summonPreview.activeAbilitySummaryDetailText).map((line, index) => (
                           <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -456,8 +450,8 @@ export function HandBar(props: HandBarProps) {
                   </div>
                 ) : null}
 
-                {!shouldShowDetails && (hoveredCard.card.summonPreview.passiveSummaryDetailText || hoveredCard.card.summonPreview.activeAbilitySummaryDetailText) ? (
-                  <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                {!shouldShowDetailedTooltips && (hoveredCard.card.summonPreview.passiveSummaryDetailText || hoveredCard.card.summonPreview.activeAbilitySummaryDetailText) ? (
+                  <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
                 ) : null}
               </aside>
             ) : null}
@@ -523,6 +517,18 @@ export function HandBar(props: HandBarProps) {
             <span className="hand-focus-cost" title={`Cost ${focusedCard.moveCost}`}>{focusedCard.moveCost}</span>
           </div>
           <p className="hand-focus-summary">{focusedCard.summaryText?.trim() ? focusedCard.summaryText : 'No text available.'}</p>
+          {shouldShowDetailedTooltips && focusedCard.summaryDetailText ? (
+            <p className="hand-card-tooltip-detail">
+              {splitDetailTextIntoLines(focusedCard.summaryDetailText).map((line, index) => (
+                <span key={`${index}-${line}`} className="hand-card-tooltip-detail-line">
+                  {renderTextWithHighlightedNumbers(line)}
+                </span>
+              ))}
+            </p>
+          ) : null}
+          {!shouldShowDetailedTooltips && focusedCard.summaryDetailText ? (
+            <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
+          ) : null}
           {!focusedCard.isPlayable ? <p className="hand-focus-instruction">Not playable right now.</p> : null}
           <p className="hand-focus-instruction">
             {focusedNeedsTarget

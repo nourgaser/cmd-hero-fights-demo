@@ -1,4 +1,4 @@
-import { useEffect, useMemo, useState, type CSSProperties } from 'react'
+import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
@@ -17,6 +17,9 @@ type PlayerScreenProps = {
   enemyId: string
   selfSideKey: 'a' | 'b'
   preview: AppBattlePreview
+  shouldShowDetailedTooltips: boolean
+  showDetailedTooltipsToggle: boolean
+  onToggleDetailedTooltips: () => void
   onBasicAttack: (input: { targetEntityId: string }) => void
   onUseEntityActive: (input: { sourceEntityId: string; targetEntityId: string }) => void
   onPressLuck: () => void
@@ -35,12 +38,16 @@ export function PlayerScreen(props: PlayerScreenProps) {
     enemyId,
     selfSideKey,
     preview,
+    shouldShowDetailedTooltips,
+    showDetailedTooltipsToggle,
+    onToggleDetailedTooltips,
     onBasicAttack,
     onUseEntityActive,
     onPressLuck,
     onEndTurn,
     onPlayCard,
   } = props
+  const screenRef = useRef<HTMLElement | null>(null)
 
   const self = preview.heroHandCounts.find((hero) => hero.heroEntityId === selfId)
   const selfHeroDetails = preview.heroDetailsByEntityId[selfId] ?? null
@@ -64,29 +71,67 @@ export function PlayerScreen(props: PlayerScreenProps) {
   } | null>(null)
   const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null>(null)
   const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
-  const [isShiftHeld, setIsShiftHeld] = useState(false)
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
+  const [openTouchTooltip, setOpenTouchTooltip] = useState<
+    'luck-help' | 'basic-attack' | 'deck' | 'press-luck' | null
+  >(null)
+
+  const toggleTouchTooltip = (tooltipId: 'luck-help' | 'basic-attack' | 'deck' | 'press-luck') => {
+    setOpenTouchTooltip((current) => (current === tooltipId ? null : tooltipId))
+  }
 
   useEffect(() => {
-    const handleKeyDown = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
-        setIsShiftHeld(true)
-      }
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
     }
 
-    const handleKeyUp = (event: KeyboardEvent) => {
-      if (event.key === 'Shift') {
-        setIsShiftHeld(false)
-      }
+    const mediaQuery = window.matchMedia('(pointer: coarse)')
+    const syncPointerMode = () => {
+      setIsCoarsePointer(mediaQuery.matches)
     }
 
-    window.addEventListener('keydown', handleKeyDown)
-    window.addEventListener('keyup', handleKeyUp)
+    syncPointerMode()
+    mediaQuery.addEventListener('change', syncPointerMode)
 
     return () => {
-      window.removeEventListener('keydown', handleKeyDown)
-      window.removeEventListener('keyup', handleKeyUp)
+      mediaQuery.removeEventListener('change', syncPointerMode)
     }
   }, [])
+
+  useEffect(() => {
+    if (!isCoarsePointer || !openTouchTooltip) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const screen = screenRef.current
+      if (!screen) {
+        return
+      }
+
+      const target = event.target
+      if (!(target instanceof Node)) {
+        return
+      }
+
+      if (!screen.contains(target)) {
+        setOpenTouchTooltip(null)
+        return
+      }
+
+      const element = target instanceof Element ? target : null
+      if (element?.closest('.touch-tooltip-toggle') || element?.closest('.hint-wrap.force-tooltip-open')) {
+        return
+      }
+
+      setOpenTouchTooltip(null)
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [isCoarsePointer, openTouchTooltip])
 
   const focusedCard = useMemo(() => {
     if (!focusedHandCardId) {
@@ -371,8 +416,63 @@ export function PlayerScreen(props: PlayerScreenProps) {
     ? splitDetailTextIntoLines(selfHeroDetails.basicAttack.summaryDetailText)
     : []
 
+  const hasSelectionState =
+    !!focusedHandCardId ||
+    !!pendingActionMode ||
+    !!selectedEntityActiveSourceId ||
+    !!selectedTargetEntityId ||
+    !!selectedPlacementPosition
+
+  useEffect(() => {
+    if (!hasSelectionState) {
+      return
+    }
+
+    const handlePointerDown = (event: PointerEvent) => {
+      const screen = screenRef.current
+      if (!screen) {
+        return
+      }
+
+      const target = event.target
+      if (!(target instanceof Element)) {
+        return
+      }
+
+      if (!screen.contains(target)) {
+        return
+      }
+
+      if (
+        target.closest(
+          '.hand-bar, .hand-card-item, .hand-focus-panel, .hand-card-info, .battle-action-overlay, .deck-overlay, .touch-tooltip-toggle, .hint-wrap, button, input, textarea, [role="button"]',
+        )
+      ) {
+        return
+      }
+
+      if (target.closest('.battle-slot.target-selectable, .battle-slot.placement-selectable')) {
+        return
+      }
+
+      handleClearFocus()
+    }
+
+    window.addEventListener('pointerdown', handlePointerDown)
+    return () => {
+      window.removeEventListener('pointerdown', handlePointerDown)
+    }
+  }, [
+    hasSelectionState,
+    focusedHandCardId,
+    pendingActionMode,
+    selectedEntityActiveSourceId,
+    selectedTargetEntityId,
+    selectedPlacementPosition,
+  ])
+
   return (
-    <section className="screen" style={screenStyle} aria-label={`${SIDE_VISUALS[selfSideKey].name} game screen`}>
+    <section ref={screenRef} className="screen" style={screenStyle} aria-label={`${SIDE_VISUALS[selfSideKey].name} game screen`}>
       <header className="screen-head">
         <h1>{title}</h1>
         <p>{SIDE_VISUALS[selfSideKey].name}</p>
@@ -381,7 +481,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
         <section className="luck-strip" aria-label="Luck track">
           <h2 className="luck-title">
             {LUCK_VISUALS.label}
-            <span className="help-chip hint-wrap" tabIndex={0}>
+            <span className={`help-chip hint-wrap ${openTouchTooltip === 'luck-help' ? 'force-tooltip-open' : ''}`.trim()} tabIndex={0}>
               <Icon icon="game-icons:info" aria-hidden="true" />
               <span className="sr-only">Luck explanation</span>
               <span className="hover-card" role="tooltip">
@@ -389,6 +489,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 <span>{LUCK_VISUALS.description}</span>
               </span>
             </span>
+            <button
+              type="button"
+              className="touch-tooltip-toggle inline-toggle"
+              aria-label="Show luck details"
+              aria-pressed={openTouchTooltip === 'luck-help'}
+              onClick={() => toggleTouchTooltip('luck-help')}
+            >
+              <Icon icon="game-icons:info" aria-hidden="true" />
+            </button>
           </h2>
           <LuckBar
             selfLuck={selfLuck}
@@ -400,7 +509,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
         <section className="battle-overlay-layer">
           <aside className="battle-action-overlay action-overlay-left" aria-label="Basic attack action">
-            <span className="battle-action-shell hint-wrap" tabIndex={0}>
+            <span className={`battle-action-shell hint-wrap ${openTouchTooltip === 'basic-attack' ? 'force-tooltip-open' : ''}`.trim()} tabIndex={0}>
               <button
                 type="button"
                 className="battle-action-stack basic"
@@ -429,7 +538,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
                     ? simplifyTooltipSummaryText(selfHeroDetails.basicAttack.summaryText)
                     : `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}
                 </span>
-                {isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
+                {shouldShowDetailedTooltips && selfHeroDetails?.basicAttack.summaryDetailText ? (
                   <span className="battle-tooltip-detail">
                     {basicAttackDetailLines.map((line, index) => (
                       <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -438,8 +547,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
                     ))}
                   </span>
                 ) : null}
-                {!isShiftHeld && selfHeroDetails?.basicAttack.summaryDetailText ? (
-                  <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                {!shouldShowDetailedTooltips && selfHeroDetails?.basicAttack.summaryDetailText ? (
+                  <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
                 ) : null}
                 <span className="tooltip-row">
                   <strong className="tooltip-inline-label">Passive:</strong>
@@ -452,6 +561,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 </span>
               </span>
             </span>
+            <button
+              type="button"
+              className="touch-tooltip-toggle battle-tooltip-toggle"
+              aria-label="Show basic attack details"
+              aria-pressed={openTouchTooltip === 'basic-attack'}
+              onClick={() => toggleTouchTooltip('basic-attack')}
+            >
+              <Icon icon="game-icons:info" aria-hidden="true" />
+            </button>
           </aside>
 
           <BattlefieldGrid
@@ -463,7 +581,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
             selectedTargetEntityId={selectedTargetEntityId}
             onSelectTargetEntityId={isActivePlayer ? handleSelectTarget : undefined}
             onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
-            isShiftHeld={isShiftHeld}
+            shouldShowDetailedTooltips={shouldShowDetailedTooltips}
             highlightedPlacementPositions={
               isActivePlayer && pendingActionMode !== 'basicAttack' ? highlightedPlacementPositions : []
             }
@@ -476,7 +594,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           />
 
           <aside
-            className="deck-overlay hint-wrap"
+            className={`deck-overlay hint-wrap ${openTouchTooltip === 'deck' ? 'force-tooltip-open' : ''}`.trim()}
             tabIndex={0}
             aria-label={`Deck status. ${selfDeckSize} cards in deck and ${selfHandSize} cards in hand.`}
           >
@@ -496,9 +614,18 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 {selfHandSize} cards.
               </span>
             </span>
+            <button
+              type="button"
+              className="touch-tooltip-toggle deck-tooltip-toggle"
+              aria-label="Show deck details"
+              aria-pressed={openTouchTooltip === 'deck'}
+              onClick={() => toggleTouchTooltip('deck')}
+            >
+              <Icon icon="game-icons:info" aria-hidden="true" />
+            </button>
           </aside>
 
-          <aside className="battle-action-overlay action-overlay-right hint-wrap" aria-label="Press luck action" tabIndex={0}>
+          <aside className={`battle-action-overlay action-overlay-right hint-wrap ${openTouchTooltip === 'press-luck' ? 'force-tooltip-open' : ''}`.trim()} aria-label="Press luck action" tabIndex={0}>
             <button
               type="button"
               className="battle-action-stack luck"
@@ -526,6 +653,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
               <strong>Luck</strong>
               <span>Shift luck in your favor by 1 point.</span>
             </span>
+            <button
+              type="button"
+              className="touch-tooltip-toggle battle-tooltip-toggle"
+              aria-label="Show press luck details"
+              aria-pressed={openTouchTooltip === 'press-luck'}
+              onClick={() => toggleTouchTooltip('press-luck')}
+            >
+              <Icon icon="game-icons:info" aria-hidden="true" />
+            </button>
           </aside>
         </section>
 
@@ -540,6 +676,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
           selectedTargetEntityId={selectedTargetEntityId}
           selectedPlacementPosition={selectedPlacementPosition}
           onEndTurn={onEndTurn}
+          shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          showDetailedTooltipsToggle={showDetailedTooltipsToggle}
+          onToggleDetailedTooltips={onToggleDetailedTooltips}
           onFocusCard={handleFocusCard}
           onConfirmFocusedCard={handleConfirmFocusedCard}
           onClearFocus={handleClearFocus}

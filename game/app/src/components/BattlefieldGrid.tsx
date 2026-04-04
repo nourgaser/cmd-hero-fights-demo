@@ -16,7 +16,7 @@ type BattlefieldGridProps = {
   selectedTargetEntityId?: string | null
   onSelectTargetEntityId?: (entityId: string) => void
   onSelectEntityId?: (entityId: string) => void
-  isShiftHeld?: boolean
+  shouldShowDetailedTooltips?: boolean
   highlightedPlacementPositions?: Array<{ row: number; column: number }>
   selectedPlacementPosition?: { row: number; column: number } | null
   onSelectPlacementPosition?: (position: { row: number; column: number }) => void
@@ -32,7 +32,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     selectedTargetEntityId,
     onSelectTargetEntityId,
     onSelectEntityId,
-    isShiftHeld = false,
+    shouldShowDetailedTooltips = false,
     highlightedPlacementPositions = [],
     selectedPlacementPosition,
     onSelectPlacementPosition,
@@ -277,7 +277,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <div className="battlefield-hover-section">
                           <span className="hover-group-title">Basic Attack</span>
                           <span className="tooltip-main-line">{simplifyTooltipSummaryText(heroDetails.basicAttack.summaryText)}</span>
-                          {isShiftHeld && heroDetails.basicAttack.summaryDetailText ? (
+                          {shouldShowDetailedTooltips && heroDetails.basicAttack.summaryDetailText ? (
                             <span className="battle-tooltip-detail">
                               {splitDetailTextIntoLines(heroDetails.basicAttack.summaryDetailText).map((line, index) => (
                                 <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -286,8 +286,8 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                               ))}
                             </span>
                           ) : null}
-                          {!isShiftHeld && heroDetails.basicAttack.summaryDetailText ? (
-                            <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                          {!shouldShowDetailedTooltips && heroDetails.basicAttack.summaryDetailText ? (
+                            <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
                           ) : null}
                           <span className="battlefield-hover-note tooltip-row">
                             <strong className="tooltip-inline-label">Cost:</strong>
@@ -302,7 +302,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <div className="battlefield-hover-section">
                           <span className="tooltip-row">{meta.description ?? 'Unit on battlefield.'}</span>
                           {entityStats?.sourceCardSummary ? <span className="tooltip-main-line">{simplifyTooltipSummaryText(entityStats.sourceCardSummary)}</span> : null}
-                          {isShiftHeld && entityStats?.sourceCardSummaryDetailText ? (
+                          {shouldShowDetailedTooltips && entityStats?.sourceCardSummaryDetailText ? (
                             <span className="battle-tooltip-detail">
                               {splitDetailTextIntoLines(entityStats.sourceCardSummaryDetailText).map((line, index) => (
                                 <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -311,15 +311,15 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                               ))}
                             </span>
                           ) : null}
-                          {!isShiftHeld && entityStats?.sourceCardSummaryDetailText ? (
-                            <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                          {!shouldShowDetailedTooltips && entityStats?.sourceCardSummaryDetailText ? (
+                            <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
                           ) : null}
                         </div>
                         {entityStats?.activeAbility ? (
                           <div className="battlefield-hover-section">
                             <span className="hover-group-title">Active</span>
                             <span className="tooltip-main-line">{simplifyTooltipSummaryText(entityStats.activeAbility.summaryText)}</span>
-                            {isShiftHeld && entityStats.activeAbility.summaryDetailText ? (
+                            {shouldShowDetailedTooltips && entityStats.activeAbility.summaryDetailText ? (
                               <span className="battle-tooltip-detail">
                                 {splitDetailTextIntoLines(entityStats.activeAbility.summaryDetailText).map((line, index) => (
                                   <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
@@ -328,8 +328,8 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                                 ))}
                               </span>
                             ) : null}
-                            {!isShiftHeld && entityStats.activeAbility.summaryDetailText ? (
-                              <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                            {!shouldShowDetailedTooltips && entityStats.activeAbility.summaryDetailText ? (
+                              <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
                             ) : null}
                             <span className="battlefield-hover-note tooltip-row">
                               <strong className="tooltip-inline-label">Cost:</strong>
