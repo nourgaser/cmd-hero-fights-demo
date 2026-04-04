@@ -15,6 +15,7 @@ type DebugStatePanelProps = {
 
 const DEBUG_PANEL_STORAGE_KEY = 'cmd-hero:debug-panel-state'
 const DEFAULT_LAYOUT = { x: 12, y: 12, width: 360, height: 560 }
+const COLLAPSED_BUBBLE_SIZE = 56
 
 type DebugPanelPersistedState = {
   x: number
@@ -171,11 +172,12 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   return (
     <Rnd
       position={{ x, y }}
-      size={{ width, height }}
-      minWidth={300}
-      minHeight={isCollapsed ? 58 : 220}
+      size={isCollapsed ? { width: COLLAPSED_BUBBLE_SIZE, height: COLLAPSED_BUBBLE_SIZE } : { width, height }}
+      minWidth={isCollapsed ? COLLAPSED_BUBBLE_SIZE : 300}
+      minHeight={isCollapsed ? COLLAPSED_BUBBLE_SIZE : 220}
       bounds="window"
       dragHandleClassName="debug-panel-header"
+      cancel=".debug-panel-actions, .debug-panel-actions *, .debug-panel-bubble"
       enableResizing={!isCollapsed}
       className={isCollapsed ? 'debug-panel debug-panel-collapsed' : 'debug-panel'}
       onDragStop={(_event, data) => {
@@ -191,32 +193,43 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
         }))
       }}
     >
-      <aside aria-label="Debug state panel">
-        <header className="debug-panel-header">
-          <strong>Debug State</strong>
-          <div className="debug-panel-actions">
-            <button
-              type="button"
-              onClick={() => updateState((current) => ({ ...current, expandAll: !current.expandAll }))}
-            >
-              {expandAll ? 'Collapse All' : 'Expand All'}
-            </button>
-            <button type="button" onClick={handleCopy}>
-              Copy JSON
-            </button>
-            <button type="button" onClick={onHardReset}>
-              Hard Reset
-            </button>
-            <button
-              type="button"
-              onClick={() => updateState((current) => ({ ...current, isCollapsed: !current.isCollapsed }))}
-            >
-              {isCollapsed ? 'Open' : 'Hide'}
-            </button>
-          </div>
-        </header>
+      {isCollapsed ? (
+        <aside aria-label="Debug state panel" className="debug-panel-bubble-shell debug-panel-header">
+          <button
+            type="button"
+            className="debug-panel-bubble"
+            aria-label="Open debug panel"
+            onClick={() => updateState((current) => ({ ...current, isCollapsed: false }))}
+          >
+            Dbg
+          </button>
+        </aside>
+      ) : (
+        <aside aria-label="Debug state panel">
+          <header className="debug-panel-header">
+            <strong>Debug State</strong>
+            <div className="debug-panel-actions">
+              <button
+                type="button"
+                onClick={() => updateState((current) => ({ ...current, expandAll: !current.expandAll }))}
+              >
+                {expandAll ? 'Collapse All' : 'Expand All'}
+              </button>
+              <button type="button" onClick={handleCopy}>
+                Copy JSON
+              </button>
+              <button type="button" onClick={onHardReset}>
+                Hard Reset
+              </button>
+              <button
+                type="button"
+                onClick={() => updateState((current) => ({ ...current, isCollapsed: !current.isCollapsed }))}
+              >
+                {isCollapsed ? 'Open' : 'Hide'}
+              </button>
+            </div>
+          </header>
 
-        {!isCollapsed ? (
           <div className="debug-tree-wrap">
             <div className="debug-seed-panel">
               <label className="debug-seed-field">
@@ -425,8 +438,8 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               }
             />
           </div>
-        ) : null}
-      </aside>
+        </aside>
+      )}
     </Rnd>
   )
 }
