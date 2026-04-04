@@ -242,7 +242,7 @@ export function HandBar(props: HandBarProps) {
 
         {hoveredCard ? (
           <span
-            className="hover-card hand-card-hover hand-card-hover-overlay"
+            className={`hover-card hand-card-hover hand-card-hover-overlay ${hoveredCard.card.summonPreview ? 'has-summon-preview' : ''}`.trim()}
             role="tooltip"
             style={{
               left: `${hoveredCard.left}px`,
@@ -284,6 +284,94 @@ export function HandBar(props: HandBarProps) {
                 <strong className="tooltip-inline-label">Condition:</strong>
                 {hoveredCard.card.castConditionText}
               </div>
+            ) : null}
+            {hoveredCard.card.summonPreview ? (
+              <aside className="summon-preview-panel" aria-label={`Summon preview for ${hoveredCard.card.summonPreview.displayName}`}>
+                <div className="hand-card-tooltip-header summon-preview-header">
+                  <strong>{hoveredCard.card.summonPreview.displayName}</strong>
+                  <div className="hand-card-tooltip-badges">
+                    <span
+                      className="hand-card-type-icon"
+                      title={getCardTypeVisual(hoveredCard.card.summonPreview.cardType).label}
+                      aria-label={getCardTypeVisual(hoveredCard.card.summonPreview.cardType).label}
+                    >
+                      <Icon icon={getCardTypeVisual(hoveredCard.card.summonPreview.cardType).icon} aria-hidden="true" />
+                    </span>
+                    <span
+                      className={`hand-card-rarity-swatch rarity-${hoveredCard.card.summonPreview.rarity}`}
+                      title={getRarityLabel(hoveredCard.card.summonPreview.rarity)}
+                      aria-label={getRarityLabel(hoveredCard.card.summonPreview.rarity)}
+                    />
+                  </div>
+                </div>
+
+                <div className="summon-preview-stats" aria-label="Summon combat and vitals">
+                  <span className="battlefield-hover-stat">
+                    <strong>HP</strong>
+                    <em>{hoveredCard.card.summonPreview.maxHealth}</em>
+                  </span>
+                  <span className="battlefield-hover-stat">
+                    <strong>AD</strong>
+                    <em>{hoveredCard.card.summonPreview.attackDamage}</em>
+                  </span>
+                  <span className="battlefield-hover-stat">
+                    <strong>AP</strong>
+                    <em>{hoveredCard.card.summonPreview.abilityPower}</em>
+                  </span>
+                  <span className="battlefield-hover-stat">
+                    <strong>AR</strong>
+                    <em>{hoveredCard.card.summonPreview.armor}</em>
+                  </span>
+                  <span className="battlefield-hover-stat">
+                    <strong>MR</strong>
+                    <em>{hoveredCard.card.summonPreview.magicResist}</em>
+                  </span>
+                  <span className="battlefield-hover-stat">
+                    <strong>MOV</strong>
+                    <em>{hoveredCard.card.summonPreview.maxMovesPerTurn}</em>
+                  </span>
+                </div>
+
+                {hoveredCard.card.summonPreview.passiveSummaryText ? (
+                  <div className="summon-preview-section">
+                    <span className="hover-group-title">Passive</span>
+                    <span className="tooltip-main-line">
+                      {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.passiveSummaryText)}
+                    </span>
+                    {isShiftHeld && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
+                      <span className="battle-tooltip-detail">
+                        {splitDetailTextIntoLines(hoveredCard.card.summonPreview.passiveSummaryDetailText).map((line, index) => (
+                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
+                            {renderTextWithHighlightedNumbers(line)}
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {hoveredCard.card.summonPreview.activeAbilitySummaryText ? (
+                  <div className="summon-preview-section">
+                    <span className="hover-group-title">Active</span>
+                    <span className="tooltip-main-line">
+                      {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.activeAbilitySummaryText)}
+                    </span>
+                    {isShiftHeld && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
+                      <span className="battle-tooltip-detail">
+                        {splitDetailTextIntoLines(hoveredCard.card.summonPreview.activeAbilitySummaryDetailText).map((line, index) => (
+                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
+                            {renderTextWithHighlightedNumbers(line)}
+                          </span>
+                        ))}
+                      </span>
+                    ) : null}
+                  </div>
+                ) : null}
+
+                {!isShiftHeld && (hoveredCard.card.summonPreview.passiveSummaryDetailText || hoveredCard.card.summonPreview.activeAbilitySummaryDetailText) ? (
+                  <span className="tooltip-shift-hint">Hold Shift for details.</span>
+                ) : null}
+              </aside>
             ) : null}
           </span>
         ) : null}

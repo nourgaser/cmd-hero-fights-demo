@@ -67,6 +67,23 @@ export type AppBattlePreview = {
       targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
       validPlacementPositions: Array<{ row: number; column: number }>
+      summonPreview: {
+        entityDefinitionId: string
+        entityKind: 'weapon' | 'totem' | 'companion'
+        displayName: string
+        cardType: 'weapon' | 'totem' | 'companion'
+        rarity: 'common' | 'rare' | 'ultimate' | 'general'
+        maxHealth: number
+        armor: number
+        magicResist: number
+        attackDamage: number
+        abilityPower: number
+        maxMovesPerTurn: number
+        passiveSummaryText: string | null
+        passiveSummaryDetailText: string | null
+        activeAbilitySummaryText: string | null
+        activeAbilitySummaryDetailText: string | null
+      } | null
     }>
   }>
   heroActionTargets: Array<{
@@ -552,6 +569,101 @@ function describeCardCastCondition(cardDefinition: unknown): string | null {
   }
 }
 
+function resolveSummonPreviewForCard(options: {
+  cardDef: {
+    effects: Array<{
+      payload: {
+        kind: string
+      } & Record<string, unknown>
+    }>
+  }
+  gameApi: ReturnType<typeof createGameApi>
+  cardsById: Record<string, (ReturnType<typeof createGameApi>['cardsById'])[keyof ReturnType<typeof createGameApi>['cardsById']]>
+  ownerHeroEntityId: string
+  luck: {
+    anchorHeroEntityId: string
+    balance: number
+  }
+}): AppBattlePreview['heroHands'][number]['cards'][number]['summonPreview'] {
+  const { cardDef, gameApi, cardsById, ownerHeroEntityId, luck } = options
+  const summonPayload = cardDef.effects
+    .map((effect) => effect.payload)
+    .find(
+      (payload): payload is { kind: 'summonEntity'; entityDefinitionId: string; entityKind: 'weapon' | 'totem' | 'companion' } =>
+        payload.kind === 'summonEntity' &&
+        typeof payload.entityDefinitionId === 'string' &&
+        (payload.entityKind === 'weapon' || payload.entityKind === 'totem' || payload.entityKind === 'companion'),
+    )
+
+  if (!summonPayload) {
+    return null
+  }
+
+  const summonedBlueprint = gameApi.resolveSummonedEntityBlueprint(
+    summonPayload.entityDefinitionId,
+    summonPayload.entityKind,
+  )
+
+  if (!summonedBlueprint) {
+    return null
+  }
+
+  const sourceCardDef = cardsById[summonedBlueprint.definitionCardId]
+  const passiveSummary = sourceCardDef
+    ? describeNumericCardText({
+        card: sourceCardDef,
+        actorHero: {
+          entityId: ownerHeroEntityId,
+          attackDamage: summonedBlueprint.attackDamage,
+          abilityPower: summonedBlueprint.abilityPower,
+          armor: summonedBlueprint.armor,
+        },
+        luck,
+      })
+    : null
+
+  const activeProfile =
+    summonedBlueprint.kind === 'weapon' || summonedBlueprint.kind === 'companion'
+      ? gameApi.resolveEntityActiveProfile({
+          sourceDefinitionCardId: summonedBlueprint.definitionCardId,
+          sourceKind: summonedBlueprint.kind,
+        })
+      : undefined
+
+  const activeSummary = activeProfile
+    ? buildEntityActiveSummary({
+        rollingHeroEntityId: ownerHeroEntityId,
+        attack: activeProfile,
+        currentAttackDamage: summonedBlueprint.attackDamage,
+        currentAbilityPower: summonedBlueprint.abilityPower,
+        luck,
+      })
+    : null
+
+  const sourceCardType =
+    sourceCardDef?.type === 'weapon' || sourceCardDef?.type === 'totem' || sourceCardDef?.type === 'companion'
+      ? sourceCardDef.type
+      : summonedBlueprint.kind
+
+  return {
+    entityDefinitionId: summonPayload.entityDefinitionId,
+    entityKind: summonedBlueprint.kind,
+    displayName: sourceCardDef?.name ?? summonPayload.entityDefinitionId,
+    cardType: sourceCardType,
+    rarity: sourceCardDef?.rarity ?? 'common',
+    maxHealth: summonedBlueprint.maxHealth,
+    armor: summonedBlueprint.armor,
+    magicResist: summonedBlueprint.magicResist,
+    attackDamage: summonedBlueprint.attackDamage,
+    abilityPower: summonedBlueprint.abilityPower,
+    maxMovesPerTurn: summonedBlueprint.maxMovesPerTurn ?? 0,
+    passiveSummaryText: passiveSummary?.summaryText ?? null,
+    passiveSummaryDetailText: passiveSummary?.summaryDetailText ?? null,
+    activeAbilitySummaryText: activeSummary?.summaryText ?? null,
+    activeAbilitySummaryDetailText: activeSummary?.summaryDetailText ?? null,
+  }
+}
+
 function resolveHeroSetup(
   gameApi: ReturnType<typeof createGameApi>,
   setup: HeroBootstrapConfig,
@@ -673,6 +785,13 @@ function buildPreviewFromState(options: {
           targeting: cardDef.targeting,
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
           validPlacementPositions: handCard.validPlacementPositions ?? [],
+          summonPreview: resolveSummonPreviewForCard({
+            cardDef,
+            gameApi,
+            cardsById,
+            ownerHeroEntityId: entity.entityId,
+            luck: state.luck,
+          }),
         }
       }),
     }

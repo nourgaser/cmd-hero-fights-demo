@@ -35,6 +35,7 @@ export type GameResolveActionInput = {
 export type GameApi = {
   cardsById: typeof CARD_DEFINITIONS_BY_ID;
   heroesById: typeof HERO_DEFINITIONS_BY_ID;
+  resolveSummonedEntityBlueprint: typeof resolveSummonedEntityBlueprint;
   resolveEntityActiveProfile: typeof resolveEntityActiveProfile;
   createBattle(input: GameCreateBattleInput): CreatedBattle;
   resolveAction(input: GameResolveActionInput): ResolveActionResult;
@@ -44,6 +45,7 @@ export function createGameApi(): GameApi {
   return {
     cardsById: CARD_DEFINITIONS_BY_ID,
     heroesById: HERO_DEFINITIONS_BY_ID,
+    resolveSummonedEntityBlueprint,
     resolveEntityActiveProfile,
     createBattle(input) {
       return createBattleCore({

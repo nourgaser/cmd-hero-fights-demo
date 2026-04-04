@@ -106,10 +106,10 @@ Goal: move from direct mutable stat edits to derived, traceable effective stats 
 
 ### Summon Preview Tooltip
 
-- [ ] Add side tooltip for summon cards showing summoned entity preview before play
-- [ ] Match existing card tooltip framing (header, type, rarity) for summon preview panel
-- [ ] Show summon preview combat/vitals stats and relevant active/passive summary text
-- [ ] Wire preview data from runtime content definitions (no markdown/reference-content parsing)
+- [x] Add side tooltip for summon cards showing summoned entity preview before play
+- [x] Match existing card tooltip framing (header, type, rarity) for summon preview panel
+- [x] Show summon preview combat/vitals stats and relevant active/passive summary text
+- [x] Wire preview data from runtime content definitions (no markdown/reference-content parsing)
 
 ### Action/Toast History
 
