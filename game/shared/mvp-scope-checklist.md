@@ -48,58 +48,67 @@ This checklist is the implementation gate for MVP work.
 - [x] Hand and card play controls (with targeting)
 - [x] Non-card action controls (basic attack, entity active, press luck, end turn)
 
-## Stat Modifier Rehaul Plan
+## Number Modifier Rehaul Plan
 
-Goal: move from direct mutable stat edits to derived, traceable effective stats powered by modifiers and aura rules.
+Goal: move from direct mutable numeric edits to derived, traceable effective numbers powered by persistent modifiers and support all gameplay-resolved numbers: entity stats, effect payload values (damage ranges, draw counts, heal ranges, refunds), and core action constants (basic attack ranges, luck deltas).
 
-### Phase 1: Shared Model Foundation
+### Phase 1: Shared Model Foundation + Keyword Architecture
 
-- [ ] Add immutable base combat stats to runtime entities (hero, weapon, totem, companion)
-- [ ] Add active stat modifier model (id, source metadata, stat, operation, value, lifetime, label)
-- [ ] Add selector-driven aura/rule model (source + target selector + stat operations + active condition)
-- [ ] Add stat explanation row model for UI traceability (base, contributions, effective)
-- [ ] Document and enforce deterministic stat resolution order in code
+- [ ] Add immutable base values to runtime entities and effect payloads (hero/summon stats, action constants)
+- [ ] Add active number modifier model (id, source metadata, target binding, operation, value, lifetime, condition)
+- [ ] Add selector-driven passive rule model (source binding + target selector + numeric operations + active condition)
+- [ ] Add number explanation row model for UI traceability (base, source-tagged contributions, effective)
+- [ ] Document and enforce deterministic number resolution order in code
+- [ ] Add explicit keyword model (keyword id, display name, description, optional icon/behavior metadata)
+- [ ] Add card-level keyword references and clarify relationship between keywords and generic tags
 
-### Phase 2: Central Resolver
+### Phase 2: Central Resolver Contract
 
-- [ ] Add engine stat resolver module to compute effective stats from base + active modifiers + aura rules
-- [ ] Add resolver outputs for explanation breakdown per stat (source-tagged contribution rows)
-- [ ] Add helper APIs for effective stat reads in engine paths (combat, scaling, resistances, previews)
+- [ ] Add engine number resolver module to compute effective numbers from base + active modifiers + passive rules
+- [ ] Extend resolver to cover entity stats, effect payload numbers (damage/heal ranges, draw counts, refunds), and action constants
+- [ ] Add resolver outputs for explanation breakdown per number (source-tagged contribution rows)
+- [ ] Add helper APIs for effective number reads in engine paths (combat, scaling, resistances, previews, card play)
 
-### Phase 3: Lifecycle Integration
+### Phase 3: Lifecycle Integration + Keyword Linkage
 
-- [ ] Initialize modifier/aura collections in battle creation
-- [ ] Initialize modifier/aura collections on summoned entities
-- [ ] Add source cleanup on entity removal (remove/disable source-emitted aura effects and linked modifiers)
-- [ ] Extend battle events with modifier/aura applied/removed events for deterministic traceability
+- [ ] Initialize modifier/rule collections in battle creation
+- [ ] Initialize modifier/rule collections on summoned entities
+- [ ] Add source cleanup on entity removal (remove/disable source-emitted rules and linked modifiers)
+- [ ] Extend battle events with number-modifier applied/updated/expired events for deterministic traceability
+- [ ] Link effect/card behavior to modeled keywords so UI can render canonical keyword metadata while engine executes effects declaratively
 
 ### Phase 4: Hard Switch Effect/Action Migration
 
-- [ ] Replace direct stat mutation handlers (gain/lose armor, MR, AD) with modifier operations only
-- [ ] Implement `modifyAttackDamageWhileSourcePresent` using selector-driven aura rules
+- [ ] Replace direct numeric mutation in stat handlers (gain/lose armor, MR, AD) with modifier operations
+- [ ] Migrate effect payload number handlers (damage/heal, draw count, refunds) to resolver-adjusted reads
+- [ ] Migrate action-level constants (basic attack ranges, luck deltas, press-luck bounds) to resolver-adjusted reads
+- [ ] Implement condition-based numeric adjustments (e.g., `modifyAttackDamageWhileSourcePresent`) using passive rules
 - [ ] Refactor temporary buff patterns from inverse rollback effects to lifetime/condition-based modifiers
-- [ ] Update damage/heal/action calculations to read effective stats from resolver only
-- [ ] Remove obsolete direct-stat effect payloads/handlers after migration
+- [ ] Remove obsolete direct-mutation effect payloads/handlers after migration
 
 ### Phase 5: Full UX Traceability
 
-- [ ] Extend app preview data with stat base/effective/delta and explanation rows
-- [ ] Battlefield hover: color AD/Armor/MR/AP states by delta vs base (up/down/neutral)
-- [ ] Shift-hover: show per-stat detailed contribution lines grouped by source
-- [ ] Ensure hero/summon tooltips and active previews consistently use effective stats
+- [ ] Extend app preview data with number base/effective/delta and explanation rows for stats and card/action numbers
+- [ ] Battlefield hover: color numeric stats by delta vs base (up/down/neutral)
+- [ ] Shift-hover: show per-number detailed contribution lines grouped by source
+- [ ] Show keyword metadata in card tooltips, entity previews, and debug surfaces
+- [ ] Ensure hero/summon tooltips and active previews consistently use effective numbers
 
-### Phase 6: Commander X Content Migration
+### Phase 6: Commander X Content + Keyword Modeling
 
-- [ ] Update included Commander X cards that currently rely on direct stat mutations to modifier/rule semantics
-- [ ] Keep effect modeling declarative: active rules + conditions + expirations, not one-off direct edits
+- [ ] Update included Commander X cards to use keyword references alongside unique effects
+- [ ] Validate mixed keyword + unique-effect cards (e.g., Jaquemin: Chivalry + follow-up attack)
+- [ ] Update cards relying on direct numeric mutations to passive rule / modifier semantics
+- [ ] Keep effect modeling declarative: passive rules + conditions + expirations, not one-off direct edits
 
 ### Phase 7: Manual Acceptance Pass (No Tests)
 
-- [ ] Fixed-seed scenario: aura source present before ally summon still affects newly summoned ally
-- [ ] Fixed-seed scenario: removing aura source removes contributions from all valid targets
+- [ ] Fixed-seed scenario: passive rule source present before ally summon still affects newly summoned ally
+- [ ] Fixed-seed scenario: removing passive source removes contributions from all valid targets
 - [ ] Fixed-seed scenario: stacked positive/negative modifiers resolve deterministically and display correctly
-- [ ] Fixed-seed scenario: temporary modifier expiration updates effective stats without direct rollback mutation
-- [ ] Verify all gameplay stat changes are driven by modifier/rule records and resolver output
+- [ ] Fixed-seed scenario: temporary modifier expiration updates effective numbers without direct rollback mutation
+- [ ] Fixed-seed scenario: keyword metadata is available and correctly linked in tooltips, previews, and debug surfaces
+- [ ] Verify all gameplay number changes are driven by modifier/rule records and resolver output
 
 
 ## Next UI/Product Tasks
