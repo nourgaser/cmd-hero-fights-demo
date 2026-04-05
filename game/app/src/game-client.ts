@@ -21,6 +21,15 @@ export type AppNumberTrace = {
   contributions: AppNumberContributionPreview[]
 }
 
+const STAT_METADATA = {
+  attackDamage: { label: 'attack damage', shortLabel: 'AD', iconId: 'game-icons:broadsword' },
+  abilityPower: { label: 'ability power', shortLabel: 'AP', iconId: 'game-icons:magic-swirl' },
+  armor: { label: 'armor', shortLabel: 'AR', iconId: 'game-icons:checked-shield' },
+  magicResist: { label: 'magic resist', shortLabel: 'MR', iconId: 'game-icons:shield-reflect' },
+} as const
+
+type StatKey = keyof typeof STAT_METADATA
+
 export type AppBattlePreview = {
   battleId: string
   seed: string
@@ -488,45 +497,27 @@ function describeNumericCardText(options: {
     }
   }
 
-  if (payload.kind === 'gainArmor' || payload.kind === 'loseArmor') {
-    const armorPayload = payload as {
-      kind: 'gainArmor' | 'loseArmor'
+  if (payload.kind === 'modifyStat') {
+    const statPayload = payload as {
+      kind: 'modifyStat'
+      stat: StatKey
       amount: number
       target: string
+      duration?: 'persistent' | 'untilSourceRemoved'
+      sourceBinding?: 'effectSource' | 'lastSummonedEntity'
     }
-    const sign = payload.kind === 'gainArmor' ? '+' : '-'
+    const statMeta = STAT_METADATA[statPayload.stat]
+    const sign = statPayload.amount >= 0 ? '+' : '-'
+    const amount = Math.abs(statPayload.amount)
+    const verb = statPayload.amount >= 0 ? 'Gain' : 'Lose'
+    const durationText =
+      statPayload.duration === 'untilSourceRemoved'
+        ? ' Lasts while the source remains present.'
+        : ''
     return {
-      summaryText: `${armorPayload.kind === 'gainArmor' ? 'Gain' : 'Lose'} ${sign}${armorPayload.amount} armor.`,
-      summaryDetailText: `Target: ${String(armorPayload.target)}.`,
-      summaryTone: payload.kind === 'gainArmor' ? 'positive' : 'negative',
-    }
-  }
-
-  if (payload.kind === 'gainMagicResist' || payload.kind === 'loseMagicResist') {
-    const magicResistPayload = payload as {
-      kind: 'gainMagicResist' | 'loseMagicResist'
-      amount: number
-      target: string
-    }
-    const sign = payload.kind === 'gainMagicResist' ? '+' : '-'
-    return {
-      summaryText: `${magicResistPayload.kind === 'gainMagicResist' ? 'Gain' : 'Lose'} ${sign}${magicResistPayload.amount} magic resist.`,
-      summaryDetailText: `Target: ${String(magicResistPayload.target)}.`,
-      summaryTone: payload.kind === 'gainMagicResist' ? 'positive' : 'negative',
-    }
-  }
-
-  if (payload.kind === 'gainAttackDamage' || payload.kind === 'loseAttackDamage') {
-    const attackDamagePayload = payload as {
-      kind: 'gainAttackDamage' | 'loseAttackDamage'
-      amount: number
-      target: string
-    }
-    const sign = payload.kind === 'gainAttackDamage' ? '+' : '-'
-    return {
-      summaryText: `${attackDamagePayload.kind === 'gainAttackDamage' ? 'Gain' : 'Lose'} ${sign}${attackDamagePayload.amount} attack damage.`,
-      summaryDetailText: `Target: ${String(attackDamagePayload.target)}.`,
-      summaryTone: payload.kind === 'gainAttackDamage' ? 'positive' : 'negative',
+      summaryText: `${verb} ${sign}${amount} ${statMeta.label}.`,
+      summaryDetailText: `Target: ${String(statPayload.target)}.${durationText}`,
+      summaryTone: statPayload.amount > 0 ? 'positive' : statPayload.amount < 0 ? 'negative' : 'neutral',
     }
   }
 

@@ -18,9 +18,11 @@ export const BATTLE_FOCUS_CARD = {
     {
       id: "effect.battle-focus.attack-bonus",
       payload: {
-        kind: "gainAttackDamage",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "attackDamage",
         amount: 2,
+        duration: "persistent",
       },
       displayText: {
         mode: "static",
@@ -39,9 +41,11 @@ export const BATTLE_FOCUS_CARD = {
           {
             id: "effect.battle-focus.remove-attack-bonus",
             payload: {
-              kind: "loseAttackDamage",
+              kind: "modifyStat",
               target: "sourceOwnerHero",
-              amount: 2,
+              stat: "attackDamage",
+              amount: -2,
+              duration: "persistent",
             },
             displayText: {
               mode: "static",

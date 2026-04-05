@@ -3,6 +3,13 @@ import { z } from "zod";
 import { DamageTypeSchema } from "../hero";
 import { EffectTargetSelectorSchema, SummonPlacementSelectorSchema } from "./selectors";
 
+export const ModifiableStatSchema = z.enum([
+  "armor",
+  "magicResist",
+  "attackDamage",
+  "abilityPower",
+]);
+
 export const DealDamageEffectPayloadSchema = z
   .object({
     kind: z.literal("dealDamage"),
@@ -32,67 +39,19 @@ export const HealEffectPayloadSchema = z
     path: ["maximum"],
   });
 
-export const GainArmorEffectPayloadSchema = z.object({
-  kind: z.literal("gainArmor"),
+export const ModifyStatEffectPayloadSchema = z.object({
+  kind: z.literal("modifyStat"),
   target: EffectTargetSelectorSchema,
-  amount: z.number().int().positive(),
-});
-
-export const LoseArmorEffectPayloadSchema = z.object({
-  kind: z.literal("loseArmor"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number().int().positive(),
-});
-
-export const GainMagicResistEffectPayloadSchema = z.object({
-  kind: z.literal("gainMagicResist"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number().int().positive(),
-});
-
-export const LoseMagicResistEffectPayloadSchema = z.object({
-  kind: z.literal("loseMagicResist"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number().int().positive(),
-});
-
-export const GainAttackDamageEffectPayloadSchema = z.object({
-  kind: z.literal("gainAttackDamage"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number().int().positive(),
-});
-
-export const LoseAttackDamageEffectPayloadSchema = z.object({
-  kind: z.literal("loseAttackDamage"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number().int().positive(),
+  stat: ModifiableStatSchema,
+  amount: z.number(),
+  duration: z.enum(["persistent", "untilSourceRemoved"]).default("persistent"),
+  sourceBinding: z.enum(["effectSource", "lastSummonedEntity"]).optional(),
 });
 
 export const DrawCardsEffectPayloadSchema = z.object({
   kind: z.literal("drawCards"),
   target: EffectTargetSelectorSchema,
   amount: z.number().int().positive(),
-});
-
-export const ModifyAttackDamageWhileSourcePresentEffectPayloadSchema = z.object({
-  kind: z.literal("modifyAttackDamageWhileSourcePresent"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number(),
-  sourceBinding: z.enum(["effectSource", "lastSummonedEntity"]).optional(),
-});
-
-export const ModifyArmorWhileSourcePresentEffectPayloadSchema = z.object({
-  kind: z.literal("modifyArmorWhileSourcePresent"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number(),
-  sourceBinding: z.enum(["effectSource", "lastSummonedEntity"]).optional(),
-});
-
-export const ModifyMagicResistWhileSourcePresentEffectPayloadSchema = z.object({
-  kind: z.literal("modifyMagicResistWhileSourcePresent"),
-  target: EffectTargetSelectorSchema,
-  amount: z.number(),
-  sourceBinding: z.enum(["effectSource", "lastSummonedEntity"]).optional(),
 });
 
 export const SummonEntityEffectPayloadSchema = z.object({

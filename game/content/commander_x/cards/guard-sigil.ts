@@ -34,9 +34,11 @@ export const GUARD_SIGIL_CARD = {
     {
       id: "effect.guard-sigil.buff-armor-while-source-present",
       payload: {
-        kind: "modifyArmorWhileSourcePresent",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "armor",
         amount: 1,
+        duration: "untilSourceRemoved",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {
@@ -50,9 +52,11 @@ export const GUARD_SIGIL_CARD = {
     {
       id: "effect.guard-sigil.buff-mr-while-source-present",
       payload: {
-        kind: "modifyMagicResistWhileSourcePresent",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "magicResist",
         amount: 1,
+        duration: "untilSourceRemoved",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {

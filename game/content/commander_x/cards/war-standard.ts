@@ -31,9 +31,11 @@ export const WAR_STANDARD_CARD = {
     {
       id: "effect.war-standard.buff-while-source-present",
       payload: {
-        kind: "modifyAttackDamageWhileSourcePresent",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "attackDamage",
         amount: 1,
+        duration: "untilSourceRemoved",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {

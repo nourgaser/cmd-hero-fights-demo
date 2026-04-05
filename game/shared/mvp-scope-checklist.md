@@ -100,8 +100,9 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 - [x] Keep effect modeling declarative: passive rules + conditions + expirations, not one-off direct edits
 
 Phase 6 notes:
-- Migrated `War Standard` and `Guard Sigil` from apply+cleanup-listener rollback patterns to declarative `modify*WhileSourcePresent` effects bound to `lastSummonedEntity`.
-- Added `modifyArmorWhileSourcePresent` and `modifyMagicResistWhileSourcePresent` payload kinds and engine handling.
+- Unified stat-changing effects under generic `modifyStat` payload (`stat`, `amount`, `duration`, `sourceBinding`) to remove duplicated effect kinds/handlers.
+- Migrated `War Standard` and `Guard Sigil` to `modifyStat` with `duration: untilSourceRemoved` bound to `lastSummonedEntity`.
+- Migrated persistent and temporary stat cards (`Iron Skin`, `Battle Focus`, `Bastion Stance`) to `modifyStat` with explicit positive/negative deltas.
 
 ### Phase 7: Manual Acceptance Pass (No Tests)
 

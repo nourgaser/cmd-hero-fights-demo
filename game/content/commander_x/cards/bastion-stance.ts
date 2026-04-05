@@ -21,9 +21,11 @@ export const BASTION_STANCE_CARD = {
     {
       id: "effect.bastion-stance.gain-armor",
       payload: {
-        kind: "gainArmor",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "armor",
         amount: 1,
+        duration: "persistent",
       },
       displayText: {
         mode: "template",
@@ -36,9 +38,11 @@ export const BASTION_STANCE_CARD = {
     {
       id: "effect.bastion-stance.gain-mr",
       payload: {
-        kind: "gainMagicResist",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "magicResist",
         amount: 1,
+        duration: "persistent",
       },
       displayText: {
         mode: "template",
@@ -60,9 +64,11 @@ export const BASTION_STANCE_CARD = {
           {
             id: "effect.bastion-stance.remove-armor",
             payload: {
-              kind: "loseArmor",
+              kind: "modifyStat",
               target: "sourceOwnerHero",
-              amount: 1,
+              stat: "armor",
+              amount: -1,
+              duration: "persistent",
             },
             displayText: {
               mode: "static",
@@ -72,9 +78,11 @@ export const BASTION_STANCE_CARD = {
           {
             id: "effect.bastion-stance.remove-mr",
             payload: {
-              kind: "loseMagicResist",
+              kind: "modifyStat",
               target: "sourceOwnerHero",
-              amount: 1,
+              stat: "magicResist",
+              amount: -1,
+              duration: "persistent",
             },
             displayText: {
               mode: "static",

@@ -21,9 +21,11 @@ export const IRON_SKIN_CARD = {
     {
       id: "effect.iron-skin.gain-armor",
       payload: {
-        kind: "gainArmor",
+        kind: "modifyStat",
         target: "sourceOwnerHero",
+        stat: "armor",
         amount: 1,
+        duration: "persistent",
       },
       displayText: {
         mode: "template",

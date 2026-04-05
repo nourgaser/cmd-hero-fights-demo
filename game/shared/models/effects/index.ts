@@ -30,16 +30,8 @@ import {
 import {
   DealDamageEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
-  GainArmorEffectPayloadSchema,
-  GainAttackDamageEffectPayloadSchema,
-  GainMagicResistEffectPayloadSchema,
   HealEffectPayloadSchema,
-  LoseArmorEffectPayloadSchema,
-  LoseAttackDamageEffectPayloadSchema,
-  ModifyArmorWhileSourcePresentEffectPayloadSchema,
-  LoseMagicResistEffectPayloadSchema,
-  ModifyAttackDamageWhileSourcePresentEffectPayloadSchema,
-  ModifyMagicResistWhileSourcePresentEffectPayloadSchema,
+  ModifyStatEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
 } from "./base-payloads";
@@ -50,16 +42,8 @@ export type EffectId = z.infer<typeof EffectIdSchema>;
 type NonRecursivePayload =
   | z.infer<typeof DealDamageEffectPayloadSchema>
   | z.infer<typeof HealEffectPayloadSchema>
-  | z.infer<typeof GainArmorEffectPayloadSchema>
-  | z.infer<typeof LoseArmorEffectPayloadSchema>
-  | z.infer<typeof GainMagicResistEffectPayloadSchema>
-  | z.infer<typeof LoseMagicResistEffectPayloadSchema>
-  | z.infer<typeof GainAttackDamageEffectPayloadSchema>
-  | z.infer<typeof LoseAttackDamageEffectPayloadSchema>
+  | z.infer<typeof ModifyStatEffectPayloadSchema>
   | z.infer<typeof DrawCardsEffectPayloadSchema>
-  | z.infer<typeof ModifyAttackDamageWhileSourcePresentEffectPayloadSchema>
-  | z.infer<typeof ModifyArmorWhileSourcePresentEffectPayloadSchema>
-  | z.infer<typeof ModifyMagicResistWhileSourcePresentEffectPayloadSchema>
   | z.infer<typeof SummonEntityEffectPayloadSchema>
   | z.infer<typeof RefundMoveCostEffectPayloadSchema>;
 
@@ -102,16 +86,8 @@ export type ListenerDefinition = {
 export const EffectPayloadKindSchema = z.enum([
   "dealDamage",
   "heal",
-  "gainArmor",
-  "loseArmor",
-  "gainMagicResist",
-  "loseMagicResist",
-  "gainAttackDamage",
-  "loseAttackDamage",
+  "modifyStat",
   "drawCards",
-  "modifyAttackDamageWhileSourcePresent",
-  "modifyArmorWhileSourcePresent",
-  "modifyMagicResistWhileSourcePresent",
   "summonEntity",
   "refundMoveCost",
   "addListener",
@@ -142,16 +118,8 @@ export const RemoveListenerEffectPayloadSchema =
 export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   DealDamageEffectPayloadSchema,
   HealEffectPayloadSchema,
-  GainArmorEffectPayloadSchema,
-  LoseArmorEffectPayloadSchema,
-  GainMagicResistEffectPayloadSchema,
-  LoseMagicResistEffectPayloadSchema,
-  GainAttackDamageEffectPayloadSchema,
-  LoseAttackDamageEffectPayloadSchema,
+  ModifyStatEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
-  ModifyAttackDamageWhileSourcePresentEffectPayloadSchema,
-  ModifyArmorWhileSourcePresentEffectPayloadSchema,
-  ModifyMagicResistWhileSourcePresentEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
   AddListenerEffectPayloadSchemaRaw,
