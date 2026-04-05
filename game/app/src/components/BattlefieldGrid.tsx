@@ -413,7 +413,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           <div className="battle-tooltip-detail">
                             {contributionGroups.map((group) => (
                               <span key={group.sourceId} className="battle-tooltip-detail-line">
-                                <strong>{group.label}:</strong> {group.lines.join(', ')}
+                                <strong>From {group.label}:</strong> {group.lines.join(', ')}
                               </span>
                             ))}
                           </div>

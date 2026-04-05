@@ -21,17 +21,20 @@ type ModifyStatPayload = {
   sourceBinding?: "effectSource" | "lastSummonedEntity";
 };
 
-function statLabel(stat: StatKey): string {
-  if (stat === "armor") {
-    return "Armor";
+function titleCaseFromSlug(slug: string): string {
+  return slug
+    .split("-")
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(" ");
+}
+
+function sourceLabelFromEffectId(effectId: string): string {
+  const segments = effectId.split(".");
+  if (segments[0] === "effect" && segments[1]) {
+    return titleCaseFromSlug(segments[1]);
   }
-  if (stat === "magicResist") {
-    return "Magic resist";
-  }
-  if (stat === "attackDamage") {
-    return "Attack damage";
-  }
-  return "Ability power";
+  return effectId;
 }
 
 export function handleModifyStatEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
@@ -68,6 +71,7 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
   }
 
   const sourceEntityId: string = resolvedSourceEntityId;
+  const sourceLabel = sourceLabelFromEffectId(effect.id);
 
   const targetId = targetEntityIdFromSelector({
     selector: payload.target,
@@ -98,7 +102,7 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
   }
 
   const propertyPath = payload.stat;
-  const label = `${statLabel(payload.stat)} ${duration === "untilSourceRemoved" ? "passive rule" : "modifier"}`;
+  const label = sourceLabel;
 
   if (duration === "untilSourceRemoved") {
     const passiveRule = {
