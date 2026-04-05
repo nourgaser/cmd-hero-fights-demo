@@ -351,10 +351,9 @@ function describeNumericCardText(options: {
     })
   }
 
-  const defaultSummary =
-    renderDisplayText(card.summaryText) ??
-    renderDisplayText(firstEffect?.displayText) ??
-    'No summary.'
+  const cardSummaryText = renderDisplayText(card.summaryText)
+  const firstEffectSummaryText = renderDisplayText(firstEffect?.displayText)
+  const defaultSummary = cardSummaryText ?? firstEffectSummaryText ?? 'No summary.'
 
   if (!firstEffect) {
     return {
@@ -517,8 +516,9 @@ function describeNumericCardText(options: {
         ? ' Lasts while the source remains present.'
         : ''
     return {
-      summaryText: `${verb} ${changeKind === 'removeMatching' ? '' : sign}${amount} ${statMeta.label}.`,
-      summaryDetailText: `Target: ${String(statPayload.target)}.${durationText}`,
+      summaryText:
+        cardSummaryText ?? `${verb} ${changeKind === 'removeMatching' ? '' : sign}${amount} ${statMeta.label}.`,
+      summaryDetailText: `${firstEffectSummaryText ? `${firstEffectSummaryText}\n` : ''}Target: ${String(statPayload.target)}.${durationText}`,
       summaryTone:
         changeKind === 'removeMatching'
           ? 'neutral'
