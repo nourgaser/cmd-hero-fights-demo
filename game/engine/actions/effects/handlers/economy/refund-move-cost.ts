@@ -2,7 +2,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../../context";
-import { getEffectiveRefundAmount } from "../../effects/get-effective-number";
+import { getEffectiveRefundAmount } from "../../get-effective-number";
 
 export function handleRefundMoveCostEffect(
   context: EffectExecutionContext,

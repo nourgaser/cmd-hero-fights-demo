@@ -3,7 +3,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../../context";
-import { getEffectiveDrawCount } from "../../effects/get-effective-number";
+import { getEffectiveDrawCount } from "../../get-effective-number";
 
 export function handleDrawCardsEffect(
   context: EffectExecutionContext,

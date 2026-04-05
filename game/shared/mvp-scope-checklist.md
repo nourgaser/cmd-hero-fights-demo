@@ -103,10 +103,14 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 
 - [ ] Fixed-seed scenario: passive rule source present before ally summon still affects newly summoned ally
 - [ ] Fixed-seed scenario: removing passive source removes contributions from all valid targets
-- [ ] Fixed-seed scenario: stacked positive/negative modifiers resolve deterministically and display correctly
-- [ ] Fixed-seed scenario: temporary modifier expiration updates effective numbers without direct rollback mutation
+- [x] Fixed-seed scenario: stacked positive/negative modifiers resolve deterministically and display correctly
+- [x] Fixed-seed scenario: temporary modifier expiration updates effective numbers without direct rollback mutation
 - [ ] Fixed-seed scenario: keyword metadata is available and correctly linked in tooltips, previews, and debug surfaces
 - [ ] Verify all gameplay number changes are driven by modifier/rule records and resolver output
+
+Validation notes:
+- `/tmp/cmd_validate_phase4.ts` run with fixed seed `validation-seed-1` produced identical end-state digest across repeated runs.
+- Scenario confirmed `numberModifierApplied` and `numberModifierExpired` events and showed temporary buff removal without direct base-stat rollback.
 
 
 ## Next UI/Product Tasks
