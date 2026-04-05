@@ -26,6 +26,7 @@ export const IRON_SKIN_CARD = {
         stat: "armor",
         amount: 1,
         duration: "persistent",
+        changeKind: "apply",
       },
       displayText: {
         mode: "template",

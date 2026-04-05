@@ -39,6 +39,7 @@ export const GUARD_SIGIL_CARD = {
         stat: "armor",
         amount: 1,
         duration: "untilSourceRemoved",
+        changeKind: "apply",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {
@@ -57,6 +58,7 @@ export const GUARD_SIGIL_CARD = {
         stat: "magicResist",
         amount: 1,
         duration: "untilSourceRemoved",
+        changeKind: "apply",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {

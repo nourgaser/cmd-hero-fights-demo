@@ -36,6 +36,7 @@ export const WAR_STANDARD_CARD = {
         stat: "attackDamage",
         amount: 1,
         duration: "untilSourceRemoved",
+        changeKind: "apply",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {

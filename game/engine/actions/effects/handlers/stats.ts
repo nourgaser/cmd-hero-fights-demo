@@ -18,6 +18,7 @@ type ModifyStatPayload = {
   stat: StatKey;
   amount: number;
   duration?: "persistent" | "untilSourceRemoved";
+  changeKind?: "apply" | "removeMatching";
   sourceBinding?: "effectSource" | "lastSummonedEntity";
 };
 
@@ -54,6 +55,7 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
 
   const payload = context.effect.payload as ModifyStatPayload;
   const duration = payload.duration ?? "persistent";
+  const changeKind = payload.changeKind ?? "apply";
 
   const resolvedSourceEntityId =
     payload.sourceBinding === "lastSummonedEntity"
@@ -103,6 +105,61 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
 
   const propertyPath = payload.stat;
   const label = sourceLabel;
+
+  if (changeKind === "removeMatching") {
+    if (duration !== "persistent") {
+      return {
+        ok: false,
+        reason: "modifyStat removeMatching supports only persistent duration.",
+      };
+    }
+
+    const expectedOperation = payload.amount >= 0 ? "add" : "subtract";
+    const expectedValue = Math.abs(payload.amount);
+    const removeIndex = state.activeModifiers.findIndex(
+      (modifier) =>
+        modifier.sourceEntityId === sourceEntityId &&
+        modifier.targetEntityId === targetId &&
+        modifier.propertyPath === propertyPath &&
+        modifier.operation === expectedOperation &&
+        modifier.value === expectedValue,
+    );
+
+    if (removeIndex < 0) {
+      return {
+        ok: true,
+        state,
+        events: [],
+        nextSequence: sequence,
+        lastDamageWasDodged,
+        lastSummonedEntityId,
+      };
+    }
+
+    const nextModifiers = [...state.activeModifiers];
+    const removedModifierId = nextModifiers[removeIndex]!.id;
+    nextModifiers.splice(removeIndex, 1);
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        activeModifiers: nextModifiers,
+      },
+      events: [
+        {
+          kind: "numberModifierExpired",
+          sequence,
+          modifierId: removedModifierId,
+          targetEntityId: targetId,
+          reason: "source_removed",
+        },
+      ],
+      nextSequence: sequence + 1,
+      lastDamageWasDodged,
+      lastSummonedEntityId,
+    };
+  }
 
   if (duration === "untilSourceRemoved") {
     const passiveRule = {

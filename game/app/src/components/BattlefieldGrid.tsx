@@ -237,19 +237,21 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 return [] as Array<{ sourceId: string; label: string; lines: string[] }>
               }
 
-              const buckets = new Map<string, { sourceId: string; label: string; lines: string[] }>()
+              const buckets = new Map<string, { sourceId: string; label: string; statDeltas: Record<string, number> }>()
               const pushContribution = (statLabel: string, contributions: AppBattlePreview['battlefield']['entitiesById'][string]['combatNumbers']['attackDamage']['contributions']) => {
                 for (const contribution of contributions) {
                   const existing = buckets.get(contribution.sourceId)
-                  const line = `${statLabel} ${formatSignedDelta(contribution.delta)}`
+                  const nextDelta = (existing?.statDeltas[statLabel] ?? 0) + contribution.delta
                   if (existing) {
-                    existing.lines.push(line)
+                    existing.statDeltas[statLabel] = nextDelta
                     continue
                   }
                   buckets.set(contribution.sourceId, {
                     sourceId: contribution.sourceId,
                     label: contribution.label,
-                    lines: [line],
+                    statDeltas: {
+                      [statLabel]: contribution.delta,
+                    },
                   })
                 }
               }
@@ -260,6 +262,17 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               pushContribution('MR', combatTraces.magicResist.contributions)
 
               return Array.from(buckets.values())
+                .map((group) => {
+                  const lines = Object.entries(group.statDeltas)
+                    .filter(([, delta]) => delta !== 0)
+                    .map(([statLabel, delta]) => `${statLabel} ${formatSignedDelta(delta)}`)
+                  return {
+                    sourceId: group.sourceId,
+                    label: group.label,
+                    lines,
+                  }
+                })
+                .filter((group) => group.lines.length > 0)
             })()
 
             return (

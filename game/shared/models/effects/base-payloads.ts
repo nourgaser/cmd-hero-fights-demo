@@ -45,6 +45,7 @@ export const ModifyStatEffectPayloadSchema = z.object({
   stat: ModifiableStatSchema,
   amount: z.number(),
   duration: z.enum(["persistent", "untilSourceRemoved"]).default("persistent"),
+  changeKind: z.enum(["apply", "removeMatching"]).default("apply"),
   sourceBinding: z.enum(["effectSource", "lastSummonedEntity"]).optional(),
 });
 

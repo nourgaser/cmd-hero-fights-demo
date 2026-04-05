@@ -504,20 +504,29 @@ function describeNumericCardText(options: {
       amount: number
       target: string
       duration?: 'persistent' | 'untilSourceRemoved'
+      changeKind?: 'apply' | 'removeMatching'
       sourceBinding?: 'effectSource' | 'lastSummonedEntity'
     }
     const statMeta = STAT_METADATA[statPayload.stat]
+    const changeKind = statPayload.changeKind ?? 'apply'
     const sign = statPayload.amount >= 0 ? '+' : '-'
     const amount = Math.abs(statPayload.amount)
-    const verb = statPayload.amount >= 0 ? 'Gain' : 'Lose'
+    const verb = changeKind === 'removeMatching' ? 'Remove' : statPayload.amount >= 0 ? 'Gain' : 'Lose'
     const durationText =
       statPayload.duration === 'untilSourceRemoved'
         ? ' Lasts while the source remains present.'
         : ''
     return {
-      summaryText: `${verb} ${sign}${amount} ${statMeta.label}.`,
+      summaryText: `${verb} ${changeKind === 'removeMatching' ? '' : sign}${amount} ${statMeta.label}.`,
       summaryDetailText: `Target: ${String(statPayload.target)}.${durationText}`,
-      summaryTone: statPayload.amount > 0 ? 'positive' : statPayload.amount < 0 ? 'negative' : 'neutral',
+      summaryTone:
+        changeKind === 'removeMatching'
+          ? 'neutral'
+          : statPayload.amount > 0
+            ? 'positive'
+            : statPayload.amount < 0
+              ? 'negative'
+              : 'neutral',
     }
   }
 

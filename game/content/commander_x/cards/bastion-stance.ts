@@ -26,6 +26,7 @@ export const BASTION_STANCE_CARD = {
         stat: "armor",
         amount: 1,
         duration: "persistent",
+        changeKind: "apply"
       },
       displayText: {
         mode: "template",
@@ -43,6 +44,7 @@ export const BASTION_STANCE_CARD = {
         stat: "magicResist",
         amount: 1,
         duration: "persistent",
+        changeKind: "apply"
       },
       displayText: {
         mode: "template",
@@ -67,8 +69,9 @@ export const BASTION_STANCE_CARD = {
               kind: "modifyStat",
               target: "sourceOwnerHero",
               stat: "armor",
-              amount: -1,
+              amount: 1,
               duration: "persistent",
+              changeKind: "removeMatching",
             },
             displayText: {
               mode: "static",
@@ -81,8 +84,9 @@ export const BASTION_STANCE_CARD = {
               kind: "modifyStat",
               target: "sourceOwnerHero",
               stat: "magicResist",
-              amount: -1,
+              amount: 1,
               duration: "persistent",
+              changeKind: "removeMatching",
             },
             displayText: {
               mode: "static",

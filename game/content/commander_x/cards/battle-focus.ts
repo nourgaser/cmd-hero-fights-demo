@@ -23,6 +23,7 @@ export const BATTLE_FOCUS_CARD = {
         stat: "attackDamage",
         amount: 2,
         duration: "persistent",
+        changeKind: "apply",
       },
       displayText: {
         mode: "static",
@@ -44,8 +45,9 @@ export const BATTLE_FOCUS_CARD = {
               kind: "modifyStat",
               target: "sourceOwnerHero",
               stat: "attackDamage",
-              amount: -2,
+              amount: 2,
               duration: "persistent",
+              changeKind: "removeMatching",
             },
             displayText: {
               mode: "static",
