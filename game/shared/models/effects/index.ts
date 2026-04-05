@@ -3,11 +3,7 @@ import { z } from "zod";
 import {
   type EffectDisplayText,
   EffectDisplayTextSchema,
-  type EffectDynamicText,
-  type EffectStaticText,
   type EffectTextParamValue,
-  EffectDynamicTextSchema,
-  EffectStaticTextSchema,
   EffectTextParamValueSchema,
   renderEffectDisplayText,
 } from "./display-text";
@@ -144,8 +140,6 @@ export const ListenerDefinitionSchema = z.object({
 
 export {
   type EffectDisplayText,
-  type EffectDynamicText,
-  type EffectStaticText,
   type EffectTargetSelector,
   type EffectTextParamValue,
   type ListenerCondition,
@@ -154,8 +148,6 @@ export {
   type ListenerSourceBinding,
   type SummonPlacementSelector,
   EffectDisplayTextSchema,
-  EffectDynamicTextSchema,
-  EffectStaticTextSchema,
   EffectTargetSelectorSchema,
   EffectTextParamValueSchema,
   ListenerConditionSchema,

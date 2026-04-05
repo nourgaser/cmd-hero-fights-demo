@@ -1,6 +1,8 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
+const IRON_SKIN_ARMOR_GAIN = 1;
+
 export const IRON_SKIN_CARD = {
   id: "card.commander-x.iron-skin",
   name: "Iron Skin",
@@ -11,10 +13,9 @@ export const IRON_SKIN_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "template",
     template: "Gain {amount} armor.",
     params: {
-      amount: 1,
+      amount: IRON_SKIN_ARMOR_GAIN,
     },
   },
   effects: [
@@ -24,15 +25,14 @@ export const IRON_SKIN_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "armor",
-        amount: 1,
+        amount: IRON_SKIN_ARMOR_GAIN,
         duration: "persistent",
         changeKind: "apply",
       },
       displayText: {
-        mode: "template",
         template: "Gain {amount} armor.",
         params: {
-          amount: 1,
+          amount: IRON_SKIN_ARMOR_GAIN,
         },
       },
     },

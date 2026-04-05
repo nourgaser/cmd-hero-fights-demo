@@ -1,6 +1,8 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
+const SHIELD_TOSS_BASE_DAMAGE = 3;
+
 export const SHIELD_TOSS_CARD = {
   id: "card.commander-x.shield-toss",
   name: "Shield Toss",
@@ -11,10 +13,9 @@ export const SHIELD_TOSS_CARD = {
   targeting: "selectedAny",
   tags: [],
   summaryText: {
-    mode: "template",
     template: "Deal {minimum} damage (scales with armor).",
     params: {
-      minimum: 3,
+      minimum: SHIELD_TOSS_BASE_DAMAGE,
     },
   },
   effects: [
@@ -23,8 +24,8 @@ export const SHIELD_TOSS_CARD = {
       payload: {
         kind: "dealDamage",
         target: "selectedAny",
-        minimum: 3,
-        maximum: 3,
+        minimum: SHIELD_TOSS_BASE_DAMAGE,
+        maximum: SHIELD_TOSS_BASE_DAMAGE,
         damageType: "physical",
         attackDamageScaling: 0,
         abilityPowerScaling: 0,
@@ -32,10 +33,9 @@ export const SHIELD_TOSS_CARD = {
         canBeDodged: true,
       },
       displayText: {
-        mode: "template",
         template: "Deal {minimum} damage plus armor scaling.",
         params: {
-          minimum: 3,
+          minimum: SHIELD_TOSS_BASE_DAMAGE,
         },
       },
     },

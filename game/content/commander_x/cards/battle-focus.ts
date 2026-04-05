@@ -1,6 +1,8 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
+const BATTLE_FOCUS_ATTACK_BONUS = 2;
+
 export const BATTLE_FOCUS_CARD = {
   id: "card.commander-x.battle-focus",
   name: "Battle Focus",
@@ -11,8 +13,10 @@ export const BATTLE_FOCUS_CARD = {
   targeting: "none",
   tags: ["buff"],
   summaryText: {
-    mode: "static",
-    text: "Your next attack deals +2 extra damage.",
+    template: "Your next attack deals +{amount} extra damage.",
+    params: {
+      amount: BATTLE_FOCUS_ATTACK_BONUS,
+    },
   },
   effects: [
     {
@@ -21,13 +25,15 @@ export const BATTLE_FOCUS_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "attackDamage",
-        amount: 2,
+        amount: BATTLE_FOCUS_ATTACK_BONUS,
         duration: "persistent",
         changeKind: "apply",
       },
       displayText: {
-        mode: "static",
-        text: "Next attack deals +2 damage.",
+        template: "Next attack deals +{amount} damage.",
+        params: {
+          amount: BATTLE_FOCUS_ATTACK_BONUS,
+        },
       },
     },
     {
@@ -45,20 +51,21 @@ export const BATTLE_FOCUS_CARD = {
               kind: "modifyStat",
               target: "sourceOwnerHero",
               stat: "attackDamage",
-              amount: 2,
+              amount: BATTLE_FOCUS_ATTACK_BONUS,
               duration: "persistent",
               changeKind: "removeMatching",
             },
             displayText: {
-              mode: "static",
-              text: "Remove Battle Focus bonus after your next attack.",
+              template: "Remove Battle Focus +{amount} bonus after your next attack.",
+              params: {
+                amount: BATTLE_FOCUS_ATTACK_BONUS,
+              },
             },
           },
         ],
       },
       displayText: {
-        mode: "static",
-        text: "Consume this bonus after your next attack.",
+        template: "Consume this bonus after your next attack.",
       },
     },
   ],

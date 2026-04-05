@@ -1,6 +1,8 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
+const BASTION_STANCE_DEFENSE_BONUS = 1;
+
 export const BASTION_STANCE_CARD = {
   id: "card.commander-x.bastion-stance",
   name: "Bastion Stance",
@@ -11,10 +13,9 @@ export const BASTION_STANCE_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "template",
     template: "Gain +{amount} armor and +{amount} magic resist until your next turn.",
     params: {
-      amount: 1,
+      amount: BASTION_STANCE_DEFENSE_BONUS,
     },
   },
   effects: [
@@ -24,15 +25,14 @@ export const BASTION_STANCE_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "armor",
-        amount: 1,
+        amount: BASTION_STANCE_DEFENSE_BONUS,
         duration: "persistent",
         changeKind: "apply"
       },
       displayText: {
-        mode: "template",
         template: "Gain {amount} armor.",
         params: {
-          amount: 1,
+          amount: BASTION_STANCE_DEFENSE_BONUS,
         },
       },
     },
@@ -42,15 +42,14 @@ export const BASTION_STANCE_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "magicResist",
-        amount: 1,
+        amount: BASTION_STANCE_DEFENSE_BONUS,
         duration: "persistent",
         changeKind: "apply"
       },
       displayText: {
-        mode: "template",
         template: "Gain {amount} magic resist.",
         params: {
-          amount: 1,
+          amount: BASTION_STANCE_DEFENSE_BONUS,
         },
       },
     },
@@ -69,13 +68,16 @@ export const BASTION_STANCE_CARD = {
               kind: "modifyStat",
               target: "sourceOwnerHero",
               stat: "armor",
-              amount: 1,
+              amount: BASTION_STANCE_DEFENSE_BONUS,
               duration: "persistent",
               changeKind: "removeMatching",
             },
             displayText: {
-              mode: "static",
-              text: "Remove Bastion Stance armor bonus at the start of your next turn.",
+              template:
+                "Remove Bastion Stance +{amount} armor bonus at the start of your next turn.",
+              params: {
+                amount: BASTION_STANCE_DEFENSE_BONUS,
+              },
             },
           },
           {
@@ -84,20 +86,22 @@ export const BASTION_STANCE_CARD = {
               kind: "modifyStat",
               target: "sourceOwnerHero",
               stat: "magicResist",
-              amount: 1,
+              amount: BASTION_STANCE_DEFENSE_BONUS,
               duration: "persistent",
               changeKind: "removeMatching",
             },
             displayText: {
-              mode: "static",
-              text: "Remove Bastion Stance magic resist bonus at the start of your next turn.",
+              template:
+                "Remove Bastion Stance +{amount} magic resist bonus at the start of your next turn.",
+              params: {
+                amount: BASTION_STANCE_DEFENSE_BONUS,
+              },
             },
           },
         ],
       },
       displayText: {
-        mode: "static",
-        text: "Remove Bastion Stance bonuses at the start of your next turn.",
+        template: "Remove Bastion Stance bonuses at the start of your next turn.",
       },
     },
   ],

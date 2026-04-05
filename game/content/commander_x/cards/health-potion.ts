@@ -1,6 +1,9 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
+const HEALTH_POTION_HEAL_MIN = 2;
+const HEALTH_POTION_HEAL_MAX = 4;
+
 export const HEALTH_POTION_CARD = {
   id: "card.commander-x.health-potion",
   name: "Health Potion",
@@ -11,11 +14,10 @@ export const HEALTH_POTION_CARD = {
   targeting: "none",
   tags: ["heal"],
   summaryText: {
-    mode: "template",
     template: "Restore {minimum}-{maximum} HP to your hero.",
     params: {
-      minimum: 2,
-      maximum: 4,
+      minimum: HEALTH_POTION_HEAL_MIN,
+      maximum: HEALTH_POTION_HEAL_MAX,
     },
   },
   effects: [
@@ -24,15 +26,14 @@ export const HEALTH_POTION_CARD = {
       payload: {
         kind: "heal",
         target: "sourceOwnerHero",
-        minimum: 2,
-        maximum: 4,
+        minimum: HEALTH_POTION_HEAL_MIN,
+        maximum: HEALTH_POTION_HEAL_MAX,
       },
       displayText: {
-        mode: "template",
         template: "Restore {minimum}-{maximum} HP.",
         params: {
-          minimum: 2,
-          maximum: 4,
+          minimum: HEALTH_POTION_HEAL_MIN,
+          maximum: HEALTH_POTION_HEAL_MAX,
         },
       },
     },

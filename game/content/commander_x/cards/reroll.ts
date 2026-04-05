@@ -1,5 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 
+const REROLL_DRAW_AMOUNT = 1;
+
 export const REROLL_CARD = {
   id: "card.general.reroll",
   name: "Reroll",
@@ -9,10 +11,9 @@ export const REROLL_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "template",
     template: "Draw {amount} card.",
     params: {
-      amount: 1,
+      amount: REROLL_DRAW_AMOUNT,
     },
   },
   effects: [
@@ -21,13 +22,12 @@ export const REROLL_CARD = {
       payload: {
         kind: "drawCards",
         target: "sourceOwnerHero",
-        amount: 1,
+        amount: REROLL_DRAW_AMOUNT,
       },
       displayText: {
-        mode: "template",
         template: "Draw {amount} card.",
         params: {
-          amount: 1,
+          amount: REROLL_DRAW_AMOUNT,
         },
       },
     },

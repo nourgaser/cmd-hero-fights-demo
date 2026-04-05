@@ -1,6 +1,8 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 
+const GUARD_SIGIL_DEFENSE_BONUS = 1;
+
 export const GUARD_SIGIL_CARD = {
   id: "card.commander-x.guard-sigil",
   name: "Guard Sigil",
@@ -11,10 +13,9 @@ export const GUARD_SIGIL_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "template",
     template: "Summon Guard Sigil. Your hero has +{amount} armor and +{amount} magic resist while it remains.",
     params: {
-      amount: 1,
+      amount: GUARD_SIGIL_DEFENSE_BONUS,
     },
   },
   effects: [
@@ -27,8 +28,7 @@ export const GUARD_SIGIL_CARD = {
         placement: "selectedEmptyPosition",
       },
       displayText: {
-        mode: "static",
-        text: "Summon Guard Sigil.",
+        template: "Summon Guard Sigil.",
       },
     },
     {
@@ -37,16 +37,15 @@ export const GUARD_SIGIL_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "armor",
-        amount: 1,
+        amount: GUARD_SIGIL_DEFENSE_BONUS,
         duration: "untilSourceRemoved",
         changeKind: "apply",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {
-        mode: "template",
         template: "Gain {amount} armor while Guard Sigil is present.",
         params: {
-          amount: 1,
+          amount: GUARD_SIGIL_DEFENSE_BONUS,
         },
       },
     },
@@ -56,16 +55,15 @@ export const GUARD_SIGIL_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "magicResist",
-        amount: 1,
+        amount: GUARD_SIGIL_DEFENSE_BONUS,
         duration: "untilSourceRemoved",
         changeKind: "apply",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {
-        mode: "template",
         template: "Gain {amount} magic resist while Guard Sigil is present.",
         params: {
-          amount: 1,
+          amount: GUARD_SIGIL_DEFENSE_BONUS,
         },
       },
     },

@@ -1,6 +1,9 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 
+const JAQUEMIN_FOLLOW_UP_MIN = 2;
+const JAQUEMIN_FOLLOW_UP_MAX = 4;
+
 export const JAQUEMIN_PATROL_CARD = {
   id: "card.commander-x.jaquemin-patrol",
   name: "Jaquemin the Patrol",
@@ -11,8 +14,8 @@ export const JAQUEMIN_PATROL_CARD = {
   targeting: "none",
   tags: ["chivalry"],
   summaryText: {
-    mode: "static",
-    text: "Summon Jaquemin the Patrol. Whenever you attack, it follows the same target.",
+    template:
+      "Summon Jaquemin the Patrol. Whenever you attack, it follows the same target.",
   },
   effects: [
     {
@@ -24,8 +27,7 @@ export const JAQUEMIN_PATROL_CARD = {
         placement: "selectedEmptyPosition",
       },
       displayText: {
-        mode: "static",
-        text: "Summon Jaquemin the Patrol.",
+        template: "Summon Jaquemin the Patrol.",
       },
     },
     {
@@ -43,8 +45,8 @@ export const JAQUEMIN_PATROL_CARD = {
             payload: {
               kind: "dealDamage",
               target: "triggeringTarget",
-              minimum: 2,
-              maximum: 4,
+              minimum: JAQUEMIN_FOLLOW_UP_MIN,
+              maximum: JAQUEMIN_FOLLOW_UP_MAX,
               damageType: "physical",
               attackDamageScaling: 0.25,
               abilityPowerScaling: 0,
@@ -52,15 +54,18 @@ export const JAQUEMIN_PATROL_CARD = {
               canBeDodged: true,
             },
             displayText: {
-              mode: "static",
-              text: "Jaquemin follows your attack with its own attack.",
+              template:
+                "Jaquemin follows your attack with its own {minimum}-{maximum} attack.",
+              params: {
+                minimum: JAQUEMIN_FOLLOW_UP_MIN,
+                maximum: JAQUEMIN_FOLLOW_UP_MAX,
+              },
             },
           },
         ],
       },
       displayText: {
-        mode: "static",
-        text: "Register Jaquemin's follow-up attack.",
+        template: "Register Jaquemin's follow-up attack.",
       },
     },
   ],

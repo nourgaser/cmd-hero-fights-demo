@@ -1,6 +1,8 @@
 import type { HeroDefinition, ListenerDefinition } from "../../shared/models";
 import { COMMANDER_X_HERO_ID } from "./constants";
 
+const COMMANDER_X_PASSIVE_HEAL_AMOUNT = 1;
+
 export const COMMANDER_X_HERO = {
   id: COMMANDER_X_HERO_ID,
   name: "Commander X",
@@ -27,7 +29,7 @@ export const COMMANDER_X_HERO = {
     abilityPowerScaling: 0,
     damageType: "physical",
   },
-  passiveText: "Your attacks restore 1 HP (if not dodged).",
+  passiveText: `Your attacks restore ${COMMANDER_X_PASSIVE_HEAL_AMOUNT} HP (if not dodged).`,
 } satisfies HeroDefinition;
 
 export function createCommanderXInitialListeners(heroEntityId: string): ListenerDefinition[] {
@@ -47,12 +49,14 @@ export function createCommanderXInitialListeners(heroEntityId: string): Listener
           payload: {
             kind: "heal",
             target: "sourceOwnerHero",
-            minimum: 1,
-            maximum: 1,
+            minimum: COMMANDER_X_PASSIVE_HEAL_AMOUNT,
+            maximum: COMMANDER_X_PASSIVE_HEAL_AMOUNT,
           },
           displayText: {
-            mode: "static",
-            text: "Restore 1 HP.",
+            template: "Restore {amount} HP.",
+            params: {
+              amount: COMMANDER_X_PASSIVE_HEAL_AMOUNT,
+            },
           },
         },
       ],

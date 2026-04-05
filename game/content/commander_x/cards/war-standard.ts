@@ -1,6 +1,8 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 
+const WAR_STANDARD_ATTACK_BONUS = 1;
+
 export const WAR_STANDARD_CARD = {
   id: "card.commander-x.war-standard",
   name: "War Standard",
@@ -11,8 +13,10 @@ export const WAR_STANDARD_CARD = {
   targeting: "none",
   tags: ["buff"],
   summaryText: {
-    mode: "static",
-    text: "Summon War Standard. Your hero has +1 AD while it remains.",
+    template: "Summon War Standard. Your hero has +{amount} AD while it remains.",
+    params: {
+      amount: WAR_STANDARD_ATTACK_BONUS,
+    },
   },
   effects: [
     {
@@ -24,8 +28,7 @@ export const WAR_STANDARD_CARD = {
         placement: "selectedEmptyPosition",
       },
       displayText: {
-        mode: "static",
-        text: "Summon War Standard.",
+        template: "Summon War Standard.",
       },
     },
     {
@@ -34,14 +37,16 @@ export const WAR_STANDARD_CARD = {
         kind: "modifyStat",
         target: "sourceOwnerHero",
         stat: "attackDamage",
-        amount: 1,
+        amount: WAR_STANDARD_ATTACK_BONUS,
         duration: "untilSourceRemoved",
         changeKind: "apply",
         sourceBinding: "lastSummonedEntity",
       },
       displayText: {
-        mode: "static",
-        text: "Gain +1 attack damage while War Standard is present.",
+        template: "Gain +{amount} attack damage while War Standard is present.",
+        params: {
+          amount: WAR_STANDARD_ATTACK_BONUS,
+        },
       },
     },
   ],

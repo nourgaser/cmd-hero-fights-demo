@@ -11,8 +11,7 @@ export const CORRODED_SHORTSWORD_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    mode: "static",
-    text: "Summon Corroded Shortsword.",
+    template: "Summon Corroded Shortsword.",
   },
   effects: [
     {
@@ -24,8 +23,7 @@ export const CORRODED_SHORTSWORD_CARD = {
         placement: "selectedEmptyPosition",
       },
       displayText: {
-        mode: "static",
-        text: "Summon your weapon.",
+        template: "Summon your weapon.",
       },
     },
   ],

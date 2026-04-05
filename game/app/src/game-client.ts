@@ -285,18 +285,14 @@ function describeNumericCardText(options: {
   card: {
     name: string
     summaryText?: {
-      mode: 'static' | 'template'
-      text?: string
       template?: string
-      params?: Record<string, string | number | boolean>
+      params?: Record<string, string | number | boolean | undefined>
     }
     effects: Array<{
       payload: { kind: string } & Record<string, unknown>
       displayText: {
-        mode: 'static' | 'template'
-        text?: string
         template?: string
-        params?: Record<string, string | number | boolean>
+        params?: Record<string, string | number | boolean | undefined>
       }
     }>
   }
@@ -327,17 +323,11 @@ function describeNumericCardText(options: {
   const firstEffect = card.effects[0]
 
   const renderDisplayText = (displayText?: {
-    mode: 'static' | 'template'
-    text?: string
     template?: string
-    params?: Record<string, string | number | boolean>
+    params?: Record<string, string | number | boolean | undefined>
   }): string | null => {
     if (!displayText) {
       return null
-    }
-
-    if (displayText.mode === 'static') {
-      return displayText.text ?? null
     }
 
     const template = displayText.template

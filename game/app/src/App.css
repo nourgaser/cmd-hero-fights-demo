@@ -609,6 +609,8 @@ h2.luck-title > * {
 }
 
 .battlefield-card {
+  position: relative;
+  z-index: 1;
   padding: 12px;
   background:
     radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--self-side-color) 12%, transparent), transparent 45%),
@@ -617,13 +619,14 @@ h2.luck-title > * {
 
 .battle-overlay-layer {
   position: relative;
+  z-index: 320;
 }
 
 .battle-action-overlay {
   position: absolute;
   top: 65%;
   transform: translateY(-50%);
-  z-index: 30;
+  z-index: 40;
 }
 
 .touch-tooltip-toggle {
@@ -868,6 +871,12 @@ h2.luck-title > * {
   box-sizing: border-box;
   position: relative;
   overflow: visible;
+  z-index: 1;
+}
+
+.battle-slot:hover,
+.battle-slot:focus-within {
+  z-index: 1850;
 }
 
 .battle-slot.north {
@@ -891,7 +900,6 @@ h2.luck-title > * {
 }
 
 .battle-slot.moves-remaining {
-  isolation: isolate;
   box-shadow:
     inset 0 0 0 3px color-mix(in srgb, #f0cb58 82%, #ffffff 18%),
     0 0 0 2px color-mix(in srgb, #8a691b 22%, transparent),
@@ -1102,6 +1110,9 @@ h2.luck-title > * {
 
 .battlefield-hover-card {
   min-width: 300px;
+  max-width: min(430px, 92vw);
+  max-height: min(76vh, 700px);
+  overflow-y: auto;
   text-align: left;
   padding: 12px;
   display: grid;
@@ -1205,6 +1216,50 @@ h2.luck-title > * {
   color: var(--tooltip-text);
 }
 
+.battlefield-hover-stat-sources {
+  margin-top: 4px;
+  display: grid;
+  gap: 2px;
+}
+
+.battlefield-hover-stat-source-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+  font-size: 10px;
+  line-height: 1.1;
+}
+
+.battlefield-hover-stat-source-name {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  color: color-mix(in srgb, var(--tooltip-text) 86%, #ffffff 14%);
+}
+
+.battlefield-hover-stat-source-delta {
+  font-weight: 700;
+}
+
+.battlefield-hover-stat-source-delta.delta-positive {
+  color: #1f6a32;
+}
+
+.battlefield-hover-stat-source-delta.delta-negative {
+  color: #8b2b22;
+}
+
+.battlefield-hover-stat-source-delta.delta-neutral {
+  color: color-mix(in srgb, var(--tooltip-text) 86%, #ffffff 14%);
+}
+
+.battlefield-hover-stat-source-more {
+  font-size: 10px;
+  line-height: 1;
+  color: color-mix(in srgb, var(--tooltip-muted) 84%, #ffffff 16%);
+}
+
 .cell-empty {
   width: 16px;
   height: 16px;
@@ -1240,7 +1295,7 @@ h2.luck-title > * {
   right: 12px;
   top: 65%;
   transform: translateY(-50%);
-  z-index: 30;
+  z-index: 40;
 }
 
 .deck-stack {
@@ -1311,7 +1366,7 @@ h2.luck-title > * {
   left: 12px;
   top: 20%;
   transform: none;
-  z-index: 30;
+  z-index: 40;
 }
 
 .action-buttons {
