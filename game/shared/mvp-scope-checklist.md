@@ -59,8 +59,8 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 - [ ] Add selector-driven passive rule model (source binding + target selector + numeric operations + active condition)
 - [ ] Add number explanation row model for UI traceability (base, source-tagged contributions, effective)
 - [ ] Document and enforce deterministic number resolution order in code
-- [ ] Add explicit keyword model (keyword id, display name, description, optional icon/behavior metadata)
-- [ ] Add card-level keyword references and clarify relationship between keywords and generic tags
+- [ ] Add explicit keyword-effect mapping only for cards that literally state a keyword in their text
+- [ ] Do not treat keywords as generic tags or placeholder labels
 
 ### Phase 2: Central Resolver Contract
 
@@ -75,7 +75,7 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 - [ ] Initialize modifier/rule collections on summoned entities
 - [ ] Add source cleanup on entity removal (remove/disable source-emitted rules and linked modifiers)
 - [ ] Extend battle events with number-modifier applied/updated/expired events for deterministic traceability
-- [ ] Link effect/card behavior to modeled keywords so UI can render canonical keyword metadata while engine executes effects declaratively
+- [ ] Keep room for explicit keyword-effect definitions in content, but only when a card text actually uses one
 
 ### Phase 4: Hard Switch Effect/Action Migration
 
@@ -91,13 +91,11 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 - [ ] Extend app preview data with number base/effective/delta and explanation rows for stats and card/action numbers
 - [ ] Battlefield hover: color numeric stats by delta vs base (up/down/neutral)
 - [ ] Shift-hover: show per-number detailed contribution lines grouped by source
-- [ ] Show keyword metadata in card tooltips, entity previews, and debug surfaces
 - [ ] Ensure hero/summon tooltips and active previews consistently use effective numbers
 
 ### Phase 6: Commander X Content + Keyword Modeling
 
-- [ ] Update included Commander X cards to use keyword references alongside unique effects
-- [ ] Validate mixed keyword + unique-effect cards (e.g., Jaquemin: Chivalry + follow-up attack)
+- [ ] If a selected Commander X card explicitly uses a keyword in text, model that keyword 1:1 with its effect
 - [ ] Update cards relying on direct numeric mutations to passive rule / modifier semantics
 - [ ] Keep effect modeling declarative: passive rules + conditions + expirations, not one-off direct edits
 

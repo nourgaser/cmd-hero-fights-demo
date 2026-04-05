@@ -59,11 +59,13 @@ export function resolveEffectiveNumber(options: {
   }
 
   // Phase 3: Apply passive rules in source position order
-  const applicableRules = state.activePassiveRules.filter((rule) => {
-    // Check if this rule targets our entity (via target selector)
-    // For now, simple implementation: we'll extend this later with full selector logic
-    return true; // placeholder
-  });
+  const applicableRules = state.activePassiveRules.filter((rule) =>
+    passiveRuleTargetsEntity({
+      rule,
+      targetEntityId,
+      state,
+    }),
+  );
 
   // Sort by source position (deterministic)
   const sortedRules = applicableRules.sort((a, b) => {
@@ -151,6 +153,38 @@ function isPassiveRuleConditionSatisfied(rule: PassiveRule, state: BattleState):
   return true;
 }
 
+function passiveRuleTargetsEntity(options: {
+  rule: PassiveRule;
+  targetEntityId: string;
+  state: BattleState;
+}): boolean {
+  const { rule, targetEntityId, state } = options;
+
+  if (rule.source.kind !== "sourceEntity") {
+    return false;
+  }
+
+  const sourceEntity = state.entitiesById[rule.source.sourceEntityId];
+  if (!sourceEntity) {
+    return false;
+  }
+
+  const sourceOwnerHeroEntityId =
+    sourceEntity.kind === "hero" ? sourceEntity.entityId : sourceEntity.ownerHeroEntityId;
+
+  switch (rule.targetSelector) {
+    case "selfHero":
+    case "sourceOwnerHero":
+      return targetEntityId === sourceOwnerHeroEntityId;
+    case "selectedAny":
+    case "selectedEnemy":
+    case "triggeringTarget":
+    case "none":
+    default:
+      return false;
+  }
+}
+
 /**
  * Apply a modifier operation to a current value, returning the delta.
  */
@@ -195,19 +229,39 @@ function applyNumericOperation(
 function getSourcePosition(
   source: { kind: "sourceEntity" | "sourceCard"; sourceEntityId?: string },
   state: BattleState,
-): number {
+): { row: number; column: number } | undefined {
   if (source.kind === "sourceEntity" && source.sourceEntityId) {
-    // TODO: integrate battlefield position lookup
-    // For now, use entity order in entitiesById
-    const entityIds = Object.keys(state.entitiesById);
-    return entityIds.indexOf(source.sourceEntityId);
+    const entity = state.entitiesById[source.sourceEntityId];
+    if (!entity) {
+      return undefined;
+    }
+
+    return entity.anchorPosition;
   }
-  return 0;
+
+  return undefined;
 }
 
 /**
  * Compare two battlefield positions for deterministic ordering.
  */
-function compareBattlefieldPosition(posA: number, posB: number): number {
-  return posA - posB;
+function compareBattlefieldPosition(
+  posA: { row: number; column: number } | undefined,
+  posB: { row: number; column: number } | undefined,
+): number {
+  if (!posA && !posB) {
+    return 0;
+  }
+  if (!posA) {
+    return 1;
+  }
+  if (!posB) {
+    return -1;
+  }
+
+  if (posA.row !== posB.row) {
+    return posA.row - posB.row;
+  }
+
+  return posA.column - posB.column;
 }

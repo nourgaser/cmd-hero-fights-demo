@@ -364,6 +364,30 @@ Even in a prototype, avoid effect implementations that are impossible to reuse u
 
 ---
 
+## Keyword Policy
+
+Some cards explicitly name a keyword in their text, and those keywords are part of the card's declared ruleset rather than generic tags.
+
+### Rule
+
+Only model a keyword when a card explicitly contains that keyword in its written effect text.
+
+Keywords should be treated as discrete, reusable content concepts with a 1:1 relationship to the effect or rule they represent.
+
+### Important Constraint
+
+Keywords are not lightweight labels and are not a replacement for tags.
+
+Do not invent placeholder keywords for cards that merely feel similar.
+
+If a card does not explicitly state a keyword, it should not have a keyword entry.
+
+### Prototype Scope Note
+
+For the current MVP slice, keyword modeling should stay minimal and only exist if the selected cards actually require it.
+
+---
+
 ## Event System Policy
 
 The prototype uses an **emit-only-when-needed** event policy.
