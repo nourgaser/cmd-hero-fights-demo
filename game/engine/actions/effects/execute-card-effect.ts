@@ -32,6 +32,8 @@ const effectHandlers = {
   gainAttackDamage: handleGainAttackDamageEffect,
   loseAttackDamage: handleGainAttackDamageEffect,
   modifyAttackDamageWhileSourcePresent: handleModifyAttackDamageWhileSourcePresentEffect,
+  modifyArmorWhileSourcePresent: handleModifyAttackDamageWhileSourcePresentEffect,
+  modifyMagicResistWhileSourcePresent: handleModifyAttackDamageWhileSourcePresentEffect,
   drawCards: handleDrawCardsEffect,
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,

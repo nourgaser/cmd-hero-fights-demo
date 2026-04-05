@@ -203,7 +203,11 @@ export function handleGainAttackDamageEffect(context: EffectExecutionContext): E
 export function handleModifyAttackDamageWhileSourcePresentEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  if (context.effect.payload.kind !== "modifyAttackDamageWhileSourcePresent") {
+  if (
+    context.effect.payload.kind !== "modifyAttackDamageWhileSourcePresent" &&
+    context.effect.payload.kind !== "modifyArmorWhileSourcePresent" &&
+    context.effect.payload.kind !== "modifyMagicResistWhileSourcePresent"
+  ) {
     return {
       ok: false,
       reason: "handleModifyAttackDamageWhileSourcePresentEffect received unsupported payload.",
@@ -221,12 +225,32 @@ export function handleModifyAttackDamageWhileSourcePresentEffect(
   } = context;
 
   const payload = context.effect.payload as {
-    kind: "modifyAttackDamageWhileSourcePresent";
+    kind:
+      | "modifyAttackDamageWhileSourcePresent"
+      | "modifyArmorWhileSourcePresent"
+      | "modifyMagicResistWhileSourcePresent";
     target: EffectTargetSelector;
     amount: number;
+    sourceBinding?: "effectSource" | "lastSummonedEntity";
   };
 
-  const sourceEntityId = effectSourceEntityId ?? actorHero.entityId;
+  const resolvedSourceEntityId =
+    payload.sourceBinding === "lastSummonedEntity"
+      ? lastSummonedEntityId
+      : effectSourceEntityId ?? actorHero.entityId;
+
+  if (!resolvedSourceEntityId) {
+    return {
+      ok: false,
+      reason:
+        payload.sourceBinding === "lastSummonedEntity"
+          ? `${payload.kind} requires an existing lastSummonedEntity source.`
+          : `${payload.kind} requires an effect source entity.`,
+    };
+  }
+
+  const sourceEntityId: string = resolvedSourceEntityId;
+
   const targetId = targetEntityIdFromSelector({
     selector: payload.target,
     action: context.action,
@@ -244,6 +268,20 @@ export function handleModifyAttackDamageWhileSourcePresentEffect(
     return { ok: false, reason: "modifyAttackDamageWhileSourcePresent target was not found." };
   }
 
+  const propertyPath =
+    payload.kind === "modifyArmorWhileSourcePresent"
+      ? "armor"
+      : payload.kind === "modifyMagicResistWhileSourcePresent"
+        ? "magicResist"
+        : "attackDamage";
+
+  const label =
+    payload.kind === "modifyArmorWhileSourcePresent"
+      ? "Armor passive rule"
+      : payload.kind === "modifyMagicResistWhileSourcePresent"
+        ? "Magic resist passive rule"
+        : "Attack damage passive rule";
+
   const passiveRule = {
     id: buildModifierId({ effectId: effect.id, sequence, targetEntityId: targetId }),
     source: {
@@ -253,14 +291,14 @@ export function handleModifyAttackDamageWhileSourcePresentEffect(
     targetSelector: payload.target,
     operations: [
       {
-        propertyPath: "attackDamage",
+        propertyPath,
         operation: "add" as const,
         value: payload.amount,
       },
     ],
     lifetime: "untilSourceRemoved" as const,
     condition: { kind: "sourcePresent" as const },
-    label: "Attack damage passive rule",
+    label,
   };
 
   return {
@@ -275,7 +313,7 @@ export function handleModifyAttackDamageWhileSourcePresentEffect(
         sequence,
         modifierId: passiveRule.id,
         targetEntityId: targetId,
-        propertyPath: "attackDamage",
+        propertyPath,
         label: passiveRule.label,
         sourceEntityId,
       },

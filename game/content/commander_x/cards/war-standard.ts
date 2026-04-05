@@ -29,44 +29,16 @@ export const WAR_STANDARD_CARD = {
       },
     },
     {
-      id: "effect.war-standard.buff-apply",
+      id: "effect.war-standard.buff-while-source-present",
       payload: {
-        kind: "gainAttackDamage",
+        kind: "modifyAttackDamageWhileSourcePresent",
         target: "sourceOwnerHero",
         amount: 1,
+        sourceBinding: "lastSummonedEntity",
       },
       displayText: {
         mode: "static",
         text: "Gain +1 attack damage while War Standard is present.",
-      },
-    },
-    {
-      id: "effect.war-standard.buff-cleanup-listener",
-      payload: {
-        kind: "addListener",
-        listenerId: "listener.war-standard.cleanup",
-        eventKind: "entityRemoved",
-        sourceBinding: "lastSummonedEntity",
-        conditions: [{ kind: "removedEntityIsListenerSource" }],
-        lifetime: "once",
-        effects: [
-          {
-            id: "effect.war-standard.buff-remove",
-            payload: {
-              kind: "loseAttackDamage",
-              target: "sourceOwnerHero",
-              amount: 1,
-            },
-            displayText: {
-              mode: "static",
-              text: "Lose War Standard bonus when it leaves the battlefield.",
-            },
-          },
-        ],
-      },
-      displayText: {
-        mode: "static",
-        text: "Register cleanup when War Standard is removed.",
       },
     },
   ],

@@ -96,8 +96,12 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 ### Phase 6: Commander X Content + Keyword Modeling
 
 - [ ] If a selected Commander X card explicitly uses a keyword in text, model that keyword 1:1 with its effect
-- [ ] Update cards relying on direct numeric mutations to passive rule / modifier semantics
-- [ ] Keep effect modeling declarative: passive rules + conditions + expirations, not one-off direct edits
+- [x] Update cards relying on direct numeric mutations to passive rule / modifier semantics
+- [x] Keep effect modeling declarative: passive rules + conditions + expirations, not one-off direct edits
+
+Phase 6 notes:
+- Migrated `War Standard` and `Guard Sigil` from apply+cleanup-listener rollback patterns to declarative `modify*WhileSourcePresent` effects bound to `lastSummonedEntity`.
+- Added `modifyArmorWhileSourcePresent` and `modifyMagicResistWhileSourcePresent` payload kinds and engine handling.
 
 ### Phase 7: Manual Acceptance Pass (No Tests)
 

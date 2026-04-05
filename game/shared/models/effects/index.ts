@@ -36,8 +36,10 @@ import {
   HealEffectPayloadSchema,
   LoseArmorEffectPayloadSchema,
   LoseAttackDamageEffectPayloadSchema,
+  ModifyArmorWhileSourcePresentEffectPayloadSchema,
   LoseMagicResistEffectPayloadSchema,
   ModifyAttackDamageWhileSourcePresentEffectPayloadSchema,
+  ModifyMagicResistWhileSourcePresentEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
 } from "./base-payloads";
@@ -56,6 +58,8 @@ type NonRecursivePayload =
   | z.infer<typeof LoseAttackDamageEffectPayloadSchema>
   | z.infer<typeof DrawCardsEffectPayloadSchema>
   | z.infer<typeof ModifyAttackDamageWhileSourcePresentEffectPayloadSchema>
+  | z.infer<typeof ModifyArmorWhileSourcePresentEffectPayloadSchema>
+  | z.infer<typeof ModifyMagicResistWhileSourcePresentEffectPayloadSchema>
   | z.infer<typeof SummonEntityEffectPayloadSchema>
   | z.infer<typeof RefundMoveCostEffectPayloadSchema>;
 
@@ -106,6 +110,8 @@ export const EffectPayloadKindSchema = z.enum([
   "loseAttackDamage",
   "drawCards",
   "modifyAttackDamageWhileSourcePresent",
+  "modifyArmorWhileSourcePresent",
+  "modifyMagicResistWhileSourcePresent",
   "summonEntity",
   "refundMoveCost",
   "addListener",
@@ -144,6 +150,8 @@ export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   LoseAttackDamageEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
   ModifyAttackDamageWhileSourcePresentEffectPayloadSchema,
+  ModifyArmorWhileSourcePresentEffectPayloadSchema,
+  ModifyMagicResistWhileSourcePresentEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
   AddListenerEffectPayloadSchemaRaw,
