@@ -1,12 +1,26 @@
-import {
-  type EffectExecutionContext,
-  type ExecuteCardEffectResult,
-} from "../context";
+import { type EffectExecutionContext, type ExecuteCardEffectResult } from "../context";
 import { targetEntityIdFromSelector } from "../targeting";
+import type { EffectTargetSelector } from "../../../../shared/models";
 
-export function handleGainArmorEffect(
-  context: EffectExecutionContext,
-): ExecuteCardEffectResult {
+function buildModifierId(options: {
+  effectId: string;
+  sequence: number;
+  targetEntityId: string;
+}): string {
+  return `mod.${options.effectId}.${options.targetEntityId}.${options.sequence}`;
+}
+
+type StatPayload =
+  | { kind: "gainArmor" | "loseArmor"; target: EffectTargetSelector; amount: number }
+  | { kind: "gainMagicResist" | "loseMagicResist"; target: EffectTargetSelector; amount: number }
+  | { kind: "gainAttackDamage" | "loseAttackDamage"; target: EffectTargetSelector; amount: number };
+
+function applyStatModifierEffect(options: {
+  context: EffectExecutionContext;
+  propertyPath: "armor" | "magicResist" | "attackDamage";
+  label: string;
+}): ExecuteCardEffectResult {
+  const { context, propertyPath, label } = options;
   const {
     state,
     effect,
@@ -15,47 +29,127 @@ export function handleGainArmorEffect(
     sequence,
     lastDamageWasDodged,
     lastSummonedEntityId,
+    effectSourceEntityId,
   } = context;
 
-  if (effect.payload.kind !== "gainArmor" && effect.payload.kind !== "loseArmor") {
-    return { ok: false, reason: "handleGainArmorEffect received unsupported payload." };
-  }
-
-  const signedAmount = effect.payload.kind === "gainArmor" ? effect.payload.amount : -effect.payload.amount;
-
+  const payload = effect.payload as StatPayload;
   const targetId = targetEntityIdFromSelector({
-    selector: effect.payload.target,
+    selector: payload.target,
     action,
     actorHero,
     state,
   });
   if (!targetId) {
-    return { ok: false, reason: "gainArmor requires a valid effect target." };
+    return { ok: false, reason: `${label} requires a valid effect target.` };
   }
 
-  const target = state.entitiesById[targetId];
-  if (!target) {
-    return { ok: false, reason: "gainArmor target was not found." };
+  if (!state.entitiesById[targetId]) {
+    return { ok: false, reason: `${label} target was not found.` };
   }
+
+  const sourceEntityId = effectSourceEntityId ?? actorHero.entityId;
+  const amount = payload.amount;
+  const isGain =
+    payload.kind === "gainArmor" ||
+    payload.kind === "gainMagicResist" ||
+    payload.kind === "gainAttackDamage";
+
+  if (isGain) {
+    const modifier = {
+      id: buildModifierId({ effectId: effect.id, sequence, targetEntityId: targetId }),
+      propertyPath,
+      targetEntityId: targetId,
+      operation: "add" as const,
+      value: amount,
+      lifetime: "persistent" as const,
+      sourceEntityId,
+      label,
+    };
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        activeModifiers: [...state.activeModifiers, modifier],
+      },
+      events: [
+        {
+          kind: "numberModifierApplied",
+          sequence,
+          modifierId: modifier.id,
+          targetEntityId: targetId,
+          propertyPath,
+          label,
+          sourceEntityId,
+        },
+      ],
+      nextSequence: sequence + 1,
+      lastDamageWasDodged,
+      lastSummonedEntityId,
+    };
+  }
+
+  const removedIndex = state.activeModifiers.findIndex(
+    (modifier) =>
+      modifier.sourceEntityId === sourceEntityId &&
+      modifier.targetEntityId === targetId &&
+      modifier.propertyPath === propertyPath &&
+      modifier.value === amount &&
+      modifier.operation === "add",
+  );
+
+  if (removedIndex >= 0) {
+    const nextModifiers = [...state.activeModifiers];
+    const removedModifierId = nextModifiers[removedIndex]!.id;
+    nextModifiers.splice(removedIndex, 1);
+
+    return {
+      ok: true,
+      state: {
+        ...state,
+        activeModifiers: nextModifiers,
+      },
+      events: [
+        {
+          kind: "numberModifierExpired",
+          sequence,
+          modifierId: removedModifierId,
+          targetEntityId: targetId,
+          reason: "source_removed",
+        },
+      ],
+      nextSequence: sequence + 1,
+      lastDamageWasDodged,
+      lastSummonedEntityId,
+    };
+  }
+
+  const modifier = {
+    id: buildModifierId({ effectId: effect.id, sequence, targetEntityId: targetId }),
+    propertyPath,
+    targetEntityId: targetId,
+    operation: "subtract" as const,
+    value: amount,
+    lifetime: "persistent" as const,
+    sourceEntityId,
+    label,
+  };
 
   return {
     ok: true,
     state: {
       ...state,
-      entitiesById: {
-        ...state.entitiesById,
-        [targetId]: {
-          ...target,
-          armor: Math.max(0, target.armor + signedAmount),
-        },
-      },
+      activeModifiers: [...state.activeModifiers, modifier],
     },
     events: [
       {
-        kind: signedAmount >= 0 ? "armorGained" : "armorLost",
+        kind: "numberModifierApplied",
         sequence,
+        modifierId: modifier.id,
         targetEntityId: targetId,
-        amount: Math.abs(signedAmount),
+        propertyPath,
+        label,
+        sourceEntityId,
       },
     ],
     nextSequence: sequence + 1,
@@ -64,126 +158,126 @@ export function handleGainArmorEffect(
   };
 }
 
-export function handleGainMagicResistEffect(
-  context: EffectExecutionContext,
-): ExecuteCardEffectResult {
-  const {
-    state,
-    effect,
-    action,
-    actorHero,
-    sequence,
-    lastDamageWasDodged,
-    lastSummonedEntityId,
-  } = context;
+export function handleGainArmorEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
+  if (context.effect.payload.kind !== "gainArmor" && context.effect.payload.kind !== "loseArmor") {
+    return { ok: false, reason: "handleGainArmorEffect received unsupported payload." };
+  }
 
+  return applyStatModifierEffect({
+    context,
+    propertyPath: "armor",
+    label: "Armor modifier",
+  });
+}
+
+export function handleGainMagicResistEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
   if (
-    effect.payload.kind !== "gainMagicResist" &&
-    effect.payload.kind !== "loseMagicResist"
+    context.effect.payload.kind !== "gainMagicResist" &&
+    context.effect.payload.kind !== "loseMagicResist"
   ) {
     return { ok: false, reason: "handleGainMagicResistEffect received unsupported payload." };
   }
 
-  const signedAmount =
-    effect.payload.kind === "gainMagicResist" ? effect.payload.amount : -effect.payload.amount;
-
-  const targetId = targetEntityIdFromSelector({
-    selector: effect.payload.target,
-    action,
-    actorHero,
-    state,
+  return applyStatModifierEffect({
+    context,
+    propertyPath: "magicResist",
+    label: "Magic resist modifier",
   });
-  if (!targetId) {
-    return { ok: false, reason: "gainMagicResist requires a valid effect target." };
-  }
-
-  const target = state.entitiesById[targetId];
-  if (!target) {
-    return { ok: false, reason: "gainMagicResist target was not found." };
-  }
-
-  return {
-    ok: true,
-    state: {
-      ...state,
-      entitiesById: {
-        ...state.entitiesById,
-        [targetId]: {
-          ...target,
-          magicResist: Math.max(0, target.magicResist + signedAmount),
-        },
-      },
-    },
-    events: [
-      {
-        kind: signedAmount >= 0 ? "magicResistGained" : "magicResistLost",
-        sequence,
-        targetEntityId: targetId,
-        amount: Math.abs(signedAmount),
-      },
-    ],
-    nextSequence: sequence + 1,
-    lastDamageWasDodged,
-    lastSummonedEntityId,
-  };
 }
 
-export function handleGainAttackDamageEffect(
-  context: EffectExecutionContext,
-): ExecuteCardEffectResult {
-  const {
-    state,
-    effect,
-    action,
-    actorHero,
-    sequence,
-    lastDamageWasDodged,
-    lastSummonedEntityId,
-  } = context;
-
+export function handleGainAttackDamageEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
   if (
-    effect.payload.kind !== "gainAttackDamage" &&
-    effect.payload.kind !== "loseAttackDamage"
+    context.effect.payload.kind !== "gainAttackDamage" &&
+    context.effect.payload.kind !== "loseAttackDamage"
   ) {
     return { ok: false, reason: "handleGainAttackDamageEffect received unsupported payload." };
   }
 
-  const signedAmount =
-    effect.payload.kind === "gainAttackDamage" ? effect.payload.amount : -effect.payload.amount;
+  return applyStatModifierEffect({
+    context,
+    propertyPath: "attackDamage",
+    label: "Attack damage modifier",
+  });
+}
 
+export function handleModifyAttackDamageWhileSourcePresentEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  if (context.effect.payload.kind !== "modifyAttackDamageWhileSourcePresent") {
+    return {
+      ok: false,
+      reason: "handleModifyAttackDamageWhileSourcePresentEffect received unsupported payload.",
+    };
+  }
+
+  const {
+    state,
+    effect,
+    actorHero,
+    sequence,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+    effectSourceEntityId,
+  } = context;
+
+  const payload = context.effect.payload as {
+    kind: "modifyAttackDamageWhileSourcePresent";
+    target: EffectTargetSelector;
+    amount: number;
+  };
+
+  const sourceEntityId = effectSourceEntityId ?? actorHero.entityId;
   const targetId = targetEntityIdFromSelector({
-    selector: effect.payload.target,
-    action,
+    selector: payload.target,
+    action: context.action,
     actorHero,
     state,
   });
   if (!targetId) {
-    return { ok: false, reason: "gainAttackDamage requires a valid effect target." };
+    return {
+      ok: false,
+      reason: "modifyAttackDamageWhileSourcePresent requires a valid target.",
+    };
   }
 
-  const target = state.entitiesById[targetId];
-  if (!target) {
-    return { ok: false, reason: "gainAttackDamage target was not found." };
+  if (!state.entitiesById[targetId]) {
+    return { ok: false, reason: "modifyAttackDamageWhileSourcePresent target was not found." };
   }
+
+  const passiveRule = {
+    id: buildModifierId({ effectId: effect.id, sequence, targetEntityId: targetId }),
+    source: {
+      kind: "sourceEntity" as const,
+      sourceEntityId,
+    },
+    targetSelector: payload.target,
+    operations: [
+      {
+        propertyPath: "attackDamage",
+        operation: "add" as const,
+        value: payload.amount,
+      },
+    ],
+    lifetime: "untilSourceRemoved" as const,
+    condition: { kind: "sourcePresent" as const },
+    label: "Attack damage passive rule",
+  };
 
   return {
     ok: true,
     state: {
       ...state,
-      entitiesById: {
-        ...state.entitiesById,
-        [targetId]: {
-          ...target,
-          attackDamage: Math.max(0, target.attackDamage + signedAmount),
-        },
-      },
+      activePassiveRules: [...state.activePassiveRules, passiveRule],
     },
     events: [
       {
-        kind: signedAmount >= 0 ? "attackDamageGained" : "attackDamageLost",
+        kind: "numberModifierApplied",
         sequence,
+        modifierId: passiveRule.id,
         targetEntityId: targetId,
-        amount: Math.abs(signedAmount),
+        propertyPath: "attackDamage",
+        label: passiveRule.label,
+        sourceEntityId,
       },
     ],
     nextSequence: sequence + 1,

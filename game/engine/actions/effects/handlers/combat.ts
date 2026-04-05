@@ -1,6 +1,13 @@
 import { applyLuckToRoll } from "../../../core/luck";
 import { rollRange } from "../../../core/rng";
 import { roundWhole, toAppliedDamage, toHealAmount } from "../../../core/combat";
+import {
+  getEffectiveAttackDamage,
+  getEffectiveArmor,
+  getEffectiveDamageRange,
+  getEffectiveHealRange,
+  getEffectiveMagicResist,
+} from "../../effects/get-effective-number";
 import { computeScaledDamageRange } from "../../../core/damage-range";
 import {
   type EffectExecutionContext,
@@ -44,11 +51,22 @@ export function handleHealEffect(
     return { ok: false, reason: "heal target was not found." };
   }
 
-  const rawRoll = rollRange(battleRng, effect.payload.minimum, effect.payload.maximum);
+  const effectiveRange = getEffectiveHealRange({
+    state,
+    targetEntityId: actorHero.entityId,
+    baseMinimum: effect.payload.minimum,
+    baseMaximum: effect.payload.maximum,
+  });
+
+  const rawRoll = rollRange(
+    battleRng,
+    effectiveRange.minimum.effectiveValue,
+    effectiveRange.maximum.effectiveValue,
+  );
   const adjustedRoll = applyLuckToRoll({
     rawRoll,
-    minimum: effect.payload.minimum,
-    maximum: effect.payload.maximum,
+    minimum: effectiveRange.minimum.effectiveValue,
+    maximum: effectiveRange.maximum.effectiveValue,
     luck: state.luck,
     rollingHeroEntityId: actorHero.entityId,
   });
@@ -138,11 +156,24 @@ export function handleDealDamageEffect(
     return { ok: false, reason: "dealDamage source entity was not found." };
   }
 
+  const effectiveAttackDamage = getEffectiveAttackDamage({
+    state,
+    targetEntityId: sourceEntity.entityId,
+    baseAttackDamage: sourceEntity.attackDamage,
+  }).effectiveValue;
+  const effectiveAbilityPower = sourceEntity.abilityPower;
+  const effectiveRange = getEffectiveDamageRange({
+    state,
+    targetEntityId: sourceEntity.entityId,
+    baseMinimum: effect.payload.minimum,
+    baseMaximum: effect.payload.maximum,
+  });
+
   const { minimum, maximum } = computeScaledDamageRange({
-    minimum: effect.payload.minimum,
-    maximum: effect.payload.maximum,
-    attackDamage: sourceEntity.attackDamage,
-    abilityPower: sourceEntity.abilityPower,
+    minimum: effectiveRange.minimum.effectiveValue,
+    maximum: effectiveRange.maximum.effectiveValue,
+    attackDamage: effectiveAttackDamage,
+    abilityPower: effectiveAbilityPower,
     armor: sourceEntity.armor,
     attackDamageScaling: effect.payload.attackDamageScaling,
     abilityPowerScaling: effect.payload.abilityPowerScaling,
@@ -167,9 +198,17 @@ export function handleDealDamageEffect(
   if (!wasDodged) {
     const resistance =
       effect.payload.damageType === "physical"
-        ? target.armor
+        ? getEffectiveArmor({
+            state,
+            targetEntityId: target.entityId,
+            baseArmor: target.armor,
+          }).effectiveValue
         : effect.payload.damageType === "magic"
-          ? target.magicResist
+          ? getEffectiveMagicResist({
+              state,
+              targetEntityId: target.entityId,
+              baseMagicResist: target.magicResist,
+            }).effectiveValue
           : 0;
     appliedDamage = toAppliedDamage(adjustedRoll, resistance);
   }

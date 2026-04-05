@@ -13,7 +13,12 @@ import {
   handleRemoveListenerEffect,
   handleRefundMoveCostEffect,
 } from "./handlers/economy";
-import { handleGainArmorEffect, handleGainMagicResistEffect, handleGainAttackDamageEffect } from "./handlers/stats";
+import {
+  handleGainArmorEffect,
+  handleGainMagicResistEffect,
+  handleGainAttackDamageEffect,
+  handleModifyAttackDamageWhileSourcePresentEffect,
+} from "./handlers/stats";
 import { handleSummonEffect } from "./handlers/summon";
 
 type EffectHandler = (context: EffectExecutionContext) => ExecuteCardEffectResult;
@@ -26,6 +31,7 @@ const effectHandlers = {
   loseMagicResist: handleGainMagicResistEffect,
   gainAttackDamage: handleGainAttackDamageEffect,
   loseAttackDamage: handleGainAttackDamageEffect,
+  modifyAttackDamageWhileSourcePresent: handleModifyAttackDamageWhileSourcePresentEffect,
   drawCards: handleDrawCardsEffect,
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,

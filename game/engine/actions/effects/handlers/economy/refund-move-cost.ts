@@ -2,6 +2,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../../context";
+import { getEffectiveRefundAmount } from "../../effects/get-effective-number";
 
 export function handleRefundMoveCostEffect(
   context: EffectExecutionContext,
@@ -52,7 +53,13 @@ export function handleRefundMoveCostEffect(
         ...state.entitiesById,
         [actorHero.entityId]: {
           ...latestActor,
-          movePoints: latestActor.movePoints + payload.amount,
+          movePoints:
+            latestActor.movePoints +
+            getEffectiveRefundAmount({
+              state,
+              targetEntityId: actorHero.entityId,
+              baseAmount: payload.amount,
+            }).effectiveValue,
         },
       },
     },

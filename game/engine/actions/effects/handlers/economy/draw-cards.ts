@@ -3,6 +3,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../../context";
+import { getEffectiveDrawCount } from "../../effects/get-effective-number";
 
 export function handleDrawCardsEffect(
   context: EffectExecutionContext,
@@ -36,7 +37,15 @@ export function handleDrawCardsEffect(
   }
 
   const availableSlots = Math.max(0, HARD_HAND_SIZE_LIMIT - target.handCards.length);
-  const drawCount = Math.min(effect.payload.amount, availableSlots, target.deckCardIds.length);
+  const drawCount = Math.min(
+    getEffectiveDrawCount({
+      state,
+      targetEntityId: target.entityId,
+      baseAmount: effect.payload.amount,
+    }).effectiveValue,
+    availableSlots,
+    target.deckCardIds.length,
+  );
   const drawnCardIds = target.deckCardIds.slice(0, drawCount);
   const remainingDeck = target.deckCardIds.slice(drawCount);
 

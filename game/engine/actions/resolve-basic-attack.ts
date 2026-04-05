@@ -4,6 +4,13 @@ import {
   type BattleState,
   type HeroDefinition,
 } from "../../shared/models";
+import {
+  getEffectiveAttackDamage,
+  getEffectiveArmor,
+  getEffectiveBasicAttackRange,
+  getEffectiveMagicResist,
+  getEffectiveAbilityPower,
+} from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToRoll } from "../core/luck";
@@ -100,11 +107,27 @@ export function resolveBasicAttackAction(options: {
     };
   }
 
+  const effectiveAttackDamage = getEffectiveAttackDamage({
+    state,
+    targetEntityId: attacker.entityId,
+    baseAttackDamage: attacker.attackDamage,
+  }).effectiveValue;
+  const effectiveAbilityPower = getEffectiveAbilityPower({
+    state,
+    targetEntityId: attacker.entityId,
+    baseAbilityPower: attacker.abilityPower,
+  }).effectiveValue;
+  const effectiveBasicAttackRange = getEffectiveBasicAttackRange({
+    state,
+    targetEntityId: attacker.entityId,
+    baseMinimum: attack.minimumDamage,
+    baseMaximum: attack.maximumDamage,
+  });
   const { minimum, maximum } = computeScaledDamageRange({
-    minimum: attack.minimumDamage,
-    maximum: attack.maximumDamage,
-    attackDamage: attacker.attackDamage,
-    abilityPower: attacker.abilityPower,
+    minimum: effectiveBasicAttackRange.minimum.effectiveValue,
+    maximum: effectiveBasicAttackRange.maximum.effectiveValue,
+    attackDamage: effectiveAttackDamage,
+    abilityPower: effectiveAbilityPower,
     attackDamageScaling: attack.attackDamageScaling,
     abilityPowerScaling: attack.abilityPowerScaling,
   });
@@ -129,9 +152,17 @@ export function resolveBasicAttackAction(options: {
   if (!wasDodged) {
     const resistance =
       attack.damageType === "physical"
-        ? target.armor
+        ? getEffectiveArmor({
+            state,
+            targetEntityId: target.entityId,
+            baseArmor: target.armor,
+          }).effectiveValue
         : attack.damageType === "magic"
-          ? target.magicResist
+          ? getEffectiveMagicResist({
+              state,
+              targetEntityId: target.entityId,
+              baseMagicResist: target.magicResist,
+            }).effectiveValue
           : 0;
     appliedDamage = toAppliedDamage(finalRoll, resistance);
   }

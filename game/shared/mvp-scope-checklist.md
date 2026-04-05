@@ -54,37 +54,37 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 
 ### Phase 1: Shared Model Foundation + Keyword Architecture
 
-- [ ] Add immutable base values to runtime entities and effect payloads (hero/summon stats, action constants)
-- [ ] Add active number modifier model (id, source metadata, target binding, operation, value, lifetime, condition)
-- [ ] Add selector-driven passive rule model (source binding + target selector + numeric operations + active condition)
-- [ ] Add number explanation row model for UI traceability (base, source-tagged contributions, effective)
-- [ ] Document and enforce deterministic number resolution order in code
-- [ ] Add explicit keyword-effect mapping only for cards that literally state a keyword in their text
-- [ ] Do not treat keywords as generic tags or placeholder labels
+- [x] Add immutable base values to runtime entities and effect payloads (hero/summon stats, action constants)
+- [x] Add active number modifier model (id, source metadata, target binding, operation, value, lifetime, condition)
+- [x] Add selector-driven passive rule model (source binding + target selector + numeric operations + active condition)
+- [x] Add number explanation row model for UI traceability (base, source-tagged contributions, effective)
+- [x] Document and enforce deterministic number resolution order in code
+- [x] Add explicit keyword-effect mapping only for cards that literally state a keyword in their text
+- [x] Do not treat keywords as generic tags or placeholder labels
 
 ### Phase 2: Central Resolver Contract
 
-- [ ] Add engine number resolver module to compute effective numbers from base + active modifiers + passive rules
-- [ ] Extend resolver to cover entity stats, effect payload numbers (damage/heal ranges, draw counts, refunds), and action constants
-- [ ] Add resolver outputs for explanation breakdown per number (source-tagged contribution rows)
-- [ ] Add helper APIs for effective number reads in engine paths (combat, scaling, resistances, previews, card play)
+- [x] Add engine number resolver module to compute effective numbers from base + active modifiers + passive rules
+- [x] Extend resolver to cover entity stats, effect payload numbers (damage/heal ranges, draw counts, refunds), and action constants
+- [x] Add resolver outputs for explanation breakdown per number (source-tagged contribution rows)
+- [x] Add helper APIs for effective number reads in engine paths (combat, scaling, resistances, previews, card play)
 
 ### Phase 3: Lifecycle Integration + Keyword Linkage
 
-- [ ] Initialize modifier/rule collections in battle creation
-- [ ] Initialize modifier/rule collections on summoned entities
-- [ ] Add source cleanup on entity removal (remove/disable source-emitted rules and linked modifiers)
-- [ ] Extend battle events with number-modifier applied/updated/expired events for deterministic traceability
-- [ ] Keep room for explicit keyword-effect definitions in content, but only when a card text actually uses one
+- [x] Initialize modifier/rule collections in battle creation
+- [x] Initialize modifier/rule collections on summoned entities
+- [x] Add source cleanup on entity removal (remove/disable source-emitted rules and linked modifiers)
+- [x] Extend battle events with number-modifier applied/updated/expired events for deterministic traceability
+- [x] Keep room for explicit keyword-effect definitions in content, but only when a card text actually uses one
 
 ### Phase 4: Hard Switch Effect/Action Migration
 
-- [ ] Replace direct numeric mutation in stat handlers (gain/lose armor, MR, AD) with modifier operations
-- [ ] Migrate effect payload number handlers (damage/heal, draw count, refunds) to resolver-adjusted reads
-- [ ] Migrate action-level constants (basic attack ranges, luck deltas, press-luck bounds) to resolver-adjusted reads
-- [ ] Implement condition-based numeric adjustments (e.g., `modifyAttackDamageWhileSourcePresent`) using passive rules
-- [ ] Refactor temporary buff patterns from inverse rollback effects to lifetime/condition-based modifiers
-- [ ] Remove obsolete direct-mutation effect payloads/handlers after migration
+- [x] Replace direct numeric mutation in stat handlers (gain/lose armor, MR, AD) with modifier operations
+- [x] Migrate effect payload number handlers (damage/heal, draw count, refunds) to resolver-adjusted reads
+- [x] Migrate action-level constants (basic attack ranges, luck deltas, press-luck bounds) to resolver-adjusted reads
+- [x] Implement condition-based numeric adjustments (e.g., `modifyAttackDamageWhileSourcePresent`) using passive rules
+- [x] Refactor temporary buff patterns from inverse rollback effects to lifetime/condition-based modifiers
+- [x] Remove obsolete direct-mutation effect payloads/handlers after migration
 
 ### Phase 5: Full UX Traceability
 

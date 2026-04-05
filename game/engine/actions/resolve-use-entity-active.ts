@@ -4,6 +4,7 @@ import {
   type DamageType,
   type UseEntityActiveAction,
 } from "../../shared/models";
+import { resolveEffectiveNumber } from "../core/number-resolver";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToRoll } from "../core/luck";
@@ -133,20 +134,51 @@ export function resolveUseEntityActiveAction(options: {
     };
   }
 
-  const { minimum, maximum } = computeScaledDamageRange({
-    minimum: profile.minimumDamage,
-    maximum: profile.maximumDamage,
-    attackDamage: source.attackDamage,
-    abilityPower: source.abilityPower,
+  const minimum = resolveEffectiveNumber({
+    state,
+    targetEntityId: source.entityId,
+    propertyPath: "useEntityActive.minimum",
+    baseValue: profile.minimumDamage,
+    clampMin: 0,
+  }).effectiveValue;
+  const maximum = resolveEffectiveNumber({
+    state,
+    targetEntityId: source.entityId,
+    propertyPath: "useEntityActive.maximum",
+    baseValue: profile.maximumDamage,
+    clampMin: 0,
+  }).effectiveValue;
+  const effectiveAttackDamage = resolveEffectiveNumber({
+    state,
+    targetEntityId: source.entityId,
+    propertyPath: "attackDamage",
+    baseValue: source.attackDamage,
+    clampMin: 0,
+  }).effectiveValue;
+  const effectiveAbilityPower = resolveEffectiveNumber({
+    state,
+    targetEntityId: source.entityId,
+    propertyPath: "abilityPower",
+    baseValue: source.abilityPower,
+    clampMin: 0,
+  }).effectiveValue;
+
+  const scaledRange = computeScaledDamageRange({
+    minimum,
+    maximum,
+    attackDamage: effectiveAttackDamage,
+    abilityPower: effectiveAbilityPower,
     attackDamageScaling: profile.attackDamageScaling,
     abilityPowerScaling: profile.abilityPowerScaling,
   });
+  const scaledMinimum = scaledRange.minimum;
+  const scaledMaximum = scaledRange.maximum;
 
-  const rawRoll = rollRange(battleRng, minimum, maximum);
+  const rawRoll = rollRange(battleRng, scaledMinimum, scaledMaximum);
   const adjustedRoll = applyLuckToRoll({
     rawRoll,
-    minimum,
-    maximum,
+    minimum: scaledMinimum,
+    maximum: scaledMaximum,
     luck: state.luck,
     rollingHeroEntityId: actorHero.entityId,
   });
