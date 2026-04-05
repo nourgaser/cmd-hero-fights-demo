@@ -627,6 +627,76 @@ Luck should be implemented centrally as part of outcome resolution, not improvis
 
 ---
 
+## Number Modifier System and Resolution Order
+
+The prototype uses a unified **number modifier system** to track all adjustments to numeric values: entity stats (armor, attack damage, magic resist), effect payload parameters (damage ranges, draw counts, heal amounts, refunds), and action constants (basic attack ranges, luck deltas).
+
+### Key Principles
+
+* All numeric modifications are **traceable** via modifier records with source metadata
+* Resolution order is **deterministic**: base → temporary modifiers → passive rules → finalization
+* Modifiers support **lifetimes and conditions**: expiration and activation rules are explicit
+* **No direct mutation**: instead of mutating state, modifiers are applied during resolution and recompute effective values
+
+### Deterministic Resolution Order
+
+Given a numeric property on a target entity, the effective value is computed as:
+
+**Phase 1: Base Value**
+- Start with immutable base value (entity stat, effect parameter, action constant)
+
+**Phase 2: Temporary Modifiers (Application Sequence Order)**
+- Apply active `NumberModifier` instances filtered by matching `propertyPath` and `targetEntityId`
+- Order: chronological by modifier creation sequence (deterministic ordering)
+- Check: only apply if modifier condition is satisfied (source exists, etc.)
+- Check: only apply if modifier lifetime is active (not expired)
+- Operation: apply modifiers.operation (add/subtract/set) to accumulated value
+
+Example: `base=5 → +2 (temp mod) → 7 → -1 (temp mod) → 6`
+
+**Phase 3: Passive Rules (Source Position Order)**
+- Apply active `PassiveRule` instances filtered by matching target selector
+- Order: by source entity battlefield position (deterministic spatial ordering)
+- Targets: resolve target selector to affected entities
+- Check: only apply if rule condition is satisfied
+- Check: only apply if rule lifetime is active
+- Operations: apply all numeric operations in the rule
+
+Example: `value=6 → +1 (War Standard) → 7 → +2 (adjacent unit) → 9`
+
+**Phase 4: Finalization**
+- Clamp to valid range (e.g., armor ≥ 0)
+- Round/floor as needed
+- Ensure type correctness
+
+### Property Path Convention
+
+Numeric properties are referenced using dot notation:
+
+- **Entity stats**: `armor`, `attackDamage`, `magicResist`, `health`
+- **Effect parameters**: `dealDamage.minimum`, `dealDamage.maximum`, `heal.amount`, `drawCards.amount`, `refundMoveCost.amount`
+- **Action constants**: `basicAttack.min`, `basicAttack.max`, `pressLuck.delta`
+
+### Determinism Guarantee
+
+Given identical seed, battle state, content, and action sequence, the effective numeric value for any property must always be identical. This requires:
+
+* No RNG in resolution logic (pure computation)
+* Stable, deterministic modifier/rule ordering
+* Conditions must not depend on randomness
+* Resolution produces no state side effects (only computed values)
+
+### UI Traceability
+
+Resolved numbers include a `NumberExplanation` breakdown:
+- base value
+- list of contributions (source id, label, delta) in resolution order
+- effective value
+
+This enables players and debuggers to understand why a value is what it is.
+
+---
+
 ## Draw and Hand Rules
 
 ### Hand Soft Cap

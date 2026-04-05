@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { EffectDefinitionSchema, EffectDisplayTextSchema } from "./effects/index";
 import { HeroIdSchema } from "./hero";
+import { KeywordIdSchema, KeywordSchema } from "./keyword";
 
 export const CardIdSchema = z.string().min(1);
 export type CardId = z.infer<typeof CardIdSchema>;
@@ -53,6 +54,20 @@ export const CardDefinitionSchema = z.object({
   effects: z.array(EffectDefinitionSchema).min(1),
   summaryText: EffectDisplayTextSchema.optional(),
   castCondition: CardCastConditionSchema.optional(),
+  /**
+   * Keywords are reusable game mechanics that this card references.
+   * Can be either full Keyword objects or just keyword IDs.
+   * Keywords allow UI to display canonical descriptions and enable effect reuse.
+   * Example: A card might have "Chivalry" keyword + unique "follow-up attack" effect.
+   */
+  keywords: z.union([
+    z.array(KeywordSchema),
+    z.array(KeywordIdSchema),
+  ]).default([]),
+  /**
+   * Tags are lightweight metadata for filtering/grouping that don't correspond to keywords.
+   * Retained for backward compatibility and non-keyword use cases.
+   */
   tags: z.array(z.string().min(1)).default([]),
 });
 export type CardDefinition = z.infer<typeof CardDefinitionSchema>;

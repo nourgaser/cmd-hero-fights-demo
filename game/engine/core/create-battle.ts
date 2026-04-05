@@ -242,6 +242,8 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     },
     battlefieldOccupancy: occupancy,
     activeListeners: initialListeners,
+    activeModifiers: [],
+    activePassiveRules: [],
   };
 
   const annotatedState = input.cardDefinitionsById

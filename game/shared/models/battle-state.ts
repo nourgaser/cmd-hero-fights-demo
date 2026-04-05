@@ -5,8 +5,10 @@ import { BattlefieldOccupancySchema, BattlefieldSideSchema } from "./battlefield
 import { EntityIdSchema, HandCardIdSchema } from "./action";
 import { EntityFootprintSchema } from "./footprint";
 import { HeroIdSchema } from "./hero";
-import { PositionSchema } from "./position";
 import { ListenerDefinitionSchema } from "./effects/index.ts";
+import { NumberModifierSchema } from "./number-modifier";
+import { PassiveRuleSchema } from "./passive-rule";
+import { PositionSchema } from "./position";
 
 export const BattleIdSchema = z.string().min(1);
 export type BattleId = z.infer<typeof BattleIdSchema>;
@@ -108,5 +110,15 @@ export const BattleStateSchema = z.object({
   entitiesById: z.record(EntityIdSchema, BattlefieldEntityStateSchema),
   battlefieldOccupancy: BattlefieldOccupancySchema,
   activeListeners: z.array(ListenerDefinitionSchema),
+  /**
+   * Active number modifiers that are currently applying adjustments to numeric values.
+   * These are ordered by application sequence for deterministic resolution.
+   */
+  activeModifiers: z.array(NumberModifierSchema).default([]),
+  /**
+   * Active passive rules that are applying numeric adjustments to targets based on sources.
+   * These are ordered by source entity position for deterministic resolution.
+   */
+  activePassiveRules: z.array(PassiveRuleSchema).default([]),
 });
 export type BattleState = z.infer<typeof BattleStateSchema>;

@@ -3,6 +3,7 @@ import { z } from "zod";
 import { BattleActionSchema, EntityIdSchema, HandCardIdSchema } from "./action";
 import { CardIdSchema } from "./card";
 import { DamageTypeSchema } from "./hero";
+import { NumberExplanationSchema } from "./number-explanation";
 import { PositionSchema } from "./position";
 
 export const EventSequenceSchema = z.number().int().nonnegative();
@@ -160,6 +161,46 @@ export const LuckBalanceChangedEventSchema = z.object({
 });
 export type LuckBalanceChangedEvent = z.infer<typeof LuckBalanceChangedEventSchema>;
 
+/**
+ * NumberModifierApplied: a new number modifier was added to active modifiers.
+ * Used for traceability and deterministic event ordering.
+ */
+export const NumberModifierAppliedEventSchema = z.object({
+  kind: z.literal("numberModifierApplied"),
+  sequence: EventSequenceSchema,
+  modifierId: z.string().min(1),
+  targetEntityId: EntityIdSchema,
+  propertyPath: z.string().min(1),
+  label: z.string().min(1),
+  sourceEntityId: EntityIdSchema.optional(),
+});
+export type NumberModifierAppliedEvent = z.infer<typeof NumberModifierAppliedEventSchema>;
+
+/**
+ * NumberModifierExpired: a number modifier's lifetime has elapsed or condition is no longer met.
+ * Used for traceability.
+ */
+export const NumberModifierExpiredEventSchema = z.object({
+  kind: z.literal("numberModifierExpired"),
+  sequence: EventSequenceSchema,
+  modifierId: z.string().min(1),
+  targetEntityId: EntityIdSchema,
+  reason: z.enum(["lifetime", "condition", "source_removed"]),
+});
+export type NumberModifierExpiredEvent = z.infer<typeof NumberModifierExpiredEventSchema>;
+
+/**
+ * NumberExplanationUpdated: the effective value of a number has changed due to modifier/rule changes.
+ * Includes full explanation breakdown for UI traceability.
+ */
+export const NumberExplanationUpdatedEventSchema = z.object({
+  kind: z.literal("numberExplanationUpdated"),
+  sequence: EventSequenceSchema,
+  targetEntityId: EntityIdSchema,
+  explanation: NumberExplanationSchema,
+});
+export type NumberExplanationUpdatedEvent = z.infer<typeof NumberExplanationUpdatedEventSchema>;
+
 export const BattleEventSchema = z.discriminatedUnion("kind", [
   ActionResolvedEventSchema,
   CardPlayedEventSchema,
@@ -175,6 +216,9 @@ export const BattleEventSchema = z.discriminatedUnion("kind", [
   MagicResistLostEventSchema,
   AttackDamageGainedEventSchema,
   AttackDamageLostEventSchema,
+  NumberModifierAppliedEventSchema,
+  NumberModifierExpiredEventSchema,
+  NumberExplanationUpdatedEventSchema,
   TurnEndedEventSchema,
   TurnStartedEventSchema,
   LuckBalanceChangedEventSchema,

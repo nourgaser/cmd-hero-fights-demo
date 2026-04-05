@@ -18,6 +18,45 @@ export function removeDefeatedSummonedEntities(options: {
   const events: BattleEvent[] = [];
   let nextState = state;
 
+  const removeSourceLinkedNumberRecords = (entityId: string) => {
+    const removedModifierIds = nextState.activeModifiers
+      .filter((modifier) => modifier.sourceEntityId === entityId)
+      .map((modifier) => modifier.id);
+    const removedPassiveRuleIds = nextState.activePassiveRules
+      .filter((rule) => rule.source.kind === "sourceEntity" && rule.source.sourceEntityId === entityId)
+      .map((rule) => rule.id);
+
+    nextState = {
+      ...nextState,
+      activeModifiers: nextState.activeModifiers.filter((modifier) => modifier.sourceEntityId !== entityId),
+      activePassiveRules: nextState.activePassiveRules.filter(
+        (rule) => !(rule.source.kind === "sourceEntity" && rule.source.sourceEntityId === entityId),
+      ),
+    };
+
+    for (const modifierId of removedModifierIds) {
+      events.push({
+        kind: "numberModifierExpired",
+        sequence,
+        modifierId,
+        targetEntityId: entityId,
+        reason: "source_removed",
+      });
+      sequence += 1;
+    }
+
+    for (const ruleId of removedPassiveRuleIds) {
+      events.push({
+        kind: "numberModifierExpired",
+        sequence,
+        modifierId: ruleId,
+        targetEntityId: entityId,
+        reason: "source_removed",
+      });
+      sequence += 1;
+    }
+  };
+
   for (const entity of Object.values(nextState.entitiesById)) {
     if (entity.kind === "hero") {
       continue;
@@ -42,6 +81,8 @@ export function removeDefeatedSummonedEntities(options: {
         entity.footprint,
       ),
     };
+
+    removeSourceLinkedNumberRecords(entity.entityId);
 
     events.push({
       kind: "entityRemoved",
