@@ -88,10 +88,10 @@ Goal: move from direct mutable numeric edits to derived, traceable effective num
 
 ### Phase 5: Full UX Traceability
 
-- [ ] Extend app preview data with number base/effective/delta and explanation rows for stats and card/action numbers
-- [ ] Battlefield hover: color numeric stats by delta vs base (up/down/neutral)
-- [ ] Shift-hover: show per-number detailed contribution lines grouped by source
-- [ ] Ensure hero/summon tooltips and active previews consistently use effective numbers
+- [x] Extend app preview data with number base/effective/delta and explanation rows for stats and card/action numbers
+- [x] Battlefield hover: color numeric stats by delta vs base (up/down/neutral)
+- [x] Shift-hover: show per-number detailed contribution lines grouped by source
+- [x] Ensure hero/summon tooltips and active previews consistently use effective numbers
 
 ### Phase 6: Commander X Content + Keyword Modeling
 

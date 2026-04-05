@@ -7,6 +7,21 @@ import {
   splitDetailTextIntoLines,
 } from '../utils/render-numeric-text.tsx'
 
+function formatSignedDelta(value: number): string {
+  const abs = Math.abs(Math.round(value * 100) / 100)
+  return `${value >= 0 ? '+' : '-'}${Number.isInteger(abs) ? abs : abs}`
+}
+
+function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
+  if (delta > 0) {
+    return 'delta-positive'
+  }
+  if (delta < 0) {
+    return 'delta-negative'
+  }
+  return 'delta-neutral'
+}
+
 type BattlefieldGridProps = {
   preview: AppBattlePreview
   selfId: string
@@ -212,6 +227,40 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               ? Math.max(0, Math.min(100, (entityStats.currentHealth / Math.max(1, entityStats.maxHealth)) * 100))
               : 0
             const healthHue = Math.round((healthPercent / 100) * 120)
+            const combatTraces = entityStats?.combatNumbers
+            const attackDamageClass = combatTraces ? numberDeltaClass(combatTraces.attackDamage.delta) : 'delta-neutral'
+            const armorClass = combatTraces ? numberDeltaClass(combatTraces.armor.delta) : 'delta-neutral'
+            const abilityPowerClass = combatTraces ? numberDeltaClass(combatTraces.abilityPower.delta) : 'delta-neutral'
+            const magicResistClass = combatTraces ? numberDeltaClass(combatTraces.magicResist.delta) : 'delta-neutral'
+            const contributionGroups = (() => {
+              if (!combatTraces || !shouldShowDetailedTooltips) {
+                return [] as Array<{ sourceId: string; label: string; lines: string[] }>
+              }
+
+              const buckets = new Map<string, { sourceId: string; label: string; lines: string[] }>()
+              const pushContribution = (statLabel: string, contributions: AppBattlePreview['battlefield']['entitiesById'][string]['combatNumbers']['attackDamage']['contributions']) => {
+                for (const contribution of contributions) {
+                  const existing = buckets.get(contribution.sourceId)
+                  const line = `${statLabel} ${formatSignedDelta(contribution.delta)}`
+                  if (existing) {
+                    existing.lines.push(line)
+                    continue
+                  }
+                  buckets.set(contribution.sourceId, {
+                    sourceId: contribution.sourceId,
+                    label: contribution.label,
+                    lines: [line],
+                  })
+                }
+              }
+
+              pushContribution('AD', combatTraces.attackDamage.contributions)
+              pushContribution('AP', combatTraces.abilityPower.contributions)
+              pushContribution('Armor', combatTraces.armor.contributions)
+              pushContribution('MR', combatTraces.magicResist.contributions)
+
+              return Array.from(buckets.values())
+            })()
 
             return (
               <div
@@ -350,13 +399,25 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         </div>
                         <span className="hover-group-title">Combat</span>
                         <div className="battlefield-hover-grid">
-                          <span className="battlefield-hover-stat"><strong>AD</strong><em>{entityStats.attackDamage}</em></span>
-                          <span className="battlefield-hover-stat"><strong>AP</strong><em>{entityStats.abilityPower}</em></span>
-                          <span className="battlefield-hover-stat"><strong>Armor</strong><em>{entityStats.armor}</em></span>
-                          <span className="battlefield-hover-stat"><strong>MR</strong><em>{entityStats.magicResist}</em></span>
+                          <span className={`battlefield-hover-stat ${attackDamageClass}`.trim()}><strong>AD</strong><em>{entityStats.attackDamage}</em></span>
+                          <span className={`battlefield-hover-stat ${abilityPowerClass}`.trim()}><strong>AP</strong><em>{entityStats.abilityPower}</em></span>
+                          <span className={`battlefield-hover-stat ${armorClass}`.trim()}><strong>Armor</strong><em>{entityStats.armor}</em></span>
+                          <span className={`battlefield-hover-stat ${magicResistClass}`.trim()}><strong>MR</strong><em>{entityStats.magicResist}</em></span>
                           <span className="battlefield-hover-stat"><strong>Crit</strong><em>{Math.round(entityStats.criticalChance * 100)}% x{entityStats.criticalMultiplier.toFixed(2)}</em></span>
                           <span className="battlefield-hover-stat"><strong>Dodge</strong><em>{Math.round(entityStats.dodgeChance * 100)}%</em></span>
                         </div>
+                        {!shouldShowDetailedTooltips && combatTraces ? (
+                          <span className="tooltip-shift-hint">Hold Shift or enable Details for modifier sources.</span>
+                        ) : null}
+                        {shouldShowDetailedTooltips && contributionGroups.length > 0 ? (
+                          <div className="battle-tooltip-detail">
+                            {contributionGroups.map((group) => (
+                              <span key={group.sourceId} className="battle-tooltip-detail-line">
+                                <strong>{group.label}:</strong> {group.lines.join(', ')}
+                              </span>
+                            ))}
+                          </div>
+                        ) : null}
                       </div>
                     ) : null}
                   </span>
@@ -365,11 +426,11 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 {entityStats ? (
                   <>
                     <span className="entity-stats-row" aria-hidden="true">
-                      <span className="entity-stat-pill">
+                      <span className={`entity-stat-pill ${attackDamageClass}`.trim()}>
                         <Icon icon="game-icons:broadsword" />
                         {entityStats.attackDamage}
                       </span>
-                      <span className="entity-stat-pill">
+                      <span className={`entity-stat-pill ${armorClass}`.trim()}>
                         <Icon icon="game-icons:checked-shield" />
                         {entityStats.armor}
                       </span>

@@ -1,12 +1,25 @@
 import { createGameApi } from '../../index.ts'
 import { LUCK_STEP_RATIO } from '../../shared/game-constants.ts'
-import type { BattleEvent } from '../../shared/models'
+import type { BattleEvent, NumberExplanation } from '../../shared/models'
 import { luckBiasForHero } from '../../engine/core/luck.ts'
 import {
   DEFAULT_GAME_BOOTSTRAP_CONFIG,
   type GameBootstrapConfig,
   type HeroBootstrapConfig,
 } from './data/game-bootstrap.ts'
+
+export type AppNumberContributionPreview = {
+  sourceId: string
+  label: string
+  delta: number
+}
+
+export type AppNumberTrace = {
+  base: number
+  effective: number
+  delta: number
+  contributions: AppNumberContributionPreview[]
+}
 
 export type AppBattlePreview = {
   battleId: string
@@ -43,6 +56,10 @@ export type AppBattlePreview = {
         maximumDamage: number
         attackDamageScaling: number
         abilityPowerScaling: number
+        minimumTrace: AppNumberTrace
+        maximumTrace: AppNumberTrace
+        attackDamageTrace: AppNumberTrace
+        abilityPowerTrace: AppNumberTrace
         summaryText: string
         summaryDetailText: string | null
         summaryTone: 'neutral' | 'positive' | 'negative'
@@ -128,6 +145,12 @@ export type AppBattlePreview = {
         magicResist: number
         attackDamage: number
         abilityPower: number
+        combatNumbers: {
+          armor: AppNumberTrace
+          magicResist: AppNumberTrace
+          attackDamage: AppNumberTrace
+          abilityPower: AppNumberTrace
+        }
         criticalChance: number
         criticalMultiplier: number
         dodgeChance: number
@@ -155,6 +178,62 @@ function formatPreviewNumber(value: number): string {
 function formatSignedDelta(value: number): string {
   const formatted = formatPreviewNumber(Math.abs(value))
   return `${value >= 0 ? '+' : '-'}${formatted}`
+}
+
+function toAppNumberTrace(explanation: NumberExplanation): AppNumberTrace {
+  return {
+    base: explanation.baseValue,
+    effective: explanation.effectiveValue,
+    delta: explanation.effectiveValue - explanation.baseValue,
+    contributions: explanation.contributions.map((contribution) => ({
+      sourceId: contribution.sourceId,
+      label: contribution.label,
+      delta: contribution.delta,
+    })),
+  }
+}
+
+function numberTraceToDetailLine(label: string, trace: AppNumberTrace): string {
+  const head = `${label}: ${formatPreviewNumber(trace.base)} -> ${formatPreviewNumber(trace.effective)}`
+  if (trace.delta === 0 || trace.contributions.length === 0) {
+    return `${head} (no modifiers)`
+  }
+
+  const contributionText = trace.contributions
+    .map((contribution) => `${contribution.label} ${formatSignedDelta(contribution.delta)}`)
+    .join(', ')
+
+  return `${head} (${formatSignedDelta(trace.delta)}: ${contributionText})`
+}
+
+function resolveNumberTrace(options: {
+  gameApi: ReturnType<typeof createGameApi>
+  state: ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+  targetEntityId: string
+  propertyPath: string
+  baseValue: number
+  clampMin?: number
+  clampMax?: number
+}): AppNumberTrace {
+  const explanation = options.gameApi.resolveEffectiveNumber({
+    state: options.state,
+    targetEntityId: options.targetEntityId,
+    propertyPath: options.propertyPath,
+    baseValue: options.baseValue,
+    clampMin: options.clampMin,
+    clampMax: options.clampMax,
+  })
+
+  return toAppNumberTrace(explanation)
+}
+
+function makeStaticNumberTrace(value: number): AppNumberTrace {
+  return {
+    base: value,
+    effective: value,
+    delta: 0,
+    contributions: [],
+  }
 }
 
 function clamp(value: number, minimum: number, maximum: number): number {
@@ -218,6 +297,14 @@ function describeNumericCardText(options: {
     abilityPower: number
     armor: number
   }
+  actorNumberTraces?: {
+    attackDamage: AppNumberTrace
+    abilityPower: AppNumberTrace
+    armor: AppNumberTrace
+  }
+  state?: BattleState
+  gameApi?: ReturnType<typeof createGameApi>
+  sourceEntityId?: string
   luck: {
     anchorHeroEntityId: string
     balance: number
@@ -227,7 +314,7 @@ function describeNumericCardText(options: {
   summaryDetailText: string | null
   summaryTone: 'neutral' | 'positive' | 'negative'
 } {
-  const { card, actorHero, luck } = options
+  const { card, actorHero, actorNumberTraces, state, gameApi, sourceEntityId, luck } = options
   const firstEffect = card.effects[0]
 
   const renderDisplayText = (displayText?: {
@@ -281,8 +368,35 @@ function describeNumericCardText(options: {
       damageType: 'physical' | 'magic' | 'true'
     }
 
-    const minimum = damagePayload.minimum + actorHero.attackDamage * damagePayload.attackDamageScaling + actorHero.abilityPower * damagePayload.abilityPowerScaling + actorHero.armor * damagePayload.armorScaling
-    const maximum = damagePayload.maximum + actorHero.attackDamage * damagePayload.attackDamageScaling + actorHero.abilityPower * damagePayload.abilityPowerScaling + actorHero.armor * damagePayload.armorScaling
+    const attackDamageValue = actorNumberTraces?.attackDamage.effective ?? actorHero.attackDamage
+    const abilityPowerValue = actorNumberTraces?.abilityPower.effective ?? actorHero.abilityPower
+    const armorValue = actorNumberTraces?.armor.effective ?? actorHero.armor
+    const minimumTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'dealDamage.minimum',
+            baseValue: damagePayload.minimum,
+            clampMin: 0,
+          })
+        : null
+    const maximumTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'dealDamage.maximum',
+            baseValue: damagePayload.maximum,
+            clampMin: 0,
+          })
+        : null
+    const effectiveMinimumBase = minimumTrace?.effective ?? damagePayload.minimum
+    const effectiveMaximumBase = maximumTrace?.effective ?? damagePayload.maximum
+    const minimum = effectiveMinimumBase + attackDamageValue * damagePayload.attackDamageScaling + abilityPowerValue * damagePayload.abilityPowerScaling + armorValue * damagePayload.armorScaling
+    const maximum = effectiveMaximumBase + attackDamageValue * damagePayload.attackDamageScaling + abilityPowerValue * damagePayload.abilityPowerScaling + armorValue * damagePayload.armorScaling
     const adjusted = summarizeLuckAdjustedRange({
       minimum,
       maximum,
@@ -297,16 +411,26 @@ function describeNumericCardText(options: {
       : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${damageLabel}.`
 
     const detailParts = [
-      `${formatPreviewNumber(damagePayload.minimum)}-${formatPreviewNumber(damagePayload.maximum)} base`,
+      `${formatPreviewNumber(effectiveMinimumBase)}-${formatPreviewNumber(effectiveMaximumBase)} base`,
       damagePayload.attackDamageScaling > 0 ? `${formatPreviewNumber(damagePayload.attackDamageScaling * 100)}% AD` : null,
       damagePayload.abilityPowerScaling > 0 ? `${formatPreviewNumber(damagePayload.abilityPowerScaling * 100)}% AP` : null,
       damagePayload.armorScaling > 0 ? `${formatPreviewNumber(damagePayload.armorScaling * 100)}% armor` : null,
       adjusted.shift !== 0 ? `Luck shift ${formatSignedDelta(adjusted.shift)} (${adjusted.bias >= 0 ? 'favored' : 'unfavored'})` : 'No luck shift',
     ].filter((part): part is string => !!part)
 
+    const detailLines = [
+      minimumTrace ? numberTraceToDetailLine('Damage min base', minimumTrace) : null,
+      maximumTrace ? numberTraceToDetailLine('Damage max base', maximumTrace) : null,
+      actorNumberTraces ? numberTraceToDetailLine('AD used', actorNumberTraces.attackDamage) : null,
+      actorNumberTraces ? numberTraceToDetailLine('AP used', actorNumberTraces.abilityPower) : null,
+      actorNumberTraces && damagePayload.armorScaling > 0
+        ? numberTraceToDetailLine('Armor used', actorNumberTraces.armor)
+        : null,
+    ].filter((line): line is string => !!line)
+
     return {
       summaryText,
-      summaryDetailText: `Formula: ${detailParts.join(' + ')}.`,
+      summaryDetailText: `${detailLines.length > 0 ? `${detailLines.join('\n')}\n` : ''}Formula: ${detailParts.join(' + ')}.`,
       summaryTone:
         adjusted.minimum > minimum || adjusted.maximum > maximum
           ? 'positive'
@@ -323,13 +447,43 @@ function describeNumericCardText(options: {
       maximum: number
     }
 
-    const summaryText = healPayload.minimum === healPayload.maximum
-      ? `Restore ${formatPreviewNumber(healPayload.minimum)} HP to your hero.`
-      : `Restore ${formatPreviewNumber(healPayload.minimum)}-${formatPreviewNumber(healPayload.maximum)} HP to your hero.`
+    const minimumTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'heal.minimum',
+            baseValue: healPayload.minimum,
+            clampMin: 0,
+          })
+        : null
+    const maximumTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'heal.maximum',
+            baseValue: healPayload.maximum,
+            clampMin: 0,
+          })
+        : null
+    const effectiveMinimum = minimumTrace?.effective ?? healPayload.minimum
+    const effectiveMaximum = maximumTrace?.effective ?? healPayload.maximum
+
+    const summaryText = effectiveMinimum === effectiveMaximum
+      ? `Restore ${formatPreviewNumber(effectiveMinimum)} HP to your hero.`
+      : `Restore ${formatPreviewNumber(effectiveMinimum)}-${formatPreviewNumber(effectiveMaximum)} HP to your hero.`
+
+    const detailLines = [
+      minimumTrace ? numberTraceToDetailLine('Heal min base', minimumTrace) : null,
+      maximumTrace ? numberTraceToDetailLine('Heal max base', maximumTrace) : null,
+    ].filter((line): line is string => !!line)
 
     return {
       summaryText,
-      summaryDetailText: `Heals from ${formatPreviewNumber(healPayload.minimum)} to ${formatPreviewNumber(healPayload.maximum)} HP.`,
+      summaryDetailText: `${detailLines.length > 0 ? `${detailLines.join('\n')}\n` : ''}Heals from ${formatPreviewNumber(effectiveMinimum)} to ${formatPreviewNumber(effectiveMaximum)} HP.`,
       summaryTone: 'positive',
     }
   }
@@ -382,9 +536,22 @@ function describeNumericCardText(options: {
       amount: number
       target: string
     }
+    const drawTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'drawCards.amount',
+            baseValue: drawPayload.amount,
+            clampMin: 0,
+          })
+        : null
+    const effectiveAmount = drawTrace?.effective ?? drawPayload.amount
+
     return {
-      summaryText: `Draw ${drawPayload.amount} card${drawPayload.amount === 1 ? '' : 's'}.`,
-      summaryDetailText: `Target: ${String(drawPayload.target)}.`,
+      summaryText: `Draw ${effectiveAmount} card${effectiveAmount === 1 ? '' : 's'}.`,
+      summaryDetailText: `${drawTrace ? `${numberTraceToDetailLine('Draw amount', drawTrace)}\n` : ''}Target: ${String(drawPayload.target)}.`,
       summaryTone: 'positive',
     }
   }
@@ -406,19 +573,34 @@ function buildHeroBasicAttackSummary(options: {
     abilityPowerScaling: number
     damageType: 'physical' | 'magic' | 'true'
   }
-  currentAttackDamage: number
-  currentAbilityPower: number
+  minimumTrace: AppNumberTrace
+  maximumTrace: AppNumberTrace
+  attackDamageTrace: AppNumberTrace
+  abilityPowerTrace: AppNumberTrace
   luck: {
     anchorHeroEntityId: string
     balance: number
   }
 }): {
+  minimumTrace: AppNumberTrace
+  maximumTrace: AppNumberTrace
+  attackDamageTrace: AppNumberTrace
+  abilityPowerTrace: AppNumberTrace
   summaryText: string
   summaryDetailText: string
   summaryTone: 'neutral' | 'positive' | 'negative'
   currentRangeText: string
 } {
-  const { heroName, rollingHeroEntityId, attack, currentAttackDamage, currentAbilityPower, luck } = options
+  const {
+    heroName,
+    rollingHeroEntityId,
+    attack,
+    minimumTrace,
+    maximumTrace,
+    attackDamageTrace,
+    abilityPowerTrace,
+    luck,
+  } = options
   const scalingParts = [
     attack.attackDamageScaling > 0
       ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% of current attack damage`
@@ -434,13 +616,13 @@ function buildHeroBasicAttackSummary(options: {
       : `Base ${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)} ${attack.damageType} damage.`
 
   const minimum =
-    attack.minimumDamage +
-    currentAttackDamage * attack.attackDamageScaling +
-    currentAbilityPower * attack.abilityPowerScaling
+    minimumTrace.effective +
+    attackDamageTrace.effective * attack.attackDamageScaling +
+    abilityPowerTrace.effective * attack.abilityPowerScaling
   const maximum =
-    attack.maximumDamage +
-    currentAttackDamage * attack.attackDamageScaling +
-    currentAbilityPower * attack.abilityPowerScaling
+    maximumTrace.effective +
+    attackDamageTrace.effective * attack.attackDamageScaling +
+    abilityPowerTrace.effective * attack.abilityPowerScaling
 
   const adjusted = summarizeLuckAdjustedRange({
     minimum,
@@ -450,12 +632,23 @@ function buildHeroBasicAttackSummary(options: {
     anchorHeroEntityId: luck.anchorHeroEntityId,
   })
 
+  const detailRows = [
+    numberTraceToDetailLine('Basic attack min base', minimumTrace),
+    numberTraceToDetailLine('Basic attack max base', maximumTrace),
+    numberTraceToDetailLine('AD used', attackDamageTrace),
+    numberTraceToDetailLine('AP used', abilityPowerTrace),
+  ]
+
   return {
+    minimumTrace,
+    maximumTrace,
+    attackDamageTrace,
+    abilityPowerTrace,
     summaryText:
       adjusted.minimum === adjusted.maximum
         ? `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType} damage.`
         : `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage.`,
-    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryDetailText: `${detailRows.join('\n')}\n${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
     summaryTone:
       adjusted.minimum > minimum || adjusted.maximum > maximum
         ? 'positive'
@@ -477,8 +670,10 @@ function buildEntityActiveSummary(options: {
     moveCost: number
     canBeDodged: boolean
   }
-  currentAttackDamage: number
-  currentAbilityPower: number
+  minimumTrace: AppNumberTrace
+  maximumTrace: AppNumberTrace
+  attackDamageTrace: AppNumberTrace
+  abilityPowerTrace: AppNumberTrace
   luck: {
     anchorHeroEntityId: string
     balance: number
@@ -492,7 +687,15 @@ function buildEntityActiveSummary(options: {
   summaryTone: 'neutral' | 'positive' | 'negative'
   currentRangeText: string
 } {
-  const { rollingHeroEntityId, attack, currentAttackDamage, currentAbilityPower, luck } = options
+  const {
+    rollingHeroEntityId,
+    attack,
+    minimumTrace,
+    maximumTrace,
+    attackDamageTrace,
+    abilityPowerTrace,
+    luck,
+  } = options
   const scalingParts = [
     attack.attackDamageScaling > 0
       ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% AD`
@@ -507,13 +710,13 @@ function buildEntityActiveSummary(options: {
     : `Base ${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)} ${attack.damageType}.`
 
   const minimum =
-    attack.minimumDamage +
-    currentAttackDamage * attack.attackDamageScaling +
-    currentAbilityPower * attack.abilityPowerScaling
+    minimumTrace.effective +
+    attackDamageTrace.effective * attack.attackDamageScaling +
+    abilityPowerTrace.effective * attack.abilityPowerScaling
   const maximum =
-    attack.maximumDamage +
-    currentAttackDamage * attack.attackDamageScaling +
-    currentAbilityPower * attack.abilityPowerScaling
+    maximumTrace.effective +
+    attackDamageTrace.effective * attack.attackDamageScaling +
+    abilityPowerTrace.effective * attack.abilityPowerScaling
 
   const adjusted = summarizeLuckAdjustedRange({
     minimum,
@@ -523,6 +726,13 @@ function buildEntityActiveSummary(options: {
     anchorHeroEntityId: luck.anchorHeroEntityId,
   })
 
+  const detailRows = [
+    numberTraceToDetailLine('Active min base', minimumTrace),
+    numberTraceToDetailLine('Active max base', maximumTrace),
+    numberTraceToDetailLine('AD used', attackDamageTrace),
+    numberTraceToDetailLine('AP used', abilityPowerTrace),
+  ]
+
   return {
     moveCost: attack.moveCost,
     damageType: attack.damageType,
@@ -531,7 +741,7 @@ function buildEntityActiveSummary(options: {
       adjusted.minimum === adjusted.maximum
         ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType}.`
         : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType}.`,
-    summaryDetailText: `${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryDetailText: `${detailRows.join('\n')}\n${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
     summaryTone:
       adjusted.minimum > minimum || adjusted.maximum > maximum
         ? 'positive'
@@ -634,8 +844,10 @@ function resolveSummonPreviewForCard(options: {
     ? buildEntityActiveSummary({
         rollingHeroEntityId: ownerHeroEntityId,
         attack: activeProfile,
-        currentAttackDamage: summonedBlueprint.attackDamage,
-        currentAbilityPower: summonedBlueprint.abilityPower,
+        minimumTrace: makeStaticNumberTrace(activeProfile.minimumDamage),
+        maximumTrace: makeStaticNumberTrace(activeProfile.maximumDamage),
+        attackDamageTrace: makeStaticNumberTrace(summonedBlueprint.attackDamage),
+        abilityPowerTrace: makeStaticNumberTrace(summonedBlueprint.abilityPower),
         luck,
       })
     : null
@@ -760,6 +972,31 @@ function buildPreviewFromState(options: {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
     }
 
+    const actorAttackDamageTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'attackDamage',
+      baseValue: entity.attackDamage,
+      clampMin: 0,
+    })
+    const actorAbilityPowerTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'abilityPower',
+      baseValue: entity.abilityPower,
+      clampMin: 0,
+    })
+    const actorArmorTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'armor',
+      baseValue: entity.armor,
+      clampMin: 0,
+    })
+
     return {
       heroEntityId,
       cards: entity.handCards.map((handCard) => {
@@ -778,6 +1015,14 @@ function buildPreviewFromState(options: {
           ...describeNumericCardText({
             card: cardDef,
             actorHero: entity,
+            actorNumberTraces: {
+              attackDamage: actorAttackDamageTrace,
+              abilityPower: actorAbilityPowerTrace,
+              armor: actorArmorTrace,
+            },
+            state,
+            gameApi,
+            sourceEntityId: entity.entityId,
             luck: state.luck,
           }),
           castConditionText: describeCardCastCondition(cardDef),
@@ -814,8 +1059,38 @@ function buildPreviewFromState(options: {
       heroName: heroDef.name,
       rollingHeroEntityId: entity.entityId,
       attack: heroDef.basicAttack,
-      currentAttackDamage: entity.attackDamage,
-      currentAbilityPower: entity.abilityPower,
+      minimumTrace: resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'basicAttack.minimum',
+        baseValue: heroDef.basicAttack.minimumDamage,
+        clampMin: 0,
+      }),
+      maximumTrace: resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'basicAttack.maximum',
+        baseValue: heroDef.basicAttack.maximumDamage,
+        clampMin: 0,
+      }),
+      attackDamageTrace: resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'attackDamage',
+        baseValue: entity.attackDamage,
+        clampMin: 0,
+      }),
+      abilityPowerTrace: resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'abilityPower',
+        baseValue: entity.abilityPower,
+        clampMin: 0,
+      }),
       luck: state.luck,
     })
 
@@ -831,6 +1106,10 @@ function buildPreviewFromState(options: {
         maximumDamage: heroDef.basicAttack.maximumDamage,
         attackDamageScaling: heroDef.basicAttack.attackDamageScaling,
         abilityPowerScaling: heroDef.basicAttack.abilityPowerScaling,
+        minimumTrace: basicAttack.minimumTrace,
+        maximumTrace: basicAttack.maximumTrace,
+        attackDamageTrace: basicAttack.attackDamageTrace,
+        abilityPowerTrace: basicAttack.abilityPowerTrace,
         summaryText: basicAttack.summaryText,
         summaryDetailText: basicAttack.summaryDetailText,
         summaryTone: basicAttack.summaryTone,
@@ -880,6 +1159,39 @@ function buildPreviewFromState(options: {
 
   const battlefieldEntities: AppBattlePreview['battlefield']['entitiesById'] = {}
   for (const entity of Object.values(state.entitiesById)) {
+    const attackDamageTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'attackDamage',
+      baseValue: entity.attackDamage,
+      clampMin: 0,
+    })
+    const abilityPowerTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'abilityPower',
+      baseValue: entity.abilityPower,
+      clampMin: 0,
+    })
+    const armorTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'armor',
+      baseValue: entity.armor,
+      clampMin: 0,
+    })
+    const magicResistTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'magicResist',
+      baseValue: entity.magicResist,
+      clampMin: 0,
+    })
+
     if (entity.kind === 'hero') {
       const heroDef = heroesById[entity.heroDefinitionId]
       battlefieldEntities[entity.entityId] = {
@@ -893,10 +1205,16 @@ function buildPreviewFromState(options: {
         sourceCardSummaryTone: 'neutral',
         currentHealth: entity.currentHealth,
         maxHealth: entity.maxHealth,
-        armor: entity.armor,
-        magicResist: entity.magicResist,
-        attackDamage: entity.attackDamage,
-        abilityPower: entity.abilityPower,
+        armor: armorTrace.effective,
+        magicResist: magicResistTrace.effective,
+        attackDamage: attackDamageTrace.effective,
+        abilityPower: abilityPowerTrace.effective,
+        combatNumbers: {
+          armor: armorTrace,
+          magicResist: magicResistTrace,
+          attackDamage: attackDamageTrace,
+          abilityPower: abilityPowerTrace,
+        },
         criticalChance: entity.criticalChance,
         criticalMultiplier: entity.criticalMultiplier,
         dodgeChance: entity.dodgeChance,
@@ -911,6 +1229,14 @@ function buildPreviewFromState(options: {
       ? describeNumericCardText({
           card: sourceCard,
           actorHero: entity,
+          actorNumberTraces: {
+            attackDamage: attackDamageTrace,
+            abilityPower: abilityPowerTrace,
+            armor: armorTrace,
+          },
+          state,
+          gameApi,
+          sourceEntityId: entity.entityId,
           luck: state.luck,
         })
       : null
@@ -934,10 +1260,16 @@ function buildPreviewFromState(options: {
       sourceCardSummaryTone: sourceCardText?.summaryTone ?? 'neutral',
       currentHealth: entity.currentHealth,
       maxHealth: entity.maxHealth,
-      armor: entity.armor,
-      magicResist: entity.magicResist,
-      attackDamage: entity.attackDamage,
-      abilityPower: entity.abilityPower,
+      armor: armorTrace.effective,
+      magicResist: magicResistTrace.effective,
+      attackDamage: attackDamageTrace.effective,
+      abilityPower: abilityPowerTrace.effective,
+      combatNumbers: {
+        armor: armorTrace,
+        magicResist: magicResistTrace,
+        attackDamage: attackDamageTrace,
+        abilityPower: abilityPowerTrace,
+      },
       criticalChance: entity.criticalChance,
       criticalMultiplier: entity.criticalMultiplier,
       dodgeChance: entity.dodgeChance,
@@ -947,8 +1279,24 @@ function buildPreviewFromState(options: {
         ? buildEntityActiveSummary({
             rollingHeroEntityId: entity.entityId,
             attack: activeProfile,
-            currentAttackDamage: entity.attackDamage,
-            currentAbilityPower: entity.abilityPower,
+            minimumTrace: resolveNumberTrace({
+              gameApi,
+              state,
+              targetEntityId: entity.entityId,
+              propertyPath: 'useEntityActive.minimum',
+              baseValue: activeProfile.minimumDamage,
+              clampMin: 0,
+            }),
+            maximumTrace: resolveNumberTrace({
+              gameApi,
+              state,
+              targetEntityId: entity.entityId,
+              propertyPath: 'useEntityActive.maximum',
+              baseValue: activeProfile.maximumDamage,
+              clampMin: 0,
+            }),
+            attackDamageTrace,
+            abilityPowerTrace,
             luck: state.luck,
           })
         : undefined,

@@ -1043,6 +1043,22 @@ h2.luck-title > * {
   font-weight: 700;
 }
 
+.entity-stat-pill.delta-positive {
+  border-color: color-mix(in srgb, #1f7a34 60%, transparent);
+  background: color-mix(in srgb, #d8f2dc 72%, #ffffff 28%);
+  color: #1f6a32;
+}
+
+.entity-stat-pill.delta-negative {
+  border-color: color-mix(in srgb, #8b2b22 60%, transparent);
+  background: color-mix(in srgb, #f7ddd9 72%, #ffffff 28%);
+  color: #7b241d;
+}
+
+.entity-stat-pill.delta-neutral {
+  color: inherit;
+}
+
 .entity-stat-pill svg {
   width: 11px;
   height: 11px;
@@ -1153,6 +1169,20 @@ h2.luck-title > * {
   border-radius: 8px;
   background: linear-gradient(180deg, #fff0a6 0%, #f5d35b 100%);
   border: 1px solid color-mix(in srgb, var(--tooltip-border) 32%, transparent);
+}
+
+.battlefield-hover-stat.delta-positive {
+  background: linear-gradient(180deg, #ecf9de 0%, #cdeca6 100%);
+  border-color: color-mix(in srgb, #3a7f2e 46%, transparent);
+}
+
+.battlefield-hover-stat.delta-negative {
+  background: linear-gradient(180deg, #fde7df 0%, #f6c9b8 100%);
+  border-color: color-mix(in srgb, #96382a 46%, transparent);
+}
+
+.battlefield-hover-stat.delta-neutral {
+  background: linear-gradient(180deg, #fff0a6 0%, #f5d35b 100%);
 }
 
 .battlefield-hover-stat strong {

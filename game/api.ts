@@ -15,6 +15,7 @@ import {
   resolveAction as resolveActionCore,
   type ResolveActionResult,
 } from "./engine/actions/resolve-action";
+import { resolveEffectiveNumber } from "./engine/core/number-resolver";
 import type { BattleAction, BattleState } from "./shared/models";
 import type { BattleRng } from "./engine/core/rng";
 
@@ -37,6 +38,14 @@ export type GameApi = {
   heroesById: typeof HERO_DEFINITIONS_BY_ID;
   resolveSummonedEntityBlueprint: typeof resolveSummonedEntityBlueprint;
   resolveEntityActiveProfile: typeof resolveEntityActiveProfile;
+  resolveEffectiveNumber(input: {
+    state: BattleState;
+    targetEntityId: string;
+    propertyPath: string;
+    baseValue: number;
+    clampMin?: number;
+    clampMax?: number;
+  }): ReturnType<typeof resolveEffectiveNumber>;
   createBattle(input: GameCreateBattleInput): CreatedBattle;
   resolveAction(input: GameResolveActionInput): ResolveActionResult;
 };
@@ -47,6 +56,9 @@ export function createGameApi(): GameApi {
     heroesById: HERO_DEFINITIONS_BY_ID,
     resolveSummonedEntityBlueprint,
     resolveEntityActiveProfile,
+    resolveEffectiveNumber(input) {
+      return resolveEffectiveNumber(input);
+    },
     createBattle(input) {
       return createBattleCore({
         ...input,
