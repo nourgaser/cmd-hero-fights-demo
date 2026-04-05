@@ -1,3 +1,26 @@
+:root {
+  --layer-behind: -1;
+  --layer-inline: 1;
+  --layer-check: 2;
+  --layer-badge: 3;
+  --layer-card-hover: 8;
+  --layer-screen-base: 10;
+  --layer-screen-active: 30;
+  --layer-board: 20;
+  --layer-controls: 40;
+  --layer-hand: 120;
+  --layer-hand-focus: 260;
+  --layer-debug-panel: 1000;
+  --layer-toast: 1100;
+  --layer-tooltip-shell: 1800;
+  --layer-tooltip: 1900;
+  --layer-tooltip-popover: 2000;
+}
+
+#__react-hot-toast {
+  z-index: var(--layer-toast) !important;
+}
+
 .dual-screens {
   display: grid;
   gap: 36px;
@@ -41,7 +64,7 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .debug-panel {
-  z-index: 1000;
+  z-index: var(--layer-debug-panel);
   border: 1px solid var(--border);
   border-radius: 12px;
   background: color-mix(in srgb, var(--panel) 96%, #ffffff 4%);
@@ -61,7 +84,7 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .debug-panel-collapsed {
-  z-index: 1000;
+  z-index: var(--layer-debug-panel);
   height: 56px !important;
   width: 56px !important;
   border-radius: 999px;
@@ -298,6 +321,9 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .screen {
+  position: relative;
+  z-index: var(--layer-screen-base);
+  isolation: isolate;
   border: 1px solid var(--border);
   border-radius: 16px;
   padding: 24px;
@@ -308,6 +334,11 @@ html[data-shift-held='true'] .game-toast-detail {
   box-shadow:
     0 10px 24px color-mix(in srgb, #000000 14%, transparent),
     inset 0 1px 0 rgba(255, 255, 255, 0.35);
+}
+
+.screen:hover,
+.screen:focus-within {
+  z-index: var(--layer-screen-active);
 }
 
 .screen-head {
@@ -413,7 +444,7 @@ html[data-shift-held='true'] .game-toast-detail {
   --hover-offset-x: -50%;
   --hover-offset-y: -4px;
   position: relative;
-  z-index: 1;
+  z-index: var(--layer-inline);
   display: inline-flex;
   align-items: center;
   justify-content: center;
@@ -422,7 +453,7 @@ html[data-shift-held='true'] .game-toast-detail {
 .hint-wrap:hover,
 .hint-wrap:focus-visible,
 .hint-wrap:focus-within {
-  z-index: 1800;
+  z-index: var(--layer-tooltip-shell);
 }
 
 .hover-card {
@@ -449,7 +480,7 @@ html[data-shift-held='true'] .game-toast-detail {
     0 6px 16px rgba(0, 0, 0, 0.2),
     inset 0 1px 0 rgba(255, 255, 255, 0.42);
   text-align: center;
-  z-index: 1810;
+  z-index: var(--layer-tooltip);
 }
 
 .hover-card strong {
@@ -477,7 +508,7 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .hint-wrap.force-tooltip-open {
-  z-index: 1800;
+  z-index: var(--layer-tooltip-shell);
 }
 
 .hint-wrap.force-tooltip-open .hover-card {
@@ -610,7 +641,6 @@ h2.luck-title > * {
 
 .battlefield-card {
   position: relative;
-  z-index: 1;
   padding: 12px;
   background:
     radial-gradient(circle at 50% -20%, color-mix(in srgb, var(--self-side-color) 12%, transparent), transparent 45%),
@@ -619,14 +649,13 @@ h2.luck-title > * {
 
 .battle-overlay-layer {
   position: relative;
-  z-index: 320;
 }
 
 .battle-action-overlay {
   position: absolute;
   top: 65%;
   transform: translateY(-50%);
-  z-index: 40;
+  z-index: var(--layer-controls);
 }
 
 .touch-tooltip-toggle {
@@ -660,14 +689,14 @@ h2.luck-title > * {
     position: absolute;
     top: -12px;
     right: -12px;
-    z-index: 1810;
+    z-index: var(--layer-tooltip);
   }
 
   .touch-tooltip-toggle.deck-tooltip-toggle {
     position: absolute;
     top: -10px;
     left: -10px;
-    z-index: 1810;
+    z-index: var(--layer-tooltip);
   }
 }
 
@@ -871,12 +900,12 @@ h2.luck-title > * {
   box-sizing: border-box;
   position: relative;
   overflow: visible;
-  z-index: 1;
+  z-index: var(--layer-inline);
 }
 
 .battle-slot:hover,
 .battle-slot:focus-within {
-  z-index: 1850;
+  z-index: var(--layer-tooltip-shell);
 }
 
 .battle-slot.north {
@@ -924,7 +953,7 @@ h2.luck-title > * {
   position: absolute;
   top: 8px;
   left: 8px;
-  z-index: 3;
+  z-index: var(--layer-badge);
   display: inline-flex;
   align-items: center;
   gap: 4px;
@@ -997,7 +1026,7 @@ h2.luck-title > * {
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     0 3px 8px rgba(0, 0, 0, 0.22);
-  z-index: 2;
+  z-index: var(--layer-check);
 }
 
 .target-check-icon svg {
@@ -1295,7 +1324,7 @@ h2.luck-title > * {
   right: 12px;
   top: 65%;
   transform: translateY(-50%);
-  z-index: 40;
+  z-index: var(--layer-controls);
 }
 
 .deck-stack {
@@ -1323,7 +1352,7 @@ h2.luck-title > * {
   border-radius: 8px;
   border: 2px solid #2a1f12;
   background: linear-gradient(145deg, #4b5563, #2b2b32);
-  z-index: -1;
+  z-index: var(--layer-behind);
 }
 
 .deck-stack::before {
@@ -1366,7 +1395,7 @@ h2.luck-title > * {
   left: 12px;
   top: 20%;
   transform: none;
-  z-index: 40;
+  z-index: var(--layer-controls);
 }
 
 .action-buttons {
@@ -1416,14 +1445,14 @@ h2.luck-title > * {
   padding: 12px;
   min-width: 0;
   position: relative;
-  z-index: 120;
+  z-index: var(--layer-hand);
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--panel) 96%, #ffffff 4%), color-mix(in srgb, var(--code-bg) 88%, #ffffff 12%));
 }
 
 .hand-bar:hover,
 .hand-bar:focus-within {
-  z-index: 260;
+  z-index: var(--layer-hand-focus);
 }
 
 .hand-bar-header {
@@ -1584,7 +1613,7 @@ h2.luck-title > * {
   width: 100%;
   min-width: 0;
   overflow: visible;
-  z-index: 1;
+  z-index: var(--layer-inline);
 }
 
 .hand-scroll-indicator {
@@ -1618,7 +1647,7 @@ h2.luck-title > * {
   padding: 8px;
   position: relative;
   cursor: inherit;
-  z-index: 1;
+  z-index: var(--layer-inline);
   border-color: color-mix(in srgb, var(--card-accent) 32%, var(--border));
   box-shadow:
     inset 0 0 0 1px color-mix(in srgb, var(--card-accent) 14%, transparent),
@@ -1711,7 +1740,7 @@ h2.luck-title > * {
   background:
     linear-gradient(180deg, color-mix(in srgb, var(--card-surface) 94%, #ffffff 6%), color-mix(in srgb, var(--card-surface) 78%, #e1c06f 22%));
   transform: translateY(-12px) scale(1.05);
-  z-index: 8;
+  z-index: var(--layer-card-hover);
   box-shadow:
     0 18px 32px rgba(0, 0, 0, 0.22),
     0 0 0 1px color-mix(in srgb, var(--card-accent) 26%, transparent),
@@ -1893,7 +1922,7 @@ h2.luck-title > * {
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     0 2px 6px rgba(0, 0, 0, 0.18);
-  z-index: 2;
+  z-index: var(--layer-check);
 }
 
 .hand-card-check svg {
@@ -1916,7 +1945,7 @@ h2.luck-title > * {
   box-shadow:
     inset 0 1px 0 rgba(255, 255, 255, 0.5),
     0 6px 14px rgba(0, 0, 0, 0.16);
-  z-index: 999;
+  z-index: var(--layer-tooltip);
 }
 
 .hand-card-hover-overlay {
@@ -1924,7 +1953,7 @@ h2.luck-title > * {
   opacity: 1;
   pointer-events: none;
   transform: translate(-50%, calc(-100% - 12px));
-  z-index: 1900;
+  z-index: var(--layer-tooltip);
 }
 
 .hand-card-hover strong {
@@ -2064,7 +2093,7 @@ h2.luck-title > * {
 }
 
 .hand-card-hover.has-summon-preview {
-  z-index: 2000;
+  z-index: var(--layer-tooltip-popover);
 }
 
 .summon-preview-panel {
@@ -2232,11 +2261,11 @@ textarea:focus-visible,
 
 @media (max-width: 700px) {
   .debug-panel {
-    z-index: 1000;
+    z-index: var(--layer-debug-panel);
   }
 
   .debug-panel-collapsed {
-    z-index: 1000;
+    z-index: var(--layer-debug-panel);
   }
 
   .deck-overlay {
