@@ -142,6 +142,7 @@ Validation notes:
 - [ ] Add snapshot list UI controls (jump to snapshot, step backward, step forward, jump to latest)
 - [ ] Add clear snapshot labels (turn, actor, action kind, short result summary)
 - [ ] Add branch-from-snapshot flow so we can continue gameplay from any prior snapshot for what-if debugging
+- [ ] Make snapshot parsable from URL so it's shareable and repeatable easily. Similar to chess.
 - [ ] Add deterministic RNG checkpoint metadata per snapshot (seed + rng cursor/step count)
 - [ ] Add engine RNG restore/advance utility so loading a snapshot resumes with the same future roll sequence
 - [ ] Validate replay determinism by rebuilding from seed + action log and comparing snapshot events/state
