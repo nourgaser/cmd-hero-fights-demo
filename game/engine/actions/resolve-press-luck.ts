@@ -67,6 +67,18 @@ export function resolvePressLuckAction(options: {
   }
 
   const actorIsAnchor = actor.entityId === state.luck.anchorHeroEntityId;
+  const atFavorableLuckLimit = actorIsAnchor
+    ? state.luck.balance >= LUCK_BALANCE_LIMIT
+    : state.luck.balance <= -LUCK_BALANCE_LIMIT;
+
+  if (atFavorableLuckLimit) {
+    return {
+      ok: false,
+      state,
+      reason: "Luck is already fully on your side.",
+    };
+  }
+
   const delta = actorIsAnchor ? LUCK_BALANCE_STEP : -LUCK_BALANCE_STEP;
   const previousBalance = state.luck.balance;
   const nextBalance = clamp(

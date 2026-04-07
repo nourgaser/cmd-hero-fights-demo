@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
+import { LUCK_BALANCE_LIMIT } from '../../../shared/game-constants.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
 import {
   renderTextWithHighlightedNumbers,
@@ -145,7 +146,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const basicAttackMoveCost = selfActionTargets?.basicAttack.moveCost ?? 0
   const pressLuckMoveCost = selfActionTargets?.pressLuck.moveCost ?? 3
   const pressLuckUsedThisTurn = preview.turn.pressLuckUsedThisTurn
-  const canConfirmPressLuck = isActivePlayer && !pressLuckUsedThisTurn && selfMovePoints >= pressLuckMoveCost
+  const isSelfLuckAnchor = preview.luck.anchorHeroEntityId === selfId
+  const pressLuckAtFavorableLimit = isSelfLuckAnchor
+    ? preview.luck.balance >= LUCK_BALANCE_LIMIT
+    : preview.luck.balance <= -LUCK_BALANCE_LIMIT
+  const canConfirmPressLuck = isActivePlayer && !pressLuckUsedThisTurn && !pressLuckAtFavorableLimit && selfMovePoints >= pressLuckMoveCost
   const entityActiveOptions = selfActionTargets?.entityActive ?? []
   const entityActiveSourceIds = entityActiveOptions.map((entry) => entry.sourceEntityId)
   const selectedEntityActiveOption = selectedEntityActiveSourceId
@@ -153,7 +158,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     : null
   const entityActiveTargetEntityIds = selectedEntityActiveOption?.validTargetEntityIds ?? []
   const canBeginBasicAttack = isActivePlayer && selfMovePoints >= basicAttackMoveCost
-  const canBeginPressLuck = isActivePlayer && !pressLuckUsedThisTurn && selfMovePoints >= pressLuckMoveCost
+  const canBeginPressLuck = isActivePlayer && !pressLuckUsedThisTurn && !pressLuckAtFavorableLimit && selfMovePoints >= pressLuckMoveCost
   const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
   const highlightedTargetEntityIds =
     pendingActionMode === 'basicAttack'
@@ -357,7 +362,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }
 
   const handleBeginPressLuck = () => {
-    if (!isActivePlayer || pressLuckUsedThisTurn || selfMovePoints < pressLuckMoveCost) {
+    if (!isActivePlayer || pressLuckUsedThisTurn || pressLuckAtFavorableLimit || selfMovePoints < pressLuckMoveCost) {
       return
     }
 
@@ -652,6 +657,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
                   ? `Press luck selected. Confirm by clicking again.`
                   : pressLuckUsedThisTurn
                     ? `Press luck already used this turn.`
+                    : pressLuckAtFavorableLimit
+                      ? `Luck is already fully on your side.`
                     : `Press luck. Costs ${pressLuckMoveCost} moves.`
               }
             >
