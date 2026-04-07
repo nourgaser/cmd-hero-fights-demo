@@ -7,7 +7,7 @@ export const REROLL_CARD = {
   name: "Reroll",
   type: "ability",
   rarity: "general",
-  moveCost: 1,
+  moveCost: 5,
   targeting: "none",
   tags: [],
   summaryText: {

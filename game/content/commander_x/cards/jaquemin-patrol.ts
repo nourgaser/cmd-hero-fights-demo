@@ -10,7 +10,7 @@ export const JAQUEMIN_PATROL_CARD = {
   type: "companion",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 6,
+  moveCost: 7,
   targeting: "none",
   tags: ["chivalry"],
   summaryText: {

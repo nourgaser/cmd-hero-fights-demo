@@ -2,7 +2,7 @@ import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
 const HEALTH_POTION_HEAL_MIN = 2;
-const HEALTH_POTION_HEAL_MAX = 4;
+const HEALTH_POTION_HEAL_MAX = 8;
 
 export const HEALTH_POTION_CARD = {
   id: "card.commander-x.health-potion",
@@ -10,7 +10,7 @@ export const HEALTH_POTION_CARD = {
   type: "ability",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 4,
+  moveCost: 6,
   targeting: "none",
   tags: ["heal"],
   summaryText: {

@@ -7,7 +7,7 @@ export const CORRODED_SHORTSWORD_CARD = {
   type: "weapon",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 5,
+  moveCost: 6,
   targeting: "none",
   tags: [],
   summaryText: {

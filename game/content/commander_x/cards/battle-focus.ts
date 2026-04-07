@@ -1,7 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
-const BATTLE_FOCUS_ATTACK_BONUS = 2;
+const BATTLE_FOCUS_ATTACK_BONUS = 3;
 
 export const BATTLE_FOCUS_CARD = {
   id: "card.commander-x.battle-focus",
@@ -9,7 +9,7 @@ export const BATTLE_FOCUS_CARD = {
   type: "ability",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 2,
+  moveCost: 3,
   targeting: "none",
   tags: ["buff"],
   summaryText: {

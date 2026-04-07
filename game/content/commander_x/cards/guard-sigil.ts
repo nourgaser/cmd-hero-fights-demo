@@ -9,7 +9,7 @@ export const GUARD_SIGIL_CARD = {
   type: "totem",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 3,
+  moveCost: 5,
   targeting: "none",
   tags: [],
   summaryText: {

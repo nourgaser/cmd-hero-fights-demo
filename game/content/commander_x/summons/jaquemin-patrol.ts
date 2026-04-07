@@ -10,7 +10,7 @@ export const JAQUEMIN_PATROL_BLUEPRINT: SummonedEntityBlueprint = {
   maxHealth: 15,
   armor: 1,
   magicResist: 0,
-  attackDamage: 0,
+  attackDamage: 2,
   abilityPower: 0,
   criticalChance: 0.1,
   criticalMultiplier: 1.5,
@@ -24,7 +24,7 @@ export const JAQUEMIN_PATROL_ACTIVE: EntityActiveProfile = {
   minimumDamage: 2,
   maximumDamage: 4,
   damageType: "physical",
-  attackDamageScaling: 0.25,
+  attackDamageScaling: 0.50,
   abilityPowerScaling: 0,
   canBeDodged: true,
 };

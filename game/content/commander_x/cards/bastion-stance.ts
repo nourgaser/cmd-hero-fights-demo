@@ -1,7 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
-const BASTION_STANCE_DEFENSE_BONUS = 1;
+const BASTION_STANCE_DEFENSE_BONUS = 2;
 
 export const BASTION_STANCE_CARD = {
   id: "card.commander-x.bastion-stance",
@@ -9,7 +9,7 @@ export const BASTION_STANCE_CARD = {
   type: "ability",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 1,
+  moveCost: 5,
   targeting: "none",
   tags: [],
   summaryText: {

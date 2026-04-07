@@ -1,7 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 
-const WAR_STANDARD_ATTACK_BONUS = 1;
+const WAR_STANDARD_ATTACK_BONUS = 2;
 
 export const WAR_STANDARD_CARD = {
   id: "card.commander-x.war-standard",
@@ -9,7 +9,7 @@ export const WAR_STANDARD_CARD = {
   type: "totem",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 2,
+  moveCost: 7,
   targeting: "none",
   tags: ["buff"],
   summaryText: {

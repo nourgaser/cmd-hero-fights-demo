@@ -6,7 +6,7 @@ import type { CommanderXSummonedDefinition } from "./types";
 export const GUARD_SIGIL_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "totem",
   definitionCardId: "card.commander-x.guard-sigil",
-  maxHealth: 5,
+  maxHealth: 10,
   armor: 1,
   magicResist: 1,
   attackDamage: 0,
