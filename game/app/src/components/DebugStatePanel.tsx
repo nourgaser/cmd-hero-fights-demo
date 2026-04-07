@@ -94,6 +94,8 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     lines: string[]
     left: number
     top: number
+    placement: 'above' | 'below'
+    align: 'left' | 'center' | 'right'
   } | null>(null)
   const deckCardTooltipTimerRef = useRef<number | null>(null)
 
@@ -405,6 +407,43 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     setDeckCardTooltip(null)
   }
 
+  const computeDeckCardTooltipPosition = (anchorElement: HTMLElement, lines: string[]) => {
+    const rect = anchorElement.getBoundingClientRect()
+    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0
+    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0
+    const maxTooltipWidth = Math.max(190, Math.min(360, viewportWidth - 18))
+    const estimatedHeight = Math.min(280, 24 + lines.length * 16)
+    const tooltipMargin = 12
+
+    let placement: 'above' | 'below' = 'above'
+    if (rect.top < estimatedHeight + tooltipMargin && viewportHeight - rect.bottom > rect.top) {
+      placement = 'below'
+    }
+
+    let align: 'left' | 'center' | 'right' = 'center'
+    if (rect.left < maxTooltipWidth * 0.5 + tooltipMargin) {
+      align = 'left'
+    } else if (viewportWidth - rect.right < maxTooltipWidth * 0.5 + tooltipMargin) {
+      align = 'right'
+    }
+
+    let left = rect.left + rect.width * 0.5
+    if (align === 'left') {
+      left = rect.left + 8
+    } else if (align === 'right') {
+      left = rect.right - 8
+    }
+
+    const top = placement === 'above' ? rect.top : rect.bottom
+
+    return {
+      left,
+      top,
+      placement,
+      align,
+    }
+  }
+
   const queueDeckCardTooltip = (options: {
     anchorElement: HTMLElement
     title: string
@@ -414,12 +453,11 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     clearDeckCardTooltip()
 
     deckCardTooltipTimerRef.current = window.setTimeout(() => {
-      const rect = anchorElement.getBoundingClientRect()
+      const position = computeDeckCardTooltipPosition(anchorElement, lines)
       setDeckCardTooltip({
         title,
         lines,
-        left: rect.left + rect.width * 0.5,
-        top: rect.top,
+        ...position,
       })
       deckCardTooltipTimerRef.current = null
     }, DECK_CARD_TOOLTIP_DELAY_MS)
@@ -437,12 +475,11 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
         return null
       }
 
-      const rect = anchorElement.getBoundingClientRect()
+      const position = computeDeckCardTooltipPosition(anchorElement, lines)
       return {
         title,
         lines,
-        left: rect.left + rect.width * 0.5,
-        top: rect.top,
+        ...position,
       }
     })
   }
@@ -950,6 +987,18 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               style={{
                 left: `${deckCardTooltip.left}px`,
                 top: `${deckCardTooltip.top}px`,
+                transform:
+                  deckCardTooltip.align === 'left'
+                    ? deckCardTooltip.placement === 'above'
+                      ? 'translate(0, calc(-100% - 10px))'
+                      : 'translate(0, 10px)'
+                    : deckCardTooltip.align === 'right'
+                      ? deckCardTooltip.placement === 'above'
+                        ? 'translate(-100%, calc(-100% - 10px))'
+                        : 'translate(-100%, 10px)'
+                      : deckCardTooltip.placement === 'above'
+                        ? 'translate(-50%, calc(-100% - 10px))'
+                        : 'translate(-50%, 10px)',
               }}
             >
               <strong>{deckCardTooltip.title}</strong>

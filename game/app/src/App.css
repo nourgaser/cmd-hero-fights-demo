@@ -540,7 +540,6 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .deck-editor-floating-tooltip {
   position: fixed;
-  transform: translate(-50%, calc(-100% - 10px));
   min-width: 190px;
   max-width: min(320px, calc(100vw - 24px));
   padding: 7px 8px;
@@ -647,6 +646,11 @@ html[data-shift-held='true'] .game-toast-detail {
 
   .deck-editor-floating-tooltip {
     max-width: min(360px, calc(100vw - 18px));
+  }
+
+  .deck-editor-floating-tooltip span {
+    font-size: 10px;
+    line-height: 1.2;
   }
 }
 
