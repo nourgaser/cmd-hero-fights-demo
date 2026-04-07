@@ -3,8 +3,8 @@ import { COMMANDER_X_HERO_ID } from "../constants";
 
 const CHAAARGE_MOVE_COST = 10;
 const CHAAARGE_CAST_HEALTH_THRESHOLD = 15;
-const CHAAARGE_DAMAGE_MIN = 2;
-const CHAAARGE_DAMAGE_MAX = 10;
+const CHAAARGE_DAMAGE_MIN = 4;
+const CHAAARGE_DAMAGE_MAX = 20;
 
 export const CHAAARGE_CARD = {
   id: "card.commander-x.chaaarge",
