@@ -693,20 +693,17 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .screen-head-brand {
-  position: relative;
-  min-height: 78px;
+  min-height: 72px;
   display: grid;
+  grid-template-columns: auto minmax(0, 1fr);
   align-items: center;
-  justify-items: center;
-  width: auto;
-  justify-self: center;
+  gap: 14px;
+  width: 100%;
+  min-width: 0;
+  justify-self: start;
 }
 
 .screen-head-logo {
-  position: absolute;
-  left: 2px;
-  top: 50%;
-  transform: translateY(-50%);
   width: 72px;
   height: 72px;
   border-radius: 14px;
@@ -719,8 +716,8 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .screen-head-copy {
   display: grid;
-  justify-items: center;
-  text-align: center;
+  justify-items: start;
+  text-align: left;
   width: 100%;
   min-width: 0;
 }
@@ -749,7 +746,7 @@ html[data-shift-held='true'] .game-toast-detail {
 
 @media (max-width: 1024px) {
   .screen-head-brand {
-    min-height: 64px;
+    min-height: 60px;
   }
 
   .screen-head-logo {
@@ -760,10 +757,12 @@ html[data-shift-held='true'] .game-toast-detail {
 
   .screen-head h1 {
     font-size: 34px;
+    line-height: 1;
   }
 
   .screen-head p {
     font-size: 19px;
+    line-height: 1;
   }
 }
 
@@ -976,6 +975,10 @@ html[data-shift-held='true'] .game-toast-detail {
   .screen-head {
     grid-template-columns: 1fr;
     justify-items: center;
+  }
+
+  .screen-head-brand {
+    justify-self: stretch;
   }
 
   .screen-head-shortcuts {
