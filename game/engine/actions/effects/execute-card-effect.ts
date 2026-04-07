@@ -9,6 +9,7 @@ import {
 import {
   handleDealDamageEffect,
   handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
+  handleDestroySelfArmorAndDealPerArmorToTargetEffect,
   handleHealEffect,
 } from "./handlers/combat";
 import {
@@ -31,6 +32,7 @@ const effectHandlers = {
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,
   destroyArmorAndDealPerArmorToEnemyHero: handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
+  destroySelfArmorAndDealPerArmorToTarget: handleDestroySelfArmorAndDealPerArmorToTargetEffect,
   refundMoveCost: handleRefundMoveCostEffect,
   addListener: handleAddListenerEffect,
   removeListener: handleRemoveListenerEffect,

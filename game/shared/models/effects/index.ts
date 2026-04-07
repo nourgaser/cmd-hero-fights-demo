@@ -25,6 +25,7 @@ import {
 } from "./listeners";
 import {
   DestroyArmorAndDealPerArmorToEnemyHeroEffectPayloadSchema,
+  DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema,
   DealDamageEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
   HealEffectPayloadSchema,
@@ -38,6 +39,7 @@ export type EffectId = z.infer<typeof EffectIdSchema>;
 
 type NonRecursivePayload =
   | z.infer<typeof DestroyArmorAndDealPerArmorToEnemyHeroEffectPayloadSchema>
+  | z.infer<typeof DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema>
   | z.infer<typeof DealDamageEffectPayloadSchema>
   | z.infer<typeof HealEffectPayloadSchema>
   | z.infer<typeof ModifyStatEffectPayloadSchema>
@@ -83,6 +85,7 @@ export type ListenerDefinition = {
 
 export const EffectPayloadKindSchema = z.enum([
   "destroyArmorAndDealPerArmorToEnemyHero",
+  "destroySelfArmorAndDealPerArmorToTarget",
   "dealDamage",
   "heal",
   "modifyStat",
@@ -116,6 +119,7 @@ export const RemoveListenerEffectPayloadSchema =
 
 export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   DestroyArmorAndDealPerArmorToEnemyHeroEffectPayloadSchema,
+  DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema,
   DealDamageEffectPayloadSchema,
   HealEffectPayloadSchema,
   ModifyStatEffectPayloadSchema,

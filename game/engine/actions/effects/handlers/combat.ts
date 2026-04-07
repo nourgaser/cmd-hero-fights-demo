@@ -16,6 +16,57 @@ import {
 } from "../context";
 import { targetEntityIdFromSelector } from "../targeting";
 
+function destroyBaseAndPermanentArmor(options: {
+  state: EffectExecutionContext["state"];
+  targetEntityId: string;
+}): {
+  nextActiveModifiers: EffectExecutionContext["state"]["activeModifiers"];
+  removedModifierIds: string[];
+  destroyedArmor: number;
+} {
+  const { state, targetEntityId } = options;
+  const target = state.entitiesById[targetEntityId];
+  if (!target) {
+    return {
+      nextActiveModifiers: state.activeModifiers,
+      removedModifierIds: [],
+      destroyedArmor: 0,
+    };
+  }
+
+  const removedModifierIds: string[] = [];
+  let destroyedArmorFromPersistentModifiers = 0;
+
+  for (const modifier of state.activeModifiers) {
+    const affectsTargetArmor = modifier.targetEntityId === targetEntityId && modifier.propertyPath === "armor";
+    if (!affectsTargetArmor) {
+      continue;
+    }
+
+    const isPersistentModifier = modifier.lifetime === "persistent";
+    const hasPermanentCondition = !modifier.condition || modifier.condition.kind === "always";
+    const addsArmor = modifier.operation === "add" && modifier.value > 0;
+
+    if (isPersistentModifier && hasPermanentCondition && addsArmor) {
+      removedModifierIds.push(modifier.id);
+      destroyedArmorFromPersistentModifiers += modifier.value;
+    }
+  }
+
+  const nextActiveModifiers = state.activeModifiers.filter(
+    (modifier) => !removedModifierIds.includes(modifier.id),
+  );
+
+  const destroyedArmorFromBase = Math.max(0, target.armor);
+  const destroyedArmor = Math.max(0, roundWhole(destroyedArmorFromBase + destroyedArmorFromPersistentModifiers));
+
+  return {
+    nextActiveModifiers,
+    removedModifierIds,
+    destroyedArmor,
+  };
+}
+
 export function handleHealEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
@@ -282,31 +333,14 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
     return { ok: false, reason: "Warcry cannot target the enemy hero." };
   }
 
-  const persistentArmorModifierIdsToRemove: string[] = [];
-  let destroyedArmorFromPersistentModifiers = 0;
-
-  for (const modifier of state.activeModifiers) {
-    const affectsTargetArmor = modifier.targetEntityId === targetId && modifier.propertyPath === "armor";
-    if (!affectsTargetArmor) {
-      continue;
-    }
-
-    const isPersistentModifier = modifier.lifetime === "persistent";
-    const hasPermanentCondition = !modifier.condition || modifier.condition.kind === "always";
-    const addsArmor = modifier.operation === "add" && modifier.value > 0;
-
-    if (isPersistentModifier && hasPermanentCondition && addsArmor) {
-      persistentArmorModifierIdsToRemove.push(modifier.id);
-      destroyedArmorFromPersistentModifiers += modifier.value;
-    }
-  }
-
-  const nextActiveModifiers = state.activeModifiers.filter(
-    (modifier) => !persistentArmorModifierIdsToRemove.includes(modifier.id),
-  );
-
-  const destroyedArmorFromBase = Math.max(0, target.armor);
-  const destroyedArmor = Math.max(0, roundWhole(destroyedArmorFromBase + destroyedArmorFromPersistentModifiers));
+  const {
+    nextActiveModifiers,
+    removedModifierIds,
+    destroyedArmor,
+  } = destroyBaseAndPermanentArmor({
+    state,
+    targetEntityId: targetId,
+  });
 
   const enemyHeroId = state.heroEntityIds.find((heroEntityId) => {
     const hero = state.entitiesById[heroEntityId];
@@ -328,7 +362,7 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
   let nextSequence = sequence;
   const events: BattleEvent[] = [];
 
-  for (const modifierId of persistentArmorModifierIdsToRemove) {
+  for (const modifierId of removedModifierIds) {
     events.push({
       kind: "numberModifierExpired",
       sequence: nextSequence,
@@ -376,6 +410,111 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
         [enemyHero.entityId]: {
           ...enemyHero,
           currentHealth: nextEnemyHealth,
+        },
+      },
+    },
+    events,
+    nextSequence,
+    lastDamageWasDodged: false,
+    lastSummonedEntityId,
+  };
+}
+
+export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    lastSummonedEntityId,
+    effectSourceEntityId,
+  } = context;
+
+  if (effect.payload.kind !== "destroySelfArmorAndDealPerArmorToTarget") {
+    return { ok: false, reason: "handleDestroySelfArmorAndDealPerArmorToTargetEffect received unsupported payload." };
+  }
+
+  const targetId = targetEntityIdFromSelector({
+    selector: effect.payload.target,
+    action,
+    actorHero,
+    state,
+  });
+  if (!targetId) {
+    return { ok: false, reason: "Shatter Plating requires a valid selected target." };
+  }
+
+  const damageTarget = state.entitiesById[targetId];
+  if (!damageTarget) {
+    return { ok: false, reason: "Shatter Plating target was not found." };
+  }
+
+  const {
+    nextActiveModifiers,
+    removedModifierIds,
+    destroyedArmor,
+  } = destroyBaseAndPermanentArmor({
+    state,
+    targetEntityId: actorHero.entityId,
+  });
+
+  const damageAmount = destroyedArmor * effect.payload.damagePerArmor;
+  const nextTargetHealth = Math.max(0, roundWhole(damageTarget.currentHealth) - damageAmount);
+
+  let nextSequence = sequence;
+  const events: BattleEvent[] = [];
+
+  for (const modifierId of removedModifierIds) {
+    events.push({
+      kind: "numberModifierExpired",
+      sequence: nextSequence,
+      modifierId,
+      targetEntityId: actorHero.entityId,
+      reason: "source_removed",
+    });
+    nextSequence += 1;
+  }
+
+  if (destroyedArmor > 0) {
+    events.push({
+      kind: "armorLost",
+      sequence: nextSequence,
+      targetEntityId: actorHero.entityId,
+      amount: destroyedArmor,
+    });
+    nextSequence += 1;
+  }
+
+  if (damageAmount > 0) {
+    events.push({
+      kind: "damageApplied",
+      sequence: nextSequence,
+      sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
+      targetEntityId: damageTarget.entityId,
+      amount: damageAmount,
+      damageType: effect.payload.damageType,
+      wasDodged: false,
+    });
+    nextSequence += 1;
+  }
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      activeModifiers: nextActiveModifiers,
+      entitiesById: {
+        ...state.entitiesById,
+        [actorHero.entityId]: {
+          ...actorHero,
+          armor: 0,
+        },
+        [damageTarget.entityId]: {
+          ...damageTarget,
+          currentHealth: nextTargetHealth,
         },
       },
     },

@@ -74,3 +74,10 @@ export const DestroyArmorAndDealPerArmorToEnemyHeroEffectPayloadSchema = z.objec
   damagePerArmor: z.number().int().nonnegative(),
   damageType: DamageTypeSchema,
 });
+
+export const DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema = z.object({
+  kind: z.literal("destroySelfArmorAndDealPerArmorToTarget"),
+  target: EffectTargetSelectorSchema,
+  damagePerArmor: z.number().int().nonnegative(),
+  damageType: DamageTypeSchema,
+});

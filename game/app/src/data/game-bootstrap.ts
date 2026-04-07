@@ -30,6 +30,7 @@ export const CARD_IDS = {
   healthPotion: 'card.commander-x.health-potion',
   bastionStance: 'card.commander-x.bastion-stance',
   battleFocus: 'card.commander-x.battle-focus',
+  shatterPlating: 'card.commander-x.shatter-plating',
   shieldToss: 'card.commander-x.shield-toss',
   warcry: 'card.commander-x.warcry',
   chaaarge: 'card.commander-x.chaaarge',

@@ -10,7 +10,7 @@ The following subset of the content is the chosen content for the prototype. It 
 
 ### General Abilities (Non-hero specific)
 
-- [Reroll](/content/Game/Cards/General/Reroll.md)
+- [Reroll](/content/Game/Cards/General/Reroll.md) done
 
 <!-- Low priority / do later -->
 - [Hunker Down](/content/Game/Cards/General/Hunker%20Down.md)
@@ -18,21 +18,21 @@ The following subset of the content is the chosen content for the prototype. It 
 
 ### Ultimate Abilities
 
-- [Chaaarge!](/content//Game/Cards/Commander%20X/Chaaarge!.md)
+- [Chaaarge!](/content//Game/Cards/Commander%20X/Chaaarge!.md) done
 
 ### Non-Ultimate Abilities
 
-- [Iron Skin](/content/Game/Cards/Commander%20X/Iron%20Skin.md)
-- [Health Potion](/content/Game/Cards/Commander%20X/Health%20Potion.md)
-- [Bastion Stance](/content/Game/Cards/Commander%20X/Bastion%20Stance.md)
-- [Battle Focus](/content/Game/Cards/Commander%20X/Battle%20Focus.md)
-- [Shield Toss](/content/Game/Cards/Commander%20X/Shield%20Toss.md)
+- [Iron Skin](/content/Game/Cards/Commander%20X/Iron%20Skin.md) done
+- [Health Potion](/content/Game/Cards/Commander%20X/Health%20Potion.md) done
+- [Bastion Stance](/content/Game/Cards/Commander%20X/Bastion%20Stance.md) done
+- [Battle Focus](/content/Game/Cards/Commander%20X/Battle%20Focus.md) done
+- [Shield Toss](/content/Game/Cards/Commander%20X/Shield%20Toss.md) done
 
 <!-- Low priority / do later -->
+- [Warcry](/content/Game/Cards/Commander%20X/Warcry.md) done
+- [Shatter Plating](/content/Game/Cards/Commander%20X/Shatter%20Plating.md) done
 - [Reactive Bulwark](/content/Game/Cards/Commander%20X/Reactive%20Bulwark.md)
-- [Warcry](/content/Game/Cards/Commander%20X/Warcry.md)
 - [Veteran Edge](/content/Game/Cards/Commander%20X/Veteran%20Edge.md)
-- [Shatter Plating](/content/Game/Cards/Commander%20X/Shatter%20Plating.md)
 - [Medal of Honor](/content/Game/Cards/Commander%20X/Medal%20of%20Honor.md)
 
 ### Weapons
