@@ -8,9 +8,13 @@ import { resolveEffectiveNumber } from "../core/number-resolver";
 import { getEffectiveDodgeChance } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
-import { applyLuckToRoll } from "../core/luck";
+import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import {
+  LUCK_CRIT_CHANCE_PER_POINT,
+  LUCK_DODGE_CHANCE_PER_POINT,
+} from "../../shared/game-constants";
 
 export type EntityActiveProfile = {
   moveCost: number;
@@ -195,7 +199,13 @@ export function resolveUseEntityActiveAction(options: {
     rollingHeroEntityId: actorHero.entityId,
   });
 
-  const wasCritical = battleRng.nextFloat() < source.criticalChance;
+  const effectiveCriticalChance = applyLuckToChance({
+    baseChance: source.criticalChance,
+    luck: state.luck,
+    affectedHeroEntityId: source.ownerHeroEntityId,
+    chancePerPoint: LUCK_CRIT_CHANCE_PER_POINT,
+  });
+  const wasCritical = battleRng.nextFloat() < effectiveCriticalChance;
   const criticalMultiplier = wasCritical ? source.criticalMultiplier : 1;
   const finalRoll = adjustedRoll * criticalMultiplier;
 
@@ -203,7 +213,7 @@ export function resolveUseEntityActiveAction(options: {
   let dodgeRoll = 0;
   if (profile.canBeDodged) {
     dodgeRoll = battleRng.nextFloat();
-    const effectiveDodgeChance = Math.min(
+    const targetBaseDodgeChance = Math.min(
       1,
       getEffectiveDodgeChance({
         state,
@@ -211,6 +221,12 @@ export function resolveUseEntityActiveAction(options: {
         baseDodgeChance: target.dodgeChance,
       }).effectiveValue,
     );
+    const effectiveDodgeChance = applyLuckToChance({
+      baseChance: targetBaseDodgeChance,
+      luck: state.luck,
+      affectedHeroEntityId: target.entityId,
+      chancePerPoint: LUCK_DODGE_CHANCE_PER_POINT,
+    });
     wasDodged = dodgeRoll < effectiveDodgeChance;
   }
 

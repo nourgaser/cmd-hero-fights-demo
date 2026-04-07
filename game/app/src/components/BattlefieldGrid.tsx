@@ -13,6 +13,10 @@ function formatSignedDelta(value: number): string {
   return `${value >= 0 ? '+' : '-'}${Number.isInteger(abs) ? abs : abs}`
 }
 
+function formatChancePercent(value: number): string {
+  return `${Math.round(value * 100)}%`
+}
+
 function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
   if (delta > 0) {
     return 'delta-positive'
@@ -271,7 +275,10 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const armorClass = combatTraces ? numberDeltaClass(combatTraces.armor.delta) : 'delta-neutral'
             const abilityPowerClass = combatTraces ? numberDeltaClass(combatTraces.abilityPower.delta) : 'delta-neutral'
             const magicResistClass = combatTraces ? numberDeltaClass(combatTraces.magicResist.delta) : 'delta-neutral'
-            const dodgeClass = combatTraces ? numberDeltaClass(combatTraces.dodgeChance.delta) : 'delta-neutral'
+            const critLuckDelta = entityStats?.criticalChanceLuckDelta ?? 0
+            const dodgeLuckDelta = entityStats?.dodgeChanceLuckDelta ?? 0
+            const critClass = numberDeltaClass(critLuckDelta)
+            const dodgeClass = numberDeltaClass((combatTraces?.dodgeChance.delta ?? 0) + dodgeLuckDelta)
             const adContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.attackDamage.contributions)
               : { rows: [], hiddenCount: 0 }
@@ -292,7 +299,9 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               apContributionSummary.rows.length > 0 ||
               armorContributionSummary.rows.length > 0 ||
               mrContributionSummary.rows.length > 0 ||
-              dodgeContributionSummary.rows.length > 0
+              dodgeContributionSummary.rows.length > 0 ||
+              critLuckDelta !== 0 ||
+              dodgeLuckDelta !== 0
 
             return (
               <div
@@ -544,11 +553,24 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                               </span>
                             ) : null}
                           </span>
-                          <span className="battlefield-hover-stat"><strong>Crit</strong><em>{Math.round(entityStats.criticalChance * 100)}% x{entityStats.criticalMultiplier.toFixed(2)}</em></span>
+                          <span className={`battlefield-hover-stat ${critClass}`.trim()}>
+                            <strong>Crit</strong>
+                            <em>{formatChancePercent(entityStats.effectiveCriticalChance)} x{entityStats.criticalMultiplier.toFixed(2)}</em>
+                            {shouldShowDetailedTooltips && critLuckDelta !== 0 ? (
+                              <span className="battlefield-hover-stat-sources">
+                                <span className="battlefield-hover-stat-source-row">
+                                  <span className="battlefield-hover-stat-source-name">Luck</span>
+                                  <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(critLuckDelta)}`.trim()}>
+                                    {formatSignedDelta(critLuckDelta * 100)}%
+                                  </span>
+                                </span>
+                              </span>
+                            ) : null}
+                          </span>
                           <span className={`battlefield-hover-stat ${dodgeClass}`.trim()}>
                             <strong>Dodge</strong>
-                            <em>{Math.round(entityStats.dodgeChance * 100)}%</em>
-                            {shouldShowDetailedTooltips && dodgeContributionSummary.rows.length > 0 ? (
+                            <em>{formatChancePercent(entityStats.effectiveDodgeChance)}</em>
+                            {shouldShowDetailedTooltips && (dodgeContributionSummary.rows.length > 0 || dodgeLuckDelta !== 0) ? (
                               <span className="battlefield-hover-stat-sources">
                                 {dodgeContributionSummary.rows.map((row) => (
                                   <span key={`dodge-${row.sourceId}`} className="battlefield-hover-stat-source-row">
@@ -558,6 +580,14 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                                     </span>
                                   </span>
                                 ))}
+                                {dodgeLuckDelta !== 0 ? (
+                                  <span className="battlefield-hover-stat-source-row">
+                                    <span className="battlefield-hover-stat-source-name">Luck</span>
+                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(dodgeLuckDelta)}`.trim()}>
+                                      {formatSignedDelta(dodgeLuckDelta * 100)}%
+                                    </span>
+                                  </span>
+                                ) : null}
                                 {dodgeContributionSummary.hiddenCount > 0 ? (
                                   <span className="battlefield-hover-stat-source-more">+{dodgeContributionSummary.hiddenCount} more</span>
                                 ) : null}

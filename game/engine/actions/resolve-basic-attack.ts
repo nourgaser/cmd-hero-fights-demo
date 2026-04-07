@@ -14,9 +14,13 @@ import {
 } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
-import { applyLuckToRoll } from "../core/luck";
+import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import {
+  LUCK_CRIT_CHANCE_PER_POINT,
+  LUCK_DODGE_CHANCE_PER_POINT,
+} from "../../shared/game-constants";
 
 export type ResolveBasicAttackResult =
   | {
@@ -142,12 +146,18 @@ export function resolveBasicAttackAction(options: {
     rollingHeroEntityId: attacker.entityId,
   });
 
-  const wasCritical = battleRng.nextFloat() < attacker.criticalChance;
+  const effectiveCriticalChance = applyLuckToChance({
+    baseChance: attacker.criticalChance,
+    luck: state.luck,
+    affectedHeroEntityId: attacker.entityId,
+    chancePerPoint: LUCK_CRIT_CHANCE_PER_POINT,
+  });
+  const wasCritical = battleRng.nextFloat() < effectiveCriticalChance;
   const criticalMultiplier = wasCritical ? attacker.criticalMultiplier : 1;
   const finalRoll = adjustedRoll * criticalMultiplier;
 
   const dodgeRoll = battleRng.nextFloat();
-  const effectiveDodgeChance = Math.min(
+  const targetBaseDodgeChance = Math.min(
     1,
     getEffectiveDodgeChance({
       state,
@@ -155,6 +165,12 @@ export function resolveBasicAttackAction(options: {
       baseDodgeChance: target.dodgeChance,
     }).effectiveValue,
   );
+  const effectiveDodgeChance = applyLuckToChance({
+    baseChance: targetBaseDodgeChance,
+    luck: state.luck,
+    affectedHeroEntityId: target.entityId,
+    chancePerPoint: LUCK_DODGE_CHANCE_PER_POINT,
+  });
   const wasDodged = dodgeRoll < effectiveDodgeChance;
 
   let appliedDamage = 0;

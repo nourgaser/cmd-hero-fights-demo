@@ -1,5 +1,9 @@
 import { createGameApi } from '../../index.ts'
-import { LUCK_STEP_RATIO } from '../../shared/game-constants.ts'
+import {
+  LUCK_CRIT_CHANCE_PER_POINT,
+  LUCK_DODGE_CHANCE_PER_POINT,
+  LUCK_STEP_RATIO,
+} from '../../shared/game-constants.ts'
 import type { BattleEvent, NumberExplanation } from '../../shared/models'
 import { luckBiasForHero } from '../../engine/core/luck.ts'
 import {
@@ -162,8 +166,12 @@ export type AppBattlePreview = {
           dodgeChance: AppNumberTrace
         }
         criticalChance: number
+        effectiveCriticalChance: number
+        criticalChanceLuckDelta: number
         criticalMultiplier: number
         dodgeChance: number
+        effectiveDodgeChance: number
+        dodgeChanceLuckDelta: number
         movePoints: number
         maxMovePoints: number
         activeAbility?: {
@@ -1214,6 +1222,10 @@ function buildPreviewFromState(options: {
 
   const battlefieldEntities: AppBattlePreview['battlefield']['entitiesById'] = {}
   for (const entity of Object.values(state.entitiesById)) {
+    const owningHeroEntityId = entity.kind === 'hero' ? entity.entityId : entity.ownerHeroEntityId
+    const luckBias = luckBiasForHero(state.luck, owningHeroEntityId)
+    const criticalChanceLuckDelta = luckBias * LUCK_CRIT_CHANCE_PER_POINT
+    const dodgeChanceLuckDelta = luckBias * LUCK_DODGE_CHANCE_PER_POINT
     const attackDamageTrace = resolveNumberTrace({
       gameApi,
       state,
@@ -1255,6 +1267,8 @@ function buildPreviewFromState(options: {
       clampMin: 0,
       clampMax: 1,
     })
+    const effectiveCriticalChance = Math.max(0, Math.min(1, entity.criticalChance + criticalChanceLuckDelta))
+    const effectiveDodgeChance = Math.max(0, Math.min(1, dodgeChanceTrace.effective + dodgeChanceLuckDelta))
 
     if (entity.kind === 'hero') {
       const heroDef = heroesById[entity.heroDefinitionId]
@@ -1281,8 +1295,12 @@ function buildPreviewFromState(options: {
           dodgeChance: dodgeChanceTrace,
         },
         criticalChance: entity.criticalChance,
+        effectiveCriticalChance,
+        criticalChanceLuckDelta,
         criticalMultiplier: entity.criticalMultiplier,
         dodgeChance: dodgeChanceTrace.effective,
+        effectiveDodgeChance,
+        dodgeChanceLuckDelta,
         movePoints: entity.movePoints,
         maxMovePoints: entity.maxMovePoints,
       }
@@ -1353,8 +1371,12 @@ function buildPreviewFromState(options: {
         dodgeChance: dodgeChanceTrace,
       },
       criticalChance: entity.criticalChance,
+      effectiveCriticalChance,
+      criticalChanceLuckDelta,
       criticalMultiplier: entity.criticalMultiplier,
       dodgeChance: dodgeChanceTrace.effective,
+      effectiveDodgeChance,
+      dodgeChanceLuckDelta,
       movePoints: entity.remainingMoves,
       maxMovePoints: entity.maxMovesPerTurn,
       activeAbility: activeProfile

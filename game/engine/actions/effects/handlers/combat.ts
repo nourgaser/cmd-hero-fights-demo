@@ -1,6 +1,7 @@
-import { applyLuckToRoll } from "../../../core/luck";
+import { applyLuckToChance, applyLuckToRoll } from "../../../core/luck";
 import { rollRange } from "../../../core/rng";
 import { roundWhole, toAppliedDamage, toHealAmount } from "../../../core/combat";
+import { LUCK_DODGE_CHANCE_PER_POINT } from "../../../../shared/game-constants";
 import type { BattleEvent } from "../../../../shared/models";
 import {
   getEffectiveAttackDamage,
@@ -244,7 +245,7 @@ export function handleDealDamageEffect(
 
   let wasDodged = false;
   if (effect.payload.canBeDodged) {
-    const effectiveDodgeChance = Math.min(
+    const targetBaseDodgeChance = Math.min(
       1,
       getEffectiveDodgeChance({
         state,
@@ -252,6 +253,12 @@ export function handleDealDamageEffect(
         baseDodgeChance: target.dodgeChance,
       }).effectiveValue,
     );
+    const effectiveDodgeChance = applyLuckToChance({
+      baseChance: targetBaseDodgeChance,
+      luck: state.luck,
+      affectedHeroEntityId: target.entityId,
+      chancePerPoint: LUCK_DODGE_CHANCE_PER_POINT,
+    });
     wasDodged = battleRng.nextFloat() < effectiveDodgeChance;
   }
 

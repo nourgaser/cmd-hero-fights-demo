@@ -48,3 +48,18 @@ export function applyLuckToRoll(options: {
 
   return clamp(adjusted, minimum, maximum);
 }
+
+export function applyLuckToChance(options: {
+  baseChance: number;
+  luck: BattleLuckState;
+  affectedHeroEntityId: EntityId;
+  chancePerPoint: number;
+}): number {
+  const { baseChance, luck, affectedHeroEntityId, chancePerPoint } = options;
+  const bias = luckBiasForHero(luck, affectedHeroEntityId);
+  if (bias === 0 || chancePerPoint === 0) {
+    return clamp(baseChance, 0, 1);
+  }
+
+  return clamp(baseChance + bias * chancePerPoint, 0, 1);
+}
