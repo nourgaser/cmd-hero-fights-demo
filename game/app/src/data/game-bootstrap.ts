@@ -26,6 +26,8 @@ export const HERO_IDS = {
 
 export const CARD_IDS = {
   reroll: 'card.general.reroll',
+  hunkerDown: 'card.general.hunker-down',
+  resetLuck: 'card.general.reset-luck',
   ironSkin: 'card.commander-x.iron-skin',
   healthPotion: 'card.commander-x.health-potion',
   bastionStance: 'card.commander-x.bastion-stance',

@@ -75,6 +75,23 @@ export function getEffectiveAbilityPower(options: {
 }
 
 /**
+ * Get effective dodge chance for an entity.
+ */
+export function getEffectiveDodgeChance(options: {
+  state: BattleState;
+  targetEntityId: string;
+  baseDodgeChance: number;
+}): NumberExplanation {
+  return resolveEffectiveNumber({
+    state: options.state,
+    targetEntityId: options.targetEntityId,
+    propertyPath: "dodgeChance",
+    baseValue: options.baseDodgeChance,
+    clampMin: 0,
+  });
+}
+
+/**
  * Get effective health for an entity.
  */
 export function getEffectiveHealth(options: {

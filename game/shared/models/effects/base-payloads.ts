@@ -8,6 +8,7 @@ export const ModifiableStatSchema = z.enum([
   "magicResist",
   "attackDamage",
   "abilityPower",
+  "dodgeChance",
 ]);
 
 export const DealDamageEffectPayloadSchema = z
@@ -80,4 +81,8 @@ export const DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema = z.obje
   target: EffectTargetSelectorSchema,
   damagePerArmor: z.number().int().nonnegative(),
   damageType: DamageTypeSchema,
+});
+
+export const ResetLuckBalanceEffectPayloadSchema = z.object({
+  kind: z.literal("resetLuckBalance"),
 });

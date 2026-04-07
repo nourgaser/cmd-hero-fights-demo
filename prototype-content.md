@@ -13,8 +13,8 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Reroll](/content/Game/Cards/General/Reroll.md) done
 
 <!-- Low priority / do later -->
-- [Hunker Down](/content/Game/Cards/General/Hunker%20Down.md)
-- [Reset Luck](/content/Game/Cards/General/Reset%20Luck.md)
+- [Hunker Down](/content/Game/Cards/General/Hunker%20Down.md) done
+- [Reset Luck](/content/Game/Cards/General/Reset%20Luck.md) done
 
 ### Ultimate Abilities
 

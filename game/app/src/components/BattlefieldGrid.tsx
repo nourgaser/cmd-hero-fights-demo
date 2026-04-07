@@ -271,6 +271,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const armorClass = combatTraces ? numberDeltaClass(combatTraces.armor.delta) : 'delta-neutral'
             const abilityPowerClass = combatTraces ? numberDeltaClass(combatTraces.abilityPower.delta) : 'delta-neutral'
             const magicResistClass = combatTraces ? numberDeltaClass(combatTraces.magicResist.delta) : 'delta-neutral'
+            const dodgeClass = combatTraces ? numberDeltaClass(combatTraces.dodgeChance.delta) : 'delta-neutral'
             const adContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.attackDamage.contributions)
               : { rows: [], hiddenCount: 0 }
@@ -283,11 +284,15 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const mrContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.magicResist.contributions)
               : { rows: [], hiddenCount: 0 }
+            const dodgeContributionSummary = combatTraces
+              ? summarizeStatContributions(combatTraces.dodgeChance.contributions)
+              : { rows: [], hiddenCount: 0 }
             const hasAnyContributionRows =
               adContributionSummary.rows.length > 0 ||
               apContributionSummary.rows.length > 0 ||
               armorContributionSummary.rows.length > 0 ||
-              mrContributionSummary.rows.length > 0
+              mrContributionSummary.rows.length > 0 ||
+              dodgeContributionSummary.rows.length > 0
 
             return (
               <div
@@ -540,7 +545,25 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             ) : null}
                           </span>
                           <span className="battlefield-hover-stat"><strong>Crit</strong><em>{Math.round(entityStats.criticalChance * 100)}% x{entityStats.criticalMultiplier.toFixed(2)}</em></span>
-                          <span className="battlefield-hover-stat"><strong>Dodge</strong><em>{Math.round(entityStats.dodgeChance * 100)}%</em></span>
+                          <span className={`battlefield-hover-stat ${dodgeClass}`.trim()}>
+                            <strong>Dodge</strong>
+                            <em>{Math.round(entityStats.dodgeChance * 100)}%</em>
+                            {shouldShowDetailedTooltips && dodgeContributionSummary.rows.length > 0 ? (
+                              <span className="battlefield-hover-stat-sources">
+                                {dodgeContributionSummary.rows.map((row) => (
+                                  <span key={`dodge-${row.sourceId}`} className="battlefield-hover-stat-source-row">
+                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
+                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
+                                      {formatSignedDelta(row.delta * 100)}%
+                                    </span>
+                                  </span>
+                                ))}
+                                {dodgeContributionSummary.hiddenCount > 0 ? (
+                                  <span className="battlefield-hover-stat-source-more">+{dodgeContributionSummary.hiddenCount} more</span>
+                                ) : null}
+                              </span>
+                            ) : null}
+                          </span>
                         </div>
                         {!shouldShowDetailedTooltips && hasAnyContributionRows ? (
                           <span className="tooltip-shift-hint">Hold Shift or enable Details to see stat sources.</span>

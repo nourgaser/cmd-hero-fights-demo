@@ -6,8 +6,10 @@ import { CHAAARGE_CARD } from "./chaaarge";
 import { CORRODED_SHORTSWORD_CARD } from "./corroded-shortsword";
 import { GUARD_SIGIL_CARD } from "./guard-sigil";
 import { HEALTH_POTION_CARD } from "./health-potion";
+import { HUNKER_DOWN_CARD } from "./hunker-down";
 import { IRON_SKIN_CARD } from "./iron-skin";
 import { JAQUEMIN_PATROL_CARD } from "./jaquemin-patrol";
+import { RESET_LUCK_CARD } from "./reset-luck";
 import { REROLL_CARD } from "./reroll";
 import { SHATTER_PLATING_CARD } from "./shatter-plating";
 import { SHIELD_TOSS_CARD } from "./shield-toss";
@@ -21,8 +23,10 @@ export {
   CORRODED_SHORTSWORD_CARD,
   GUARD_SIGIL_CARD,
   HEALTH_POTION_CARD,
+  HUNKER_DOWN_CARD,
   IRON_SKIN_CARD,
   JAQUEMIN_PATROL_CARD,
+  RESET_LUCK_CARD,
   REROLL_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
@@ -32,6 +36,8 @@ export {
 
 export const COMMANDER_X_CARDS = [
   REROLL_CARD,
+  HUNKER_DOWN_CARD,
+  RESET_LUCK_CARD,
   IRON_SKIN_CARD,
   HEALTH_POTION_CARD,
   BASTION_STANCE_CARD,

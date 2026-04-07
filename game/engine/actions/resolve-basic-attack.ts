@@ -8,6 +8,7 @@ import {
   getEffectiveAttackDamage,
   getEffectiveArmor,
   getEffectiveBasicAttackRange,
+  getEffectiveDodgeChance,
   getEffectiveMagicResist,
   getEffectiveAbilityPower,
 } from "./effects/get-effective-number";
@@ -146,7 +147,15 @@ export function resolveBasicAttackAction(options: {
   const finalRoll = adjustedRoll * criticalMultiplier;
 
   const dodgeRoll = battleRng.nextFloat();
-  const wasDodged = dodgeRoll < target.dodgeChance;
+  const effectiveDodgeChance = Math.min(
+    1,
+    getEffectiveDodgeChance({
+      state,
+      targetEntityId: target.entityId,
+      baseDodgeChance: target.dodgeChance,
+    }).effectiveValue,
+  );
+  const wasDodged = dodgeRoll < effectiveDodgeChance;
 
   let appliedDamage = 0;
   if (!wasDodged) {

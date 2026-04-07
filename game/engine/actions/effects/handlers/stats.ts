@@ -10,7 +10,7 @@ function buildModifierId(options: {
   return `mod.${options.effectId}.${options.targetEntityId}.${options.sequence}`;
 }
 
-type StatKey = "armor" | "magicResist" | "attackDamage" | "abilityPower";
+type StatKey = "armor" | "magicResist" | "attackDamage" | "abilityPower" | "dodgeChance";
 
 type ModifyStatPayload = {
   kind: "modifyStat";

@@ -6,6 +6,7 @@ import {
   getEffectiveAttackDamage,
   getEffectiveArmor,
   getEffectiveDamageRange,
+  getEffectiveDodgeChance,
   getEffectiveHealRange,
   getEffectiveMagicResist,
 } from "../../effects/get-effective-number";
@@ -243,7 +244,15 @@ export function handleDealDamageEffect(
 
   let wasDodged = false;
   if (effect.payload.canBeDodged) {
-    wasDodged = battleRng.nextFloat() < target.dodgeChance;
+    const effectiveDodgeChance = Math.min(
+      1,
+      getEffectiveDodgeChance({
+        state,
+        targetEntityId: target.entityId,
+        baseDodgeChance: target.dodgeChance,
+      }).effectiveValue,
+    );
+    wasDodged = battleRng.nextFloat() < effectiveDodgeChance;
   }
 
   let appliedDamage = 0;

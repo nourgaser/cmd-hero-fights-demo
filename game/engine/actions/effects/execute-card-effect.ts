@@ -16,6 +16,7 @@ import {
   handleAddListenerEffect,
   handleDrawCardsEffect,
   handleRemoveListenerEffect,
+  handleResetLuckBalanceEffect,
   handleRefundMoveCostEffect,
 } from "./handlers/economy";
 import {
@@ -33,6 +34,7 @@ const effectHandlers = {
   dealDamage: handleDealDamageEffect,
   destroyArmorAndDealPerArmorToEnemyHero: handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
   destroySelfArmorAndDealPerArmorToTarget: handleDestroySelfArmorAndDealPerArmorToTargetEffect,
+  resetLuckBalance: handleResetLuckBalanceEffect,
   refundMoveCost: handleRefundMoveCostEffect,
   addListener: handleAddListenerEffect,
   removeListener: handleRemoveListenerEffect,

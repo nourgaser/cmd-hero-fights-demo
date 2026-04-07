@@ -5,6 +5,7 @@ import {
   type UseEntityActiveAction,
 } from "../../shared/models";
 import { resolveEffectiveNumber } from "../core/number-resolver";
+import { getEffectiveDodgeChance } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToRoll } from "../core/luck";
@@ -202,7 +203,15 @@ export function resolveUseEntityActiveAction(options: {
   let dodgeRoll = 0;
   if (profile.canBeDodged) {
     dodgeRoll = battleRng.nextFloat();
-    wasDodged = dodgeRoll < target.dodgeChance;
+    const effectiveDodgeChance = Math.min(
+      1,
+      getEffectiveDodgeChance({
+        state,
+        targetEntityId: target.entityId,
+        baseDodgeChance: target.dodgeChance,
+      }).effectiveValue,
+    );
+    wasDodged = dodgeRoll < effectiveDodgeChance;
   }
 
   let appliedDamage = 0;

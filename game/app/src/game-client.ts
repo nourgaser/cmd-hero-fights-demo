@@ -159,6 +159,7 @@ export type AppBattlePreview = {
           magicResist: AppNumberTrace
           attackDamage: AppNumberTrace
           abilityPower: AppNumberTrace
+          dodgeChance: AppNumberTrace
         }
         criticalChance: number
         criticalMultiplier: number
@@ -1245,6 +1246,15 @@ function buildPreviewFromState(options: {
       baseValue: entity.magicResist,
       clampMin: 0,
     })
+    const dodgeChanceTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'dodgeChance',
+      baseValue: entity.dodgeChance,
+      clampMin: 0,
+      clampMax: 1,
+    })
 
     if (entity.kind === 'hero') {
       const heroDef = heroesById[entity.heroDefinitionId]
@@ -1268,10 +1278,11 @@ function buildPreviewFromState(options: {
           magicResist: magicResistTrace,
           attackDamage: attackDamageTrace,
           abilityPower: abilityPowerTrace,
+          dodgeChance: dodgeChanceTrace,
         },
         criticalChance: entity.criticalChance,
         criticalMultiplier: entity.criticalMultiplier,
-        dodgeChance: entity.dodgeChance,
+        dodgeChance: dodgeChanceTrace.effective,
         movePoints: entity.movePoints,
         maxMovePoints: entity.maxMovePoints,
       }
@@ -1339,10 +1350,11 @@ function buildPreviewFromState(options: {
         magicResist: magicResistTrace,
         attackDamage: attackDamageTrace,
         abilityPower: abilityPowerTrace,
+        dodgeChance: dodgeChanceTrace,
       },
       criticalChance: entity.criticalChance,
       criticalMultiplier: entity.criticalMultiplier,
-      dodgeChance: entity.dodgeChance,
+      dodgeChance: dodgeChanceTrace.effective,
       movePoints: entity.remainingMoves,
       maxMovePoints: entity.maxMovesPerTurn,
       activeAbility: activeProfile
