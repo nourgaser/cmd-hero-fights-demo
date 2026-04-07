@@ -3,6 +3,7 @@ import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_BALANCE_LIMIT } from '../../../shared/game-constants.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
+import { KEYBOARD_SHORTCUT_HINT_ROWS, resolveKeyboardShortcutAction } from '../config/keyboard-shortcuts.ts'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
@@ -160,6 +161,13 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const canBeginBasicAttack = isActivePlayer && selfMovePoints >= basicAttackMoveCost
   const canBeginPressLuck = isActivePlayer && !pressLuckUsedThisTurn && !pressLuckAtFavorableLimit && selfMovePoints >= pressLuckMoveCost
   const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
+  const focusedNeedsTarget = !!focusedCard && focusedCard.validTargetEntityIds.length > 0
+  const focusedNeedsPlacement = !!focusedCard && focusedCard.validPlacementPositions.length > 0
+  const canConfirmFocusedCardShortcut =
+    !!focusedCard &&
+    focusedCard.isPlayable &&
+    (!focusedNeedsTarget || !!selectedTargetEntityId) &&
+    (!focusedNeedsPlacement || !!selectedPlacementPosition)
   const highlightedTargetEntityIds =
     pendingActionMode === 'basicAttack'
       ? basicAttackTargetEntityIds
@@ -477,6 +485,86 @@ export function PlayerScreen(props: PlayerScreenProps) {
     selectedPlacementPosition,
   ])
 
+  useEffect(() => {
+    if (typeof window === 'undefined' || isCoarsePointer) {
+      return
+    }
+
+    const isEditableTarget = (target: EventTarget | null): boolean => {
+      if (!(target instanceof HTMLElement)) {
+        return false
+      }
+
+      return target.isContentEditable || target.closest('input, textarea, select, [contenteditable="true"]') !== null
+    }
+
+    const onKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || event.repeat || event.metaKey || event.ctrlKey || event.altKey) {
+        return
+      }
+
+      if (isEditableTarget(event.target)) {
+        return
+      }
+
+      const shortcut = resolveKeyboardShortcutAction(event)
+      if (!shortcut) {
+        return
+      }
+
+      if (!isActivePlayer) {
+        return
+      }
+
+      switch (shortcut.kind) {
+        case 'endTurn':
+          onEndTurn()
+          event.preventDefault()
+          return
+        case 'basicAttack':
+          handleBasicAttackOverlayClick()
+          event.preventDefault()
+          return
+        case 'pressLuck':
+          handlePressLuckOverlayClick()
+          event.preventDefault()
+          return
+        case 'cardSlot': {
+          const card = selfHandCards[shortcut.slotIndex]
+          if (!card || !card.isPlayable) {
+            return
+          }
+
+          if (focusedHandCardId === card.handCardId && canConfirmFocusedCardShortcut) {
+            handleConfirmFocusedCard()
+          } else {
+            handleFocusCard(card.handCardId)
+          }
+
+          event.preventDefault()
+          return
+        }
+      }
+    }
+
+    window.addEventListener('keydown', onKeyDown)
+
+    return () => {
+      window.removeEventListener('keydown', onKeyDown)
+    }
+  }, [
+    canConfirmFocusedCardShortcut,
+    focusedHandCardId,
+    handleBasicAttackOverlayClick,
+    handleConfirmFocusedCard,
+    handleFocusCard,
+    handlePressLuckOverlayClick,
+    isActivePlayer,
+    isCoarsePointer,
+    onEndTurn,
+    selfHandCards,
+  ])
+
   return (
     <section ref={screenRef} className="screen" style={screenStyle} aria-label={`${SIDE_VISUALS[selfSideKey].name} game screen`}>
       <header className="screen-head">
@@ -490,32 +578,46 @@ export function PlayerScreen(props: PlayerScreenProps) {
       </header>
 
         <section className="luck-strip" aria-label="Luck track">
-          <h2 className="luck-title">
-            {LUCK_VISUALS.label}
-            <span className={`help-chip hint-wrap ${openTouchTooltip === 'luck-help' ? 'force-tooltip-open' : ''}`.trim()} tabIndex={0}>
-              <Icon icon="game-icons:info" aria-hidden="true" />
-              <span className="sr-only">Luck explanation</span>
-              <span className="hover-card" role="tooltip">
-                <strong>{LUCK_VISUALS.label}</strong>
-                <span>{LUCK_VISUALS.description}</span>
+          <div className={`luck-tooltip-anchor hint-wrap ${openTouchTooltip === 'luck-help' ? 'force-tooltip-open' : ''}`.trim()} tabIndex={0}>
+            <h2 className="luck-title">
+              {LUCK_VISUALS.label}
+              <button
+                type="button"
+                className="touch-tooltip-toggle inline-toggle luck-inline-toggle"
+                aria-label="Show luck details"
+                aria-pressed={openTouchTooltip === 'luck-help'}
+                onClick={() => toggleTouchTooltip('luck-help')}
+              >
+                <Icon icon="game-icons:info" aria-hidden="true" />
+              </button>
+            </h2>
+            <span className="hover-card luck-hover-card" role="tooltip">
+              <strong>{LUCK_VISUALS.label}</strong>
+              <span>{LUCK_VISUALS.description}</span>
+            </span>
+            <LuckBar
+              selfLuck={selfLuck}
+              enemyLuck={enemyLuck}
+              capacity={LUCK_VISUALS.capacity}
+              iconId={LUCK_VISUALS.iconId}
+            />
+          </div>
+          <span className="help-chip keyboard-shortcuts-chip keyboard-shortcuts-floating hint-wrap" tabIndex={0} data-hover-align="left">
+            <Icon icon="game-icons:keyboard" aria-hidden="true" />
+            <span className="sr-only">Keyboard shortcuts</span>
+            <span className="hover-card" role="tooltip">
+              <strong>Shortcuts</strong>
+              <span className="shortcut-tooltip-list">
+                {KEYBOARD_SHORTCUT_HINT_ROWS.map((entry) => (
+                  <span key={`${entry.key}:${entry.description}`} className="shortcut-tooltip-row">
+                    <span className="shortcut-tooltip-key">{entry.key}</span>
+                    <span>{entry.description}</span>
+                  </span>
+                ))}
+                <span className="shortcut-tooltip-note">Board targeting remains click/tap for now.</span>
               </span>
             </span>
-            <button
-              type="button"
-              className="touch-tooltip-toggle inline-toggle"
-              aria-label="Show luck details"
-              aria-pressed={openTouchTooltip === 'luck-help'}
-              onClick={() => toggleTouchTooltip('luck-help')}
-            >
-              <Icon icon="game-icons:info" aria-hidden="true" />
-            </button>
-          </h2>
-          <LuckBar
-            selfLuck={selfLuck}
-            enemyLuck={enemyLuck}
-            capacity={LUCK_VISUALS.capacity}
-            iconId={LUCK_VISUALS.iconId}
-          />
+          </span>
         </section>
 
         <section className="battle-overlay-layer">

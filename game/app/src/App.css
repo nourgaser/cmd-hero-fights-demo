@@ -542,10 +542,18 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .luck-strip {
+  position: relative;
   display: grid;
   justify-items: center;
   gap: 4px;
   padding: 4px 0 0;
+}
+
+.luck-tooltip-anchor {
+  position: relative;
+  display: grid;
+  justify-items: center;
+  gap: 4px;
 }
 
 h2.luck-title {
@@ -580,6 +588,47 @@ h2.luck-title > * {
 .help-chip svg {
   width: 18px;
   height: 18px;
+}
+
+.keyboard-shortcuts-chip .hover-card {
+  min-width: 250px;
+}
+
+.keyboard-shortcuts-floating {
+  position: absolute;
+  right: -56px;
+  top: 2px;
+  margin-left: 0;
+}
+
+.luck-hover-card {
+  min-width: 220px;
+}
+
+.shortcut-tooltip-list {
+  display: grid;
+  gap: 3px;
+  margin-top: 2px;
+}
+
+.shortcut-tooltip-row {
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 8px;
+  align-items: baseline;
+}
+
+.shortcut-tooltip-key {
+  font-family: var(--heading);
+  font-weight: 700;
+  color: var(--tooltip-border);
+  min-width: 28px;
+}
+
+.shortcut-tooltip-note {
+  margin-top: 3px;
+  font-size: 10px;
+  color: color-mix(in srgb, var(--tooltip-muted) 82%, #ffffff 18%);
 }
 
 .luck-strip p {
@@ -663,6 +712,10 @@ h2.luck-title > * {
 }
 
 @media (pointer: coarse) {
+  .keyboard-shortcuts-chip {
+    display: none;
+  }
+
   .touch-tooltip-toggle {
     width: 44px;
     height: 44px;
@@ -683,6 +736,10 @@ h2.luck-title > * {
 
   .touch-tooltip-toggle.inline-toggle {
     margin-left: 6px;
+  }
+
+  .touch-tooltip-toggle.luck-inline-toggle {
+    margin-left: 8px;
   }
 
   .touch-tooltip-toggle.battle-tooltip-toggle {
