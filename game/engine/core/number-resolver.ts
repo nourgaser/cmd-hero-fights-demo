@@ -5,6 +5,7 @@ import type {
   NumberExplanation,
   NumberContribution,
 } from "../../shared/models";
+import { countAdjacentAllyOccupiedCells } from "../battlefield/adjacency";
 
 /**
  * NumberResolver computes effective numeric values for any property on any entity.
@@ -93,6 +94,23 @@ export function resolveEffectiveNumber(options: {
           });
         }
       }
+    }
+  }
+
+  // Apply battlefield adjacency buff for defense stats.
+  if (propertyPath === "armor" || propertyPath === "magicResist") {
+    const adjacencyDelta = countAdjacentAllyOccupiedCells({
+      state,
+      targetEntityId,
+    });
+
+    if (adjacencyDelta > 0) {
+      accumulated += adjacencyDelta;
+      contributions.push({
+        sourceId: `core:adjacency:${propertyPath}`,
+        label: "Adjacent allies",
+        delta: adjacencyDelta,
+      });
     }
   }
 
