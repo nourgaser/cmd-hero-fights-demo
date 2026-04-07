@@ -11,6 +11,7 @@ import { JAQUEMIN_PATROL_CARD } from "./jaquemin-patrol";
 import { REROLL_CARD } from "./reroll";
 import { SHIELD_TOSS_CARD } from "./shield-toss";
 import { WAR_STANDARD_CARD } from "./war-standard";
+import { WARCRY_CARD } from "./warcry";
 
 export {
   BASTION_STANCE_CARD,
@@ -24,6 +25,7 @@ export {
   REROLL_CARD,
   SHIELD_TOSS_CARD,
   WAR_STANDARD_CARD,
+  WARCRY_CARD,
 };
 
 export const COMMANDER_X_CARDS = [
@@ -38,6 +40,7 @@ export const COMMANDER_X_CARDS = [
   WAR_STANDARD_CARD,
   GUARD_SIGIL_CARD,
   JAQUEMIN_PATROL_CARD,
+  WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];
 
 export type CommanderXCardDefinition = (typeof COMMANDER_X_CARDS)[number];

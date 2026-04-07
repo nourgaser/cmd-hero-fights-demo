@@ -67,3 +67,10 @@ export const RefundMoveCostEffectPayloadSchema = z.object({
   amount: z.number().int().positive(),
   condition: z.enum(["always", "ifNotDodged"]),
 });
+
+export const DestroyArmorAndDealPerArmorToEnemyHeroEffectPayloadSchema = z.object({
+  kind: z.literal("destroyArmorAndDealPerArmorToEnemyHero"),
+  target: EffectTargetSelectorSchema,
+  damagePerArmor: z.number().int().nonnegative(),
+  damageType: DamageTypeSchema,
+});

@@ -15,6 +15,7 @@ export type CardRarity = z.infer<typeof CardRaritySchema>;
 export const CardTargetingSchema = z.enum([
   "none",
   "selectedAny",
+  "selectedAnyExceptEnemyHero",
   "selectedEnemy",
   "selectedAlly",
 ]);

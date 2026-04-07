@@ -31,6 +31,7 @@ export const CARD_IDS = {
   bastionStance: 'card.commander-x.bastion-stance',
   battleFocus: 'card.commander-x.battle-focus',
   shieldToss: 'card.commander-x.shield-toss',
+  warcry: 'card.commander-x.warcry',
   chaaarge: 'card.commander-x.chaaarge',
   corrodedShortsword: 'card.commander-x.corroded-shortsword',
   warStandard: 'card.commander-x.war-standard',

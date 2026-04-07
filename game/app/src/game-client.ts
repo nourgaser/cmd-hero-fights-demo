@@ -90,7 +90,7 @@ export type AppBattlePreview = {
       summaryTone: 'neutral' | 'positive' | 'negative'
       castConditionText: string | null
       isPlayable: boolean
-      targeting: 'none' | 'selectedAny' | 'selectedEnemy' | 'selectedAlly'
+      targeting: 'none' | 'selectedAny' | 'selectedAnyExceptEnemyHero' | 'selectedEnemy' | 'selectedAlly'
       validTargetEntityIds: string[]
       validPlacementPositions: Array<{ row: number; column: number }>
       summonPreview: {

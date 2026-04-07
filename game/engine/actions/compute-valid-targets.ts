@@ -39,6 +39,14 @@ export function computeValidTargetsForCard(options: {
     for (const entity of allEntities) {
       validTargets.push(entity.entityId);
     }
+  } else if (cardDef.targeting === "selectedAnyExceptEnemyHero") {
+    // Any entity except the enemy hero
+    for (const entity of allEntities) {
+      const isEnemyHero = entity.kind === "hero" && entity.battlefieldSide !== actorHero.battlefieldSide;
+      if (!isEnemyHero) {
+        validTargets.push(entity.entityId);
+      }
+    }
   } else if (cardDef.targeting === "selectedAlly") {
     // Only allies (same side)
     for (const entity of allEntities) {

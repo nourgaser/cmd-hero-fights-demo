@@ -6,7 +6,11 @@ import {
   type ExecuteCardEffectResult,
   type SummonedEntityBlueprint,
 } from "./context";
-import { handleDealDamageEffect, handleHealEffect } from "./handlers/combat";
+import {
+  handleDealDamageEffect,
+  handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
+  handleHealEffect,
+} from "./handlers/combat";
 import {
   handleAddListenerEffect,
   handleDrawCardsEffect,
@@ -26,6 +30,7 @@ const effectHandlers = {
   drawCards: handleDrawCardsEffect,
   heal: handleHealEffect,
   dealDamage: handleDealDamageEffect,
+  destroyArmorAndDealPerArmorToEnemyHero: handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
   refundMoveCost: handleRefundMoveCostEffect,
   addListener: handleAddListenerEffect,
   removeListener: handleRemoveListenerEffect,

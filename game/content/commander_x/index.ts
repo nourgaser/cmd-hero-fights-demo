@@ -14,6 +14,7 @@ export {
   JAQUEMIN_PATROL_CARD,
   REROLL_CARD,
   SHIELD_TOSS_CARD,
+  WARCRY_CARD,
   WAR_STANDARD_CARD,
 } from "./cards";
 export {
