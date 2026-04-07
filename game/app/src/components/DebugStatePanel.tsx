@@ -16,6 +16,9 @@ type DebugStatePanelProps = {
     type: 'ability' | 'weapon' | 'totem' | 'companion'
     rarity: 'common' | 'rare' | 'ultimate' | 'general'
     heroId?: string
+    summaryText: string | null
+    effectTexts: string[]
+    castConditionText: string | null
   }>
   seed: string
   onSeedChange: (seed: string) => void
@@ -87,9 +90,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
   const [deckCardTooltip, setDeckCardTooltip] = useState<{
     title: string
-    lineOne: string
-    lineTwo: string
-    lineThree: string
+    lines: string[]
     left: number
     top: number
   } | null>(null)
@@ -363,20 +364,16 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   const queueDeckCardTooltip = (options: {
     anchorElement: HTMLElement
     title: string
-    lineOne: string
-    lineTwo: string
-    lineThree: string
+    lines: string[]
   }) => {
-    const { anchorElement, title, lineOne, lineTwo, lineThree } = options
+    const { anchorElement, title, lines } = options
     clearDeckCardTooltip()
 
     deckCardTooltipTimerRef.current = window.setTimeout(() => {
       const rect = anchorElement.getBoundingClientRect()
       setDeckCardTooltip({
         title,
-        lineOne,
-        lineTwo,
-        lineThree,
+        lines,
         left: rect.left + rect.width * 0.5,
         top: rect.top,
       })
@@ -736,9 +733,13 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                         queueDeckCardTooltip({
                           anchorElement: event.currentTarget,
                           title: entry.card.name,
-                          lineOne: `Cost ${entry.card.moveCost}`,
-                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                          lineThree: `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                          lines: [
+                            entry.card.summaryText ?? 'No summary text available.',
+                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                            `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                          ].filter((line): line is string => !!line),
                         })
                       }}
                       onMouseLeave={clearDeckCardTooltip}
@@ -746,9 +747,13 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                         queueDeckCardTooltip({
                           anchorElement: event.currentTarget,
                           title: entry.card.name,
-                          lineOne: `Cost ${entry.card.moveCost}`,
-                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                          lineThree: `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                          lines: [
+                            entry.card.summaryText ?? 'No summary text available.',
+                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                            `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                          ].filter((line): line is string => !!line),
                         })
                       }}
                       onBlur={clearDeckCardTooltip}
@@ -783,9 +788,13 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                         queueDeckCardTooltip({
                           anchorElement: event.currentTarget,
                           title: entry.card.name,
-                          lineOne: `Cost ${entry.card.moveCost}`,
-                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                          lineThree: `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                          lines: [
+                            entry.card.summaryText ?? 'No summary text available.',
+                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                            `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                          ].filter((line): line is string => !!line),
                         })
                       }}
                       onMouseLeave={clearDeckCardTooltip}
@@ -793,9 +802,13 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                         queueDeckCardTooltip({
                           anchorElement: event.currentTarget,
                           title: entry.card.name,
-                          lineOne: `Cost ${entry.card.moveCost}`,
-                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                          lineThree: `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                          lines: [
+                            entry.card.summaryText ?? 'No summary text available.',
+                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                            `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                          ].filter((line): line is string => !!line),
                         })
                       }}
                       onBlur={clearDeckCardTooltip}
@@ -824,9 +837,9 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               }}
             >
               <strong>{deckCardTooltip.title}</strong>
-              <span>{deckCardTooltip.lineOne}</span>
-              <span>{deckCardTooltip.lineTwo}</span>
-              <span>{deckCardTooltip.lineThree}</span>
+              {deckCardTooltip.lines.map((line, index) => (
+                <span key={`${deckCardTooltip.title}-${index}`}>{line}</span>
+              ))}
             </div>
           ) : null}
           </div>,

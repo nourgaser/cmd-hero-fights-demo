@@ -124,6 +124,42 @@ function updateHoverCardPlacement(wrap: HTMLElement) {
   wrap.style.setProperty('--hover-tooltip-max-width', `${maxTooltipWidth}px`)
 }
 
+function renderDisplayText(displayText?: {
+  template?: string
+  params?: Record<string, string | number | boolean | undefined>
+}): string | null {
+  if (!displayText?.template) {
+    return null
+  }
+
+  return displayText.template.replaceAll(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
+    const value = displayText.params?.[key]
+    return value === undefined ? match : String(value)
+  })
+}
+
+function describeCardCastCondition(cardDefinition: unknown): string | null {
+  if (!cardDefinition || typeof cardDefinition !== 'object' || !('castCondition' in cardDefinition)) {
+    return null
+  }
+
+  const castCondition = (cardDefinition as { castCondition?: unknown }).castCondition
+  if (!castCondition || typeof castCondition !== 'object' || !('kind' in castCondition)) {
+    return null
+  }
+
+  if (castCondition.kind !== 'heroHealthBelow') {
+    return null
+  }
+
+  const threshold = (castCondition as { threshold?: unknown }).threshold
+  if (typeof threshold !== 'number') {
+    return null
+  }
+
+  return `Only playable when your hero is below ${threshold} HP.`
+}
+
 function App() {
   const [initialBootstrapConfig] = useState(() => loadBootstrapConfig())
   const [bootstrapConfig, setBootstrapConfig] = useState(initialBootstrapConfig)
@@ -382,6 +418,9 @@ function App() {
     type: card.type,
     rarity: card.rarity,
     heroId: 'heroId' in card ? card.heroId : undefined,
+    summaryText: renderDisplayText(card.summaryText),
+    effectTexts: card.effects.map((effect) => renderDisplayText(effect.displayText)).filter((text): text is string => !!text),
+    castConditionText: 'castCondition' in card ? describeCardCastCondition(card) : null,
   }))
 
   const [heroAId, heroBId] = preview.heroEntityIds
