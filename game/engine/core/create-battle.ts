@@ -15,6 +15,7 @@ import {
   rowsPerSide,
   setOccupantFootprint,
 } from "../../shared/models";
+import { MOVE_POINTS_CAP } from "../../shared/game-constants";
 import { createBattleRng, type BattleRng } from "./rng";
 import { annotateBattleStateWithActionOptions } from "../actions/annotate-action-options";
 
@@ -58,6 +59,8 @@ function createHeroEntityState(
   setup: CreateBattleHeroSetup,
   battlefieldSide: BattlefieldSide,
 ): HeroEntityState {
+  const openingMovePoints = Math.min(setup.openingMovePoints, MOVE_POINTS_CAP);
+
   return {
     kind: "hero",
     entityId: setup.heroEntityId,
@@ -74,8 +77,8 @@ function createHeroEntityState(
     criticalChance: setup.hero.combat.criticalChance,
     criticalMultiplier: setup.hero.combat.criticalMultiplier,
     dodgeChance: setup.hero.combat.dodgeChance,
-    maxMovePoints: setup.openingMovePoints,
-    movePoints: setup.openingMovePoints,
+    maxMovePoints: openingMovePoints,
+    movePoints: openingMovePoints,
     basicAttackMoveCost: setup.hero.basicAttack.moveCost,
     deckCardIds: [...setup.openingDeckCardIds],
     handCards: [],

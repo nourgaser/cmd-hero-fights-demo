@@ -3,6 +3,7 @@ import {
   type ExecuteCardEffectResult,
 } from "../../context";
 import { getEffectiveRefundAmount } from "../../get-effective-number";
+import { MOVE_POINTS_CAP } from "../../../../../shared/game-constants";
 
 export function handleRefundMoveCostEffect(
   context: EffectExecutionContext,
@@ -53,13 +54,16 @@ export function handleRefundMoveCostEffect(
         ...state.entitiesById,
         [actorHero.entityId]: {
           ...latestActor,
-          movePoints:
+          movePoints: Math.min(
             latestActor.movePoints +
-            getEffectiveRefundAmount({
-              state,
-              targetEntityId: actorHero.entityId,
-              baseAmount: payload.amount,
-            }).effectiveValue,
+              getEffectiveRefundAmount({
+                state,
+                targetEntityId: actorHero.entityId,
+                baseAmount: payload.amount,
+              }).effectiveValue,
+            latestActor.maxMovePoints,
+            MOVE_POINTS_CAP,
+          ),
         },
       },
     },

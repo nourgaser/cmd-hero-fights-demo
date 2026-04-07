@@ -4,6 +4,7 @@ import {
   type EndTurnAction,
 } from "../../shared/models";
 import {
+  MOVE_POINTS_CAP,
   HARD_HAND_SIZE_LIMIT,
   TURN_START_SOFT_HAND_SIZE,
 } from "../../shared/game-constants";
@@ -82,7 +83,7 @@ export function resolveEndTurnAction(options: {
   const drawCount = canDrawOneCard ? 1 : 0;
   const drawnCardIds = nextHero.deckCardIds.slice(0, drawCount);
   const remainingDeck = nextHero.deckCardIds.slice(drawCount);
-  const nextTurnMaxMovePoints = nextHero.maxMovePoints + 1;
+  const nextTurnMaxMovePoints = Math.min(nextHero.maxMovePoints + 1, MOVE_POINTS_CAP);
 
   const refreshedNextHero = {
     ...nextHero,
@@ -116,7 +117,7 @@ export function resolveEndTurnAction(options: {
         entityId,
         {
           ...entity,
-          remainingMoves: entity.maxMovesPerTurn,
+          remainingMoves: Math.min(entity.maxMovesPerTurn, MOVE_POINTS_CAP),
         },
       ];
     }),

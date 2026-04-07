@@ -2,6 +2,7 @@ import {
   SingleCellFootprint,
   setOccupantFootprint,
 } from "../../../../shared/models";
+import { MOVE_POINTS_CAP } from "../../../../shared/game-constants";
 import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
@@ -36,7 +37,8 @@ export function handleSummonEffect(
   });
 
   const footprint = blueprint.footprint ?? SingleCellFootprint;
-  const maxMovesPerTurn = blueprint.maxMovesPerTurn ?? blueprint.remainingMoves;
+  const maxMovesPerTurn = Math.min(blueprint.maxMovesPerTurn ?? blueprint.remainingMoves, MOVE_POINTS_CAP);
+  const remainingMoves = Math.min(blueprint.remainingMoves, maxMovesPerTurn);
 
   return {
     ok: true,
@@ -62,7 +64,7 @@ export function handleSummonEffect(
           criticalMultiplier: blueprint.criticalMultiplier,
           dodgeChance: blueprint.dodgeChance,
           maxMovesPerTurn,
-          remainingMoves: blueprint.remainingMoves,
+          remainingMoves,
         },
       },
       battlefieldOccupancy: setOccupantFootprint(
