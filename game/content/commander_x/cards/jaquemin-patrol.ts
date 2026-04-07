@@ -14,8 +14,7 @@ export const JAQUEMIN_PATROL_CARD = {
   targeting: "none",
   tags: ["chivalry"],
   summaryText: {
-    template:
-      "Summon Jaquemin the Patrol. Whenever you attack, it follows the same target.",
+    template: "Summon Jaquemin the Patrol.",
   },
   effects: [
     {
@@ -65,7 +64,7 @@ export const JAQUEMIN_PATROL_CARD = {
         ],
       },
       displayText: {
-        template: "Register Jaquemin's follow-up attack.",
+        template: "Whenever you attack, Jaquemin attacks the same target.",
       },
     },
   ],

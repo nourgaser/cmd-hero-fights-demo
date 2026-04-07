@@ -337,6 +337,7 @@ function describeNumericCardText(options: {
   state?: BattleState
   gameApi?: ReturnType<typeof createGameApi>
   sourceEntityId?: string
+  viewMode?: 'card' | 'entity'
   luck: {
     anchorHeroEntityId: string
     balance: number
@@ -346,7 +347,7 @@ function describeNumericCardText(options: {
   summaryDetailText: string | null
   summaryTone: 'neutral' | 'positive' | 'negative'
 } {
-  const { card, actorHero, actorNumberTraces, state, gameApi, sourceEntityId, luck } = options
+  const { card, actorHero, actorNumberTraces, state, gameApi, sourceEntityId, viewMode = 'card', luck } = options
   const firstEffect = card.effects[0]
 
   const renderDisplayText = (displayText?: {
@@ -570,6 +571,28 @@ function describeNumericCardText(options: {
       summaryText: `Draw ${effectiveAmount} card${effectiveAmount === 1 ? '' : 's'}.`,
       summaryDetailText: `${drawTrace ? `${numberTraceToDetailLine('Draw amount', drawTrace)}\n` : ''}Target: ${String(drawPayload.target)}.`,
       summaryTone: 'positive',
+    }
+  }
+
+  if (payload.kind === 'summonEntity') {
+    const summonSummary = firstEffectSummaryText ?? cardSummaryText ?? defaultSummary
+    const postSummonEffectText = card.effects
+      .slice(1)
+      .map((effect) => renderDisplayText(effect.displayText))
+      .find((line): line is string => !!line)
+
+    if (viewMode === 'entity') {
+      return {
+          summaryText: postSummonEffectText ?? '',
+        summaryDetailText: null,
+        summaryTone: 'neutral',
+      }
+    }
+
+    return {
+      summaryText: summonSummary,
+      summaryDetailText: null,
+      summaryTone: 'neutral',
     }
   }
 
@@ -842,6 +865,7 @@ function resolveSummonPreviewForCard(options: {
           abilityPower: summonedBlueprint.abilityPower,
           armor: summonedBlueprint.armor,
         },
+          viewMode: 'entity',
         luck,
       })
     : null
@@ -1267,6 +1291,7 @@ function buildPreviewFromState(options: {
           state,
           gameApi,
           sourceEntityId: entity.entityId,
+          viewMode: 'entity',
           luck: state.luck,
         })
       : null
