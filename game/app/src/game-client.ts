@@ -623,8 +623,6 @@ function buildHeroBasicAttackSummary(options: {
   })
 
   const detailRows = [
-    numberTraceToDetailLine('Basic attack min base', minimumTrace),
-    numberTraceToDetailLine('Basic attack max base', maximumTrace),
     numberTraceToDetailLine('AD used', attackDamageTrace),
     numberTraceToDetailLine('AP used', abilityPowerTrace),
   ]
@@ -638,7 +636,7 @@ function buildHeroBasicAttackSummary(options: {
       adjusted.minimum === adjusted.maximum
         ? `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType} damage.`
         : `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage.`,
-    summaryDetailText: `${detailRows.join('\n')}\n${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
     summaryTone:
       adjusted.minimum > minimum || adjusted.maximum > maximum
         ? 'positive'
@@ -717,8 +715,6 @@ function buildEntityActiveSummary(options: {
   })
 
   const detailRows = [
-    numberTraceToDetailLine('Active min base', minimumTrace),
-    numberTraceToDetailLine('Active max base', maximumTrace),
     numberTraceToDetailLine('AD used', attackDamageTrace),
     numberTraceToDetailLine('AP used', abilityPowerTrace),
   ]
@@ -731,7 +727,7 @@ function buildEntityActiveSummary(options: {
       adjusted.minimum === adjusted.maximum
         ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType}.`
         : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType}.`,
-    summaryDetailText: `${detailRows.join('\n')}\n${summaryText} Current pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}. Luck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.`,
+    summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
     summaryTone:
       adjusted.minimum > minimum || adjusted.maximum > maximum
         ? 'positive'

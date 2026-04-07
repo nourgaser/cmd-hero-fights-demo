@@ -5,6 +5,7 @@ import type { AppBattlePreview } from '../game-client.ts'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
+  splitTooltipDetailLabel,
   splitDetailTextIntoLines,
 } from '../utils/render-numeric-text.tsx'
 
@@ -423,8 +424,18 @@ export function HandBar(props: HandBarProps) {
                     {shouldShowDetailedTooltips && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
                       <span className="battle-tooltip-detail">
                         {splitDetailTextIntoLines(hoveredCard.card.summonPreview.passiveSummaryDetailText).map((line, index) => (
-                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
-                            {renderTextWithHighlightedNumbers(line)}
+                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                            {(() => {
+                              const parts = splitTooltipDetailLabel(line)
+                              return parts.label ? (
+                                <>
+                                  <span className="tooltip-detail-label">{parts.label}</span>
+                                  <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
+                                </>
+                              ) : (
+                                <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
+                              )
+                            })()}
                           </span>
                         ))}
                       </span>
@@ -441,8 +452,18 @@ export function HandBar(props: HandBarProps) {
                     {shouldShowDetailedTooltips && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
                       <span className="battle-tooltip-detail">
                         {splitDetailTextIntoLines(hoveredCard.card.summonPreview.activeAbilitySummaryDetailText).map((line, index) => (
-                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
-                            {renderTextWithHighlightedNumbers(line)}
+                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                            {(() => {
+                              const parts = splitTooltipDetailLabel(line)
+                              return parts.label ? (
+                                <>
+                                  <span className="tooltip-detail-label">{parts.label}</span>
+                                  <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
+                                </>
+                              ) : (
+                                <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
+                              )
+                            })()}
                           </span>
                         ))}
                       </span>

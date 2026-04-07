@@ -5,6 +5,7 @@ import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
+  splitTooltipDetailLabel,
   splitDetailTextIntoLines,
 } from '../utils/render-numeric-text.tsx'
 import { LuckBar } from './LuckBar.tsx'
@@ -546,8 +547,18 @@ export function PlayerScreen(props: PlayerScreenProps) {
                 {shouldShowDetailedTooltips && selfHeroDetails?.basicAttack.summaryDetailText ? (
                   <span className="battle-tooltip-detail">
                     {basicAttackDetailLines.map((line, index) => (
-                      <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
-                        {renderTextWithHighlightedNumbers(line)}
+                      <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                        {(() => {
+                          const parts = splitTooltipDetailLabel(line)
+                          return parts.label ? (
+                            <>
+                              <span className="tooltip-detail-label">{parts.label}</span>
+                              <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
+                            </>
+                          ) : (
+                            <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
+                          )
+                        })()}
                       </span>
                     ))}
                   </span>

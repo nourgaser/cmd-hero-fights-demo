@@ -38,15 +38,44 @@ export function renderTextWithHighlightedNumbers(
 }
 
 export function splitDetailTextIntoLines(text: string): string[] {
-  const normalized = text.replace(/\s+/g, ' ').trim()
-  if (!normalized) {
+  const trimmed = text.trim()
+  if (!trimmed) {
     return []
   }
 
-  return normalized
+  const rawLines = trimmed
+    .split(/\r?\n+/)
+    .map((line) => line.replace(/\s+/g, ' ').trim())
+    .filter((line) => line.length > 0)
+
+  const expanded = rawLines.flatMap((line) => (
+    line
+      .split(/(?<=[.!?])\s+(?=Current pre-luck range:|Luck shift:|Target:|Cost:|Type:|Dodged:)/)
+      .map((chunk) => chunk.trim())
+      .filter((chunk) => chunk.length > 0)
+  ))
+
+  if (expanded.length > 0) {
+    return expanded
+  }
+
+  return trimmed
+    .replace(/\s+/g, ' ')
     .split(/(?<=[.!?])\s+/)
     .map((line) => line.trim())
     .filter((line) => line.length > 0)
+}
+
+export function splitTooltipDetailLabel(line: string): { label: string | null; value: string } {
+  const match = line.match(/^([^:]{2,42}):\s*(.+)$/)
+  if (!match) {
+    return { label: null, value: line }
+  }
+
+  return {
+    label: match[1].trim(),
+    value: match[2].trim(),
+  }
 }
 
 export function simplifyTooltipSummaryText(text: string): string {

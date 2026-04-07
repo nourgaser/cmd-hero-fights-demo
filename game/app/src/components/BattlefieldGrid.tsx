@@ -4,6 +4,7 @@ import { ENTITY_ICON_META } from '../data/visual-metadata.ts'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
+  splitTooltipDetailLabel,
   splitDetailTextIntoLines,
 } from '../utils/render-numeric-text.tsx'
 
@@ -350,8 +351,18 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           {shouldShowDetailedTooltips && heroDetails.basicAttack.summaryDetailText ? (
                             <span className="battle-tooltip-detail">
                               {splitDetailTextIntoLines(heroDetails.basicAttack.summaryDetailText).map((line, index) => (
-                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
-                                  {renderTextWithHighlightedNumbers(line)}
+                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                                  {(() => {
+                                    const parts = splitTooltipDetailLabel(line)
+                                    return parts.label ? (
+                                      <>
+                                        <span className="tooltip-detail-label">{parts.label}</span>
+                                        <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
+                                    )
+                                  })()}
                                 </span>
                               ))}
                             </span>
@@ -361,9 +372,10 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           ) : null}
                           <span className="battlefield-hover-note tooltip-row">
                             <strong className="tooltip-inline-label">Cost:</strong>
-                            {heroDetails.basicAttack.moveCost} move{heroDetails.basicAttack.moveCost === 1 ? '' : 's'}.
+                            {heroDetails.basicAttack.moveCost} move{heroDetails.basicAttack.moveCost === 1 ? '' : 's'}
+                            {' \u00b7 '}
                             <strong className="tooltip-inline-label">Type:</strong>
-                            {heroDetails.basicAttack.damageType}.
+                            {heroDetails.basicAttack.damageType}
                           </span>
                         </div>
                       </>
@@ -375,8 +387,18 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           {shouldShowDetailedTooltips && entityStats?.sourceCardSummaryDetailText ? (
                             <span className="battle-tooltip-detail">
                               {splitDetailTextIntoLines(entityStats.sourceCardSummaryDetailText).map((line, index) => (
-                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
-                                  {renderTextWithHighlightedNumbers(line)}
+                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                                  {(() => {
+                                    const parts = splitTooltipDetailLabel(line)
+                                    return parts.label ? (
+                                      <>
+                                        <span className="tooltip-detail-label">{parts.label}</span>
+                                        <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
+                                      </>
+                                    ) : (
+                                      <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
+                                    )
+                                  })()}
                                 </span>
                               ))}
                             </span>
@@ -392,8 +414,18 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             {shouldShowDetailedTooltips && entityStats.activeAbility.summaryDetailText ? (
                               <span className="battle-tooltip-detail">
                                 {splitDetailTextIntoLines(entityStats.activeAbility.summaryDetailText).map((line, index) => (
-                                  <span key={`${index}-${line}`} className="battle-tooltip-detail-line">
-                                    {renderTextWithHighlightedNumbers(line)}
+                                  <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                                    {(() => {
+                                      const parts = splitTooltipDetailLabel(line)
+                                      return parts.label ? (
+                                        <>
+                                          <span className="tooltip-detail-label">{parts.label}</span>
+                                          <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
+                                        </>
+                                      ) : (
+                                        <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
+                                      )
+                                    })()}
                                   </span>
                                 ))}
                               </span>
@@ -403,9 +435,10 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             ) : null}
                             <span className="battlefield-hover-note tooltip-row">
                               <strong className="tooltip-inline-label">Cost:</strong>
-                              {entityStats.activeAbility.moveCost} unit move{entityStats.activeAbility.moveCost === 1 ? '' : 's'}.
+                              {entityStats.activeAbility.moveCost} unit move{entityStats.activeAbility.moveCost === 1 ? '' : 's'}
+                              {' \u00b7 '}
                               <strong className="tooltip-inline-label">Dodged:</strong>
-                              {entityStats.activeAbility.canBeDodged ? 'Yes.' : 'No.'}
+                              {entityStats.activeAbility.canBeDodged ? 'Yes' : 'No'}
                             </span>
                           </div>
                         ) : null}

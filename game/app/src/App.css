@@ -864,12 +864,39 @@ h2.luck-title > * {
   padding-left: 10px;
 }
 
+.battle-tooltip-detail-line.tooltip-detail-row {
+  padding-left: 0;
+  display: grid;
+  grid-template-columns: auto 1fr;
+  column-gap: 6px;
+  align-items: start;
+}
+
+.tooltip-detail-label {
+  font-family: var(--heading);
+  font-weight: 700;
+  color: color-mix(in srgb, var(--tooltip-border) 84%, #ffffff 16%);
+  white-space: nowrap;
+}
+
+.tooltip-detail-value {
+  color: var(--tooltip-muted);
+}
+
+.tooltip-detail-value-full {
+  grid-column: 1 / -1;
+}
+
 .battle-tooltip-detail-line::before {
   content: '\2022';
   position: absolute;
   left: 0;
   top: 0;
   color: color-mix(in srgb, #7a5a19 70%, #ffffff 30%);
+}
+
+.battle-tooltip-detail-line.tooltip-detail-row::before {
+  content: none;
 }
 
 .tooltip-shift-hint {
