@@ -88,6 +88,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   const [bootstrapConfigError, setBootstrapConfigError] = useState<string | null>(null)
   const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
+  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [deckCardTooltip, setDeckCardTooltip] = useState<{
     title: string
     lines: string[]
@@ -134,6 +135,24 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   }, [isDeckEditorOpen])
 
   useEffect(() => {
+    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
+      return
+    }
+
+    const mediaQuery = window.matchMedia('(pointer: coarse)')
+    const syncPointerMode = () => {
+      setIsCoarsePointer(mediaQuery.matches)
+    }
+
+    syncPointerMode()
+    mediaQuery.addEventListener('change', syncPointerMode)
+
+    return () => {
+      mediaQuery.removeEventListener('change', syncPointerMode)
+    }
+  }, [])
+
+  useEffect(() => {
     return () => {
       if (deckCardTooltipTimerRef.current !== null) {
         window.clearTimeout(deckCardTooltipTimerRef.current)
@@ -167,6 +186,31 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       window.removeEventListener('resize', dismissTooltip)
     }
   }, [isDeckEditorOpen, deckCardTooltip])
+
+  useEffect(() => {
+    if (!isDeckEditorOpen || !deckCardTooltip || !isCoarsePointer) {
+      return
+    }
+
+    const dismissTooltip = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Node)) {
+        return
+      }
+
+      if ((target as Element | null)?.closest?.('.deck-editor-tooltip-toggle')) {
+        return
+      }
+
+      setDeckCardTooltip(null)
+    }
+
+    window.addEventListener('pointerdown', dismissTooltip)
+
+    return () => {
+      window.removeEventListener('pointerdown', dismissTooltip)
+    }
+  }, [isDeckEditorOpen, deckCardTooltip, isCoarsePointer])
 
   const updateState = (updater: (current: DebugPanelPersistedState) => DebugPanelPersistedState) => {
     setPersistedState((current) => {
@@ -379,6 +423,28 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       })
       deckCardTooltipTimerRef.current = null
     }, DECK_CARD_TOOLTIP_DELAY_MS)
+  }
+
+  const toggleDeckCardTooltip = (options: {
+    anchorElement: HTMLElement
+    title: string
+    lines: string[]
+  }) => {
+    const { anchorElement, title, lines } = options
+
+    setDeckCardTooltip((current) => {
+      if (current?.title === title) {
+        return null
+      }
+
+      const rect = anchorElement.getBoundingClientRect()
+      return {
+        title,
+        lines,
+        left: rect.left + rect.width * 0.5,
+        top: rect.top,
+      }
+    })
   }
 
   const saveDeckFromModal = () => {
@@ -724,47 +790,72 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               <div className="deck-editor-list">
                 {availableRows.length > 0 ? (
                   availableRows.map((entry) => (
-                    <button
-                      key={`pool:${entry.card.id}`}
-                      type="button"
-                      className={`deck-editor-card-row rarity-${entry.card.rarity}`}
-                      onClick={() => addDeckCopy(entry.card.id)}
-                      onMouseEnter={(event) => {
-                        queueDeckCardTooltip({
-                          anchorElement: event.currentTarget,
-                          title: entry.card.name,
-                          lines: [
-                            entry.card.summaryText ?? 'No summary text available.',
-                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                            `Copies left: ${entry.inPool}/${entry.maxCopies}`,
-                          ].filter((line): line is string => !!line),
-                        })
-                      }}
-                      onMouseLeave={clearDeckCardTooltip}
-                      onFocus={(event) => {
-                        queueDeckCardTooltip({
-                          anchorElement: event.currentTarget,
-                          title: entry.card.name,
-                          lines: [
-                            entry.card.summaryText ?? 'No summary text available.',
-                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                            `Copies left: ${entry.inPool}/${entry.maxCopies}`,
-                          ].filter((line): line is string => !!line),
-                        })
-                      }}
-                      onBlur={clearDeckCardTooltip}
-                    >
-                      <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
-                      <span className="deck-editor-card-main">
-                        <span className="deck-editor-card-name">{entry.card.name}</span>
-                        <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
-                      </span>
-                      <span className="deck-editor-card-count">{entry.inPool}x</span>
-                    </button>
+                    <div key={`pool:${entry.card.id}`} className="deck-editor-card-entry">
+                      <button
+                        type="button"
+                        className={`deck-editor-card-row rarity-${entry.card.rarity}`}
+                        onClick={() => addDeckCopy(entry.card.id)}
+                        onMouseEnter={(event) => {
+                          queueDeckCardTooltip({
+                            anchorElement: event.currentTarget,
+                            title: entry.card.name,
+                            lines: [
+                              entry.card.summaryText ?? 'No summary text available.',
+                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                              `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                            ].filter((line): line is string => !!line),
+                          })
+                        }}
+                        onMouseLeave={clearDeckCardTooltip}
+                        onFocus={(event) => {
+                          queueDeckCardTooltip({
+                            anchorElement: event.currentTarget,
+                            title: entry.card.name,
+                            lines: [
+                              entry.card.summaryText ?? 'No summary text available.',
+                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                              `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                            ].filter((line): line is string => !!line),
+                          })
+                        }}
+                        onBlur={clearDeckCardTooltip}
+                      >
+                        <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
+                        <span className="deck-editor-card-main">
+                          <span className="deck-editor-card-name">{entry.card.name}</span>
+                          <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
+                        </span>
+                        <span className="deck-editor-card-count">{entry.inPool}x</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="touch-tooltip-toggle deck-editor-tooltip-toggle"
+                        aria-label={`Show ${entry.card.name} details`}
+                        aria-pressed={deckCardTooltip?.title === entry.card.name}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          toggleDeckCardTooltip({
+                            anchorElement: event.currentTarget,
+                            title: entry.card.name,
+                            lines: [
+                              entry.card.summaryText ?? 'No summary text available.',
+                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                              `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                            ].filter((line): line is string => !!line),
+                          })
+                        }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <span className="sr-only">Details</span>
+                        <span aria-hidden="true">i</span>
+                      </button>
+                    </div>
                   ))
                 ) : (
                   <p className="deck-editor-empty">No cards left to add.</p>
@@ -779,47 +870,72 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               <div className="deck-editor-list">
                 {deckRows.length > 0 ? (
                   deckRows.map((entry) => (
-                    <button
-                      key={`deck:${entry.card.id}`}
-                      type="button"
-                      className={`deck-editor-card-row rarity-${entry.card.rarity}`}
-                      onClick={() => removeDeckCopy(entry.card.id)}
-                      onMouseEnter={(event) => {
-                        queueDeckCardTooltip({
-                          anchorElement: event.currentTarget,
-                          title: entry.card.name,
-                          lines: [
-                            entry.card.summaryText ?? 'No summary text available.',
-                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                            `In deck: ${entry.inDeck}/${entry.maxCopies}`,
-                          ].filter((line): line is string => !!line),
-                        })
-                      }}
-                      onMouseLeave={clearDeckCardTooltip}
-                      onFocus={(event) => {
-                        queueDeckCardTooltip({
-                          anchorElement: event.currentTarget,
-                          title: entry.card.name,
-                          lines: [
-                            entry.card.summaryText ?? 'No summary text available.',
-                            ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                            entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                            `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                            `In deck: ${entry.inDeck}/${entry.maxCopies}`,
-                          ].filter((line): line is string => !!line),
-                        })
-                      }}
-                      onBlur={clearDeckCardTooltip}
-                    >
-                      <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
-                      <span className="deck-editor-card-main">
-                        <span className="deck-editor-card-name">{entry.card.name}</span>
-                        <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
-                      </span>
-                      <span className="deck-editor-card-count">{entry.inDeck}x</span>
-                    </button>
+                    <div key={`deck:${entry.card.id}`} className="deck-editor-card-entry">
+                      <button
+                        type="button"
+                        className={`deck-editor-card-row rarity-${entry.card.rarity}`}
+                        onClick={() => removeDeckCopy(entry.card.id)}
+                        onMouseEnter={(event) => {
+                          queueDeckCardTooltip({
+                            anchorElement: event.currentTarget,
+                            title: entry.card.name,
+                            lines: [
+                              entry.card.summaryText ?? 'No summary text available.',
+                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                              `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                            ].filter((line): line is string => !!line),
+                          })
+                        }}
+                        onMouseLeave={clearDeckCardTooltip}
+                        onFocus={(event) => {
+                          queueDeckCardTooltip({
+                            anchorElement: event.currentTarget,
+                            title: entry.card.name,
+                            lines: [
+                              entry.card.summaryText ?? 'No summary text available.',
+                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                              `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                            ].filter((line): line is string => !!line),
+                          })
+                        }}
+                        onBlur={clearDeckCardTooltip}
+                      >
+                        <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
+                        <span className="deck-editor-card-main">
+                          <span className="deck-editor-card-name">{entry.card.name}</span>
+                          <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
+                        </span>
+                        <span className="deck-editor-card-count">{entry.inDeck}x</span>
+                      </button>
+                      <button
+                        type="button"
+                        className="touch-tooltip-toggle deck-editor-tooltip-toggle"
+                        aria-label={`Show ${entry.card.name} details`}
+                        aria-pressed={deckCardTooltip?.title === entry.card.name}
+                        onClick={(event) => {
+                          event.stopPropagation()
+                          toggleDeckCardTooltip({
+                            anchorElement: event.currentTarget,
+                            title: entry.card.name,
+                            lines: [
+                              entry.card.summaryText ?? 'No summary text available.',
+                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
+                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
+                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                              `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                            ].filter((line): line is string => !!line),
+                          })
+                        }}
+                        onPointerDown={(event) => event.stopPropagation()}
+                      >
+                        <span className="sr-only">Details</span>
+                        <span aria-hidden="true">i</span>
+                      </button>
+                    </div>
                   ))
                 ) : (
                   <p className="deck-editor-empty">No cards in deck yet.</p>

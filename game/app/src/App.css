@@ -445,6 +445,10 @@ html[data-shift-held='true'] .game-toast-detail {
   align-content: start;
 }
 
+.deck-editor-card-entry {
+  position: relative;
+}
+
 .deck-editor-card-row {
   width: 100%;
   border: 1px solid #202f4f;
@@ -560,6 +564,90 @@ html[data-shift-held='true'] .game-toast-detail {
 .deck-editor-floating-tooltip span {
   font-size: 11px;
   line-height: 1.1;
+}
+
+@media (pointer: coarse), (max-width: 880px) {
+  .deck-editor-modal {
+    padding: 12px;
+    gap: 10px;
+  }
+
+  .deck-editor-modal-header {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .deck-editor-title-wrap strong {
+    font-size: 24px;
+  }
+
+  .deck-editor-header-actions {
+    flex-wrap: wrap;
+  }
+
+  .deck-editor-hero-tab,
+  .deck-editor-save,
+  .deck-editor-close {
+    flex: 1 1 auto;
+    min-height: 44px;
+  }
+
+  .deck-editor-rules {
+    gap: 8px;
+    line-height: 1.35;
+  }
+
+  .deck-editor-panels {
+    grid-template-columns: minmax(0, 1fr);
+    grid-template-rows: minmax(0, 1fr) minmax(0, 1fr);
+    min-height: 0;
+  }
+
+  .deck-editor-panel {
+    min-height: 0;
+  }
+
+  .deck-editor-list {
+    padding: 10px;
+    gap: 10px;
+  }
+
+  .deck-editor-card-row {
+    min-height: 56px;
+    grid-template-columns: 38px minmax(0, 1fr) auto;
+    padding-right: 52px;
+  }
+
+  .deck-editor-card-name {
+    white-space: normal;
+    overflow: visible;
+    text-overflow: clip;
+    line-height: 1.2;
+  }
+
+  .deck-editor-tooltip-toggle {
+    position: absolute;
+    top: 50%;
+    right: 8px;
+    transform: translateY(-50%);
+    display: grid;
+    width: 40px;
+    height: 40px;
+    border: 1px solid color-mix(in srgb, #f2d498 35%, #fff 65%);
+    background: color-mix(in srgb, #1f2a47 80%, #ffffff 20%);
+    color: #f8eedb;
+    box-shadow: 0 2px 8px rgba(0, 0, 0, 0.18);
+  }
+
+  .deck-editor-tooltip-toggle span {
+    font-size: 16px;
+    font-weight: 800;
+    line-height: 1;
+  }
+
+  .deck-editor-floating-tooltip {
+    max-width: min(360px, calc(100vw - 18px));
+  }
 }
 
 .action-feedback {
