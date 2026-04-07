@@ -10,7 +10,7 @@ export const CORRODED_SHORTSWORD_BLUEPRINT: SummonedEntityBlueprint = {
   maxHealth: 14,
   armor: 0,
   magicResist: 0,
-  attackDamage: 0,
+  attackDamage: 2,
   abilityPower: 0,
   criticalChance: 0,
   criticalMultiplier: 1,

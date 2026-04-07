@@ -155,6 +155,17 @@ export function resolveUseEntityActiveAction(options: {
     baseValue: source.attackDamage,
     clampMin: 0,
   }).effectiveValue;
+  const ownerHeroAttackDamage =
+    source.kind === "weapon"
+      ? resolveEffectiveNumber({
+          state,
+          targetEntityId: actorHero.entityId,
+          propertyPath: "attackDamage",
+          baseValue: actorHero.attackDamage,
+          clampMin: 0,
+        }).effectiveValue
+      : 0;
+  const combinedAttackDamage = effectiveAttackDamage + ownerHeroAttackDamage;
   const effectiveAbilityPower = resolveEffectiveNumber({
     state,
     targetEntityId: source.entityId,
@@ -166,7 +177,7 @@ export function resolveUseEntityActiveAction(options: {
   const scaledRange = computeScaledDamageRange({
     minimum,
     maximum,
-    attackDamage: effectiveAttackDamage,
+    attackDamage: combinedAttackDamage,
     abilityPower: effectiveAbilityPower,
     attackDamageScaling: profile.attackDamageScaling,
     abilityPowerScaling: profile.abilityPowerScaling,

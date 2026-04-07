@@ -71,7 +71,7 @@ export function resolveTriggeredListeners(options: {
         continue;
       }
 
-      if (!allConditionsMatch(listener, event)) {
+      if (!allConditionsMatch(listener, event, nextState)) {
         continue;
       }
 

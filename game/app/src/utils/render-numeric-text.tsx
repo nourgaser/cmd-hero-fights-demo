@@ -68,13 +68,19 @@ export function splitDetailTextIntoLines(text: string): string[] {
 
 export function splitTooltipDetailLabel(line: string): { label: string | null; value: string } {
   const match = line.match(/^([^:]{2,42}):\s*(.+)$/)
-  if (!match) {
+  if (!match || match.length < 3) {
+    return { label: null, value: line }
+  }
+
+  const label = match[1]
+  const value = match[2]
+  if (!label || !value) {
     return { label: null, value: line }
   }
 
   return {
-    label: match[1].trim(),
-    value: match[2].trim(),
+    label: label.trim(),
+    value: value.trim(),
   }
 }
 

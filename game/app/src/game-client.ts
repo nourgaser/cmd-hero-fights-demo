@@ -245,6 +245,33 @@ function makeStaticNumberTrace(value: number): AppNumberTrace {
   }
 }
 
+function combineNumberTraces(...traces: AppNumberTrace[]): AppNumberTrace {
+  const contributionsBySource = new Map<string, AppNumberContributionPreview>()
+
+  for (const trace of traces) {
+    for (const contribution of trace.contributions) {
+      const key = `${contribution.sourceId}:${contribution.label}`
+      const existing = contributionsBySource.get(key)
+      if (existing) {
+        existing.delta += contribution.delta
+      } else {
+        contributionsBySource.set(key, {
+          sourceId: contribution.sourceId,
+          label: contribution.label,
+          delta: contribution.delta,
+        })
+      }
+    }
+  }
+
+  return {
+    base: traces.reduce((sum, trace) => sum + trace.base, 0),
+    effective: traces.reduce((sum, trace) => sum + trace.effective, 0),
+    delta: traces.reduce((sum, trace) => sum + trace.delta, 0),
+    contributions: Array.from(contributionsBySource.values()).filter((entry) => entry.delta !== 0),
+  }
+}
+
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
 }
@@ -776,12 +803,13 @@ function resolveSummonPreviewForCard(options: {
   gameApi: ReturnType<typeof createGameApi>
   cardsById: Record<string, (ReturnType<typeof createGameApi>['cardsById'])[keyof ReturnType<typeof createGameApi>['cardsById']]>
   ownerHeroEntityId: string
+  state: ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
   luck: {
     anchorHeroEntityId: string
     balance: number
   }
 }): AppBattlePreview['heroHands'][number]['cards'][number]['summonPreview'] {
-  const { cardDef, gameApi, cardsById, ownerHeroEntityId, luck } = options
+  const { cardDef, gameApi, cardsById, ownerHeroEntityId, state, luck } = options
   const summonPayload = cardDef.effects
     .map((effect) => effect.payload)
     .find(
@@ -832,7 +860,22 @@ function resolveSummonPreviewForCard(options: {
         attack: activeProfile,
         minimumTrace: makeStaticNumberTrace(activeProfile.minimumDamage),
         maximumTrace: makeStaticNumberTrace(activeProfile.maximumDamage),
-        attackDamageTrace: makeStaticNumberTrace(summonedBlueprint.attackDamage),
+        attackDamageTrace:
+          summonedBlueprint.kind === 'weapon'
+            ? combineNumberTraces(
+                makeStaticNumberTrace(summonedBlueprint.attackDamage),
+                resolveNumberTrace({
+                  gameApi,
+                  state,
+                  targetEntityId: ownerHeroEntityId,
+                  propertyPath: 'attackDamage',
+                  baseValue: state.entitiesById[ownerHeroEntityId]?.kind === 'hero'
+                    ? state.entitiesById[ownerHeroEntityId].attackDamage
+                    : 0,
+                  clampMin: 0,
+                }),
+              )
+            : makeStaticNumberTrace(summonedBlueprint.attackDamage),
         abilityPowerTrace: makeStaticNumberTrace(summonedBlueprint.abilityPower),
         luck,
       })
@@ -1021,6 +1064,7 @@ function buildPreviewFromState(options: {
             gameApi,
             cardsById,
             ownerHeroEntityId: entity.entityId,
+            state,
             luck: state.luck,
           }),
         }
@@ -1234,6 +1278,21 @@ function buildPreviewFromState(options: {
             sourceKind: entity.kind,
           })
         : undefined
+    const ownerHeroEntity = state.entitiesById[entity.ownerHeroEntityId]
+
+    const activeAttackDamageTrace = entity.kind === 'weapon'
+      ? combineNumberTraces(
+          attackDamageTrace,
+          resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: entity.ownerHeroEntityId,
+            propertyPath: 'attackDamage',
+            baseValue: ownerHeroEntity && ownerHeroEntity.kind === 'hero' ? ownerHeroEntity.attackDamage : 0,
+            clampMin: 0,
+          }),
+        )
+      : attackDamageTrace
 
     battlefieldEntities[entity.entityId] = {
       entityId: entity.entityId,
@@ -1281,7 +1340,7 @@ function buildPreviewFromState(options: {
               baseValue: activeProfile.maximumDamage,
               clampMin: 0,
             }),
-            attackDamageTrace,
+            attackDamageTrace: activeAttackDamageTrace,
             abilityPowerTrace,
             luck: state.luck,
           })
