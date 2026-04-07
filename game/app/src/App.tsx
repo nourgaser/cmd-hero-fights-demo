@@ -338,7 +338,7 @@ function App() {
     const failureReason = resetRuntime(nextConfig)
     if (failureReason) {
       showActionErrorToast(failureReason)
-      return
+      return false
     }
 
     setBootstrapConfig(nextConfig)
@@ -347,6 +347,8 @@ function App() {
       window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextConfig.seed)
       window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
     }
+
+    return true
   }
 
   const handleHardReset = () => {
@@ -369,6 +371,18 @@ function App() {
   }
 
   const preview = runtime.preview
+  const cardsById = runtime.session.gameApi.cardsById as Record<
+    string,
+    (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
+  >
+  const deckEditorCards = Object.values(cardsById).map((card) => ({
+    id: card.id,
+    name: card.name,
+    moveCost: card.moveCost,
+    type: card.type,
+    rarity: card.rarity,
+    heroId: 'heroId' in card ? card.heroId : undefined,
+  }))
 
   const [heroAId, heroBId] = preview.heroEntityIds
 
@@ -561,6 +575,7 @@ function App() {
       <DebugStatePanel
         state={runtime.session.state as Record<string, unknown>}
         bootstrapConfig={bootstrapConfig}
+        deckEditorCards={deckEditorCards}
         seed={bootstrapConfig.seed}
         onSeedChange={handleSeedChange}
         onBootstrapConfigChange={handleBootstrapConfigChange}

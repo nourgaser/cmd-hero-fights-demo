@@ -1,21 +1,35 @@
-import { useEffect, useMemo, useState } from 'react'
+import { useEffect, useMemo, useRef, useState } from 'react'
+import { createPortal } from 'react-dom'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import { Rnd } from 'react-rnd'
+import { toast } from 'react-hot-toast'
 import 'react-json-view-lite/dist/index.css'
 import type { GameBootstrapConfig } from '../data/game-bootstrap.ts'
 
 type DebugStatePanelProps = {
   state: Record<string, unknown> | unknown[]
   bootstrapConfig: GameBootstrapConfig
+  deckEditorCards: Array<{
+    id: string
+    name: string
+    moveCost: number
+    type: 'ability' | 'weapon' | 'totem' | 'companion'
+    rarity: 'common' | 'rare' | 'ultimate' | 'general'
+    heroId?: string
+  }>
   seed: string
   onSeedChange: (seed: string) => void
-  onBootstrapConfigChange: (config: GameBootstrapConfig) => void
+  onBootstrapConfigChange: (config: GameBootstrapConfig) => boolean
   onHardReset: () => void
 }
 
 const DEBUG_PANEL_STORAGE_KEY = 'cmd-hero:debug-panel-state'
 const DEFAULT_LAYOUT = { x: 12, y: 12, width: 360, height: 560 }
 const COLLAPSED_BUBBLE_SIZE = 56
+const MAX_DECK_SIZE = 15
+const MAX_ULTIMATE_COPIES = 1
+const DECK_SAVE_TOAST_ID = 'deck-editor-save'
+const DECK_CARD_TOOLTIP_DELAY_MS = 1000
 
 type DebugPanelPersistedState = {
   x: number
@@ -60,7 +74,7 @@ const persistState = (state: DebugPanelPersistedState) => {
 }
 
 export function DebugStatePanel(props: DebugStatePanelProps) {
-  const { state, bootstrapConfig, seed, onSeedChange, onBootstrapConfigChange, onHardReset } = props
+  const { state, bootstrapConfig, deckEditorCards, seed, onSeedChange, onBootstrapConfigChange, onHardReset } = props
   const [persistedState, setPersistedState] = useState<DebugPanelPersistedState>(() => loadPersistedState())
   const [draftSeed, setDraftSeed] = useState(seed)
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
@@ -69,6 +83,17 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     () => JSON.stringify(bootstrapConfig, null, 2),
   )
   const [bootstrapConfigError, setBootstrapConfigError] = useState<string | null>(null)
+  const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
+  const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
+  const [deckCardTooltip, setDeckCardTooltip] = useState<{
+    title: string
+    lineOne: string
+    lineTwo: string
+    lineThree: string
+    left: number
+    top: number
+  } | null>(null)
+  const deckCardTooltipTimerRef = useRef<number | null>(null)
 
   const { x, y, width, height, isCollapsed, expandAll } = persistedState
 
@@ -89,6 +114,58 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       setDraftBootstrapConfigText(JSON.stringify(draftBootstrapConfig, null, 2))
     }
   }, [draftBootstrapConfig, editorMode])
+
+  useEffect(() => {
+    if (!isDeckEditorOpen) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsDeckEditorOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isDeckEditorOpen])
+
+  useEffect(() => {
+    return () => {
+      if (deckCardTooltipTimerRef.current !== null) {
+        window.clearTimeout(deckCardTooltipTimerRef.current)
+      }
+    }
+  }, [])
+
+  useEffect(() => {
+    if (!isDeckEditorOpen) {
+      setDeckCardTooltip(null)
+      if (deckCardTooltipTimerRef.current !== null) {
+        window.clearTimeout(deckCardTooltipTimerRef.current)
+        deckCardTooltipTimerRef.current = null
+      }
+      return
+    }
+
+    if (!deckCardTooltip) {
+      return
+    }
+
+    const dismissTooltip = () => {
+      setDeckCardTooltip(null)
+    }
+
+    window.addEventListener('scroll', dismissTooltip, true)
+    window.addEventListener('resize', dismissTooltip)
+
+    return () => {
+      window.removeEventListener('scroll', dismissTooltip, true)
+      window.removeEventListener('resize', dismissTooltip)
+    }
+  }, [isDeckEditorOpen, deckCardTooltip])
 
   const updateState = (updater: (current: DebugPanelPersistedState) => DebugPanelPersistedState) => {
     setPersistedState((current) => {
@@ -115,15 +192,22 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       try {
         const parsed = JSON.parse(draftBootstrapConfigText) as GameBootstrapConfig
         setDraftBootstrapConfig(parsed)
-        onBootstrapConfigChange(parsed)
+        const saved = onBootstrapConfigChange(parsed)
+        if (saved) {
+          toast.success('Bootstrap config saved.', { id: DECK_SAVE_TOAST_ID })
+        }
         setBootstrapConfigError(null)
       } catch (error) {
         setBootstrapConfigError(error instanceof Error ? error.message : 'Invalid bootstrap JSON.')
+        toast.error('Bootstrap config JSON is invalid.', { id: DECK_SAVE_TOAST_ID })
       }
       return
     }
 
-    onBootstrapConfigChange(draftBootstrapConfig)
+    const saved = onBootstrapConfigChange(draftBootstrapConfig)
+    if (saved) {
+      toast.success('Bootstrap config saved.', { id: DECK_SAVE_TOAST_ID })
+    }
     setBootstrapConfigError(null)
   }
 
@@ -167,6 +251,157 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       ...current,
       openingDeckCardIds: nextDeckCardIds,
     }))
+  }
+
+  const deckEditorHero = draftBootstrapConfig.heroes[deckEditorHeroIndex]
+  const eligibleDeckEditorCards = useMemo(() => {
+    return deckEditorCards
+      .filter((card) => !card.heroId || card.heroId === deckEditorHero.heroDefinitionId)
+      .sort((left, right) => {
+        if (left.moveCost !== right.moveCost) {
+          return left.moveCost - right.moveCost
+        }
+        return left.name.localeCompare(right.name)
+      })
+  }, [deckEditorCards, deckEditorHero.heroDefinitionId])
+
+  const deckCountsByCardId = useMemo(() => {
+    const counts = new Map<string, number>()
+    for (const cardId of deckEditorHero.openingDeckCardIds) {
+      counts.set(cardId, (counts.get(cardId) ?? 0) + 1)
+    }
+    return counts
+  }, [deckEditorHero.openingDeckCardIds])
+
+  const totalUltimateCopiesInDeck = useMemo(() => {
+    return eligibleDeckEditorCards.reduce((sum, card) => {
+      if (card.rarity !== 'ultimate') {
+        return sum
+      }
+      return sum + (deckCountsByCardId.get(card.id) ?? 0)
+    }, 0)
+  }, [eligibleDeckEditorCards, deckCountsByCardId])
+
+  const getMaxCopiesForCard = (rarity: 'common' | 'rare' | 'ultimate' | 'general') => {
+    return rarity === 'ultimate' ? 1 : 2
+  }
+
+  const getCardTypeLabel = (type: 'ability' | 'weapon' | 'totem' | 'companion') => {
+    switch (type) {
+      case 'ability':
+        return 'Ability'
+      case 'weapon':
+        return 'Weapon'
+      case 'totem':
+        return 'Totem'
+      case 'companion':
+        return 'Companion'
+      default:
+        return 'Card'
+    }
+  }
+
+  const deckEditorRows = eligibleDeckEditorCards.map((card) => {
+    const inDeck = deckCountsByCardId.get(card.id) ?? 0
+    const maxCopies = getMaxCopiesForCard(card.rarity)
+    const inPool = Math.max(0, maxCopies - inDeck)
+    return {
+      card,
+      inDeck,
+      inPool,
+      maxCopies,
+    }
+  })
+
+  const availableRows = deckEditorRows.filter((entry) => entry.inPool > 0)
+  const deckRows = deckEditorRows.filter((entry) => entry.inDeck > 0)
+
+  const addDeckCopy = (cardId: string) => {
+    const cardEntry = deckEditorRows.find((entry) => entry.card.id === cardId)
+    if (!cardEntry || cardEntry.inPool <= 0) {
+      return
+    }
+
+    if (deckEditorHero.openingDeckCardIds.length >= MAX_DECK_SIZE) {
+      return
+    }
+
+    if (cardEntry.card.rarity === 'ultimate' && totalUltimateCopiesInDeck >= MAX_ULTIMATE_COPIES) {
+      return
+    }
+
+    updateHeroDraft(deckEditorHeroIndex, (current) => ({
+      ...current,
+      openingDeckCardIds: [...current.openingDeckCardIds, cardEntry.card.id],
+    }))
+  }
+
+  const removeDeckCopy = (cardId: string) => {
+    updateHeroDraft(deckEditorHeroIndex, (current) => {
+      const removeIndex = current.openingDeckCardIds.findIndex((entry) => entry === cardId)
+      if (removeIndex < 0) {
+        return current
+      }
+
+      const nextDeck = [...current.openingDeckCardIds]
+      nextDeck.splice(removeIndex, 1)
+      return {
+        ...current,
+        openingDeckCardIds: nextDeck,
+      }
+    })
+  }
+
+  const clearDeckCardTooltip = () => {
+    if (deckCardTooltipTimerRef.current !== null) {
+      window.clearTimeout(deckCardTooltipTimerRef.current)
+      deckCardTooltipTimerRef.current = null
+    }
+    setDeckCardTooltip(null)
+  }
+
+  const queueDeckCardTooltip = (options: {
+    anchorElement: HTMLElement
+    title: string
+    lineOne: string
+    lineTwo: string
+    lineThree: string
+  }) => {
+    const { anchorElement, title, lineOne, lineTwo, lineThree } = options
+    clearDeckCardTooltip()
+
+    deckCardTooltipTimerRef.current = window.setTimeout(() => {
+      const rect = anchorElement.getBoundingClientRect()
+      setDeckCardTooltip({
+        title,
+        lineOne,
+        lineTwo,
+        lineThree,
+        left: rect.left + rect.width * 0.5,
+        top: rect.top,
+      })
+      deckCardTooltipTimerRef.current = null
+    }, DECK_CARD_TOOLTIP_DELAY_MS)
+  }
+
+  const saveDeckFromModal = () => {
+    if (deckEditorHero.openingDeckCardIds.length !== MAX_DECK_SIZE) {
+      toast.error(`Deck must contain exactly ${MAX_DECK_SIZE} cards before saving.`, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    if (totalUltimateCopiesInDeck > MAX_ULTIMATE_COPIES) {
+      toast.error(`Deck can contain only ${MAX_ULTIMATE_COPIES} ultimate card.`, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    const saved = onBootstrapConfigChange(draftBootstrapConfig)
+    if (!saved) {
+      return
+    }
+
+    toast.success('Deck saved. Battle restarted with updated deck.', { id: DECK_SAVE_TOAST_ID })
+    setIsDeckEditorOpen(false)
   }
 
   return (
@@ -437,9 +672,167 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                   : (level) => level < 2
               }
             />
+            <button type="button" className="debug-edit-deck-button" onClick={() => setIsDeckEditorOpen(true)}>
+              Edit Deck
+            </button>
           </div>
         </aside>
       )}
+
+      {isDeckEditorOpen && typeof document !== 'undefined'
+        ? createPortal(
+          <div className="deck-editor-modal" role="dialog" aria-modal="true" aria-label="Deck editor">
+          <div className="deck-editor-modal-header">
+            <div className="deck-editor-title-wrap">
+              <strong>Deck Editor</strong>
+              <span>
+                Build {deckEditorHero.heroEntityId} deck: {deckEditorHero.openingDeckCardIds.length}/{MAX_DECK_SIZE}
+              </span>
+            </div>
+            <div className="deck-editor-header-actions">
+              <button
+                type="button"
+                className={`deck-editor-hero-tab ${deckEditorHeroIndex === 0 ? 'active' : ''}`.trim()}
+                onClick={() => setDeckEditorHeroIndex(0)}
+              >
+                Hero 1
+              </button>
+              <button
+                type="button"
+                className={`deck-editor-hero-tab ${deckEditorHeroIndex === 1 ? 'active' : ''}`.trim()}
+                onClick={() => setDeckEditorHeroIndex(1)}
+              >
+                Hero 2
+              </button>
+              <button type="button" className="deck-editor-save" onClick={saveDeckFromModal}>
+                Save Deck
+              </button>
+              <button type="button" className="deck-editor-close" onClick={() => setIsDeckEditorOpen(false)}>
+                Close
+              </button>
+            </div>
+          </div>
+
+          <div className="deck-editor-rules">
+            <span>Ultimate cards: max {MAX_ULTIMATE_COPIES} total copy in deck.</span>
+            <span>Other cards: max 2 copies each.</span>
+            <span>Apply Bootstrap Config when done to restart with this deck.</span>
+          </div>
+
+          <div className="deck-editor-panels">
+            <section className="deck-editor-panel" aria-label="Available cards">
+              <header>
+                <strong>Available Cards</strong>
+              </header>
+              <div className="deck-editor-list">
+                {availableRows.length > 0 ? (
+                  availableRows.map((entry) => (
+                    <button
+                      key={`pool:${entry.card.id}`}
+                      type="button"
+                      className={`deck-editor-card-row rarity-${entry.card.rarity}`}
+                      onClick={() => addDeckCopy(entry.card.id)}
+                      onMouseEnter={(event) => {
+                        queueDeckCardTooltip({
+                          anchorElement: event.currentTarget,
+                          title: entry.card.name,
+                          lineOne: `Cost ${entry.card.moveCost}`,
+                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                          lineThree: `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                        })
+                      }}
+                      onMouseLeave={clearDeckCardTooltip}
+                      onFocus={(event) => {
+                        queueDeckCardTooltip({
+                          anchorElement: event.currentTarget,
+                          title: entry.card.name,
+                          lineOne: `Cost ${entry.card.moveCost}`,
+                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                          lineThree: `Copies left: ${entry.inPool}/${entry.maxCopies}`,
+                        })
+                      }}
+                      onBlur={clearDeckCardTooltip}
+                    >
+                      <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
+                      <span className="deck-editor-card-main">
+                        <span className="deck-editor-card-name">{entry.card.name}</span>
+                        <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
+                      </span>
+                      <span className="deck-editor-card-count">{entry.inPool}x</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="deck-editor-empty">No cards left to add.</p>
+                )}
+              </div>
+            </section>
+
+            <section className="deck-editor-panel" aria-label="Deck cards">
+              <header>
+                <strong>Deck</strong>
+              </header>
+              <div className="deck-editor-list">
+                {deckRows.length > 0 ? (
+                  deckRows.map((entry) => (
+                    <button
+                      key={`deck:${entry.card.id}`}
+                      type="button"
+                      className={`deck-editor-card-row rarity-${entry.card.rarity}`}
+                      onClick={() => removeDeckCopy(entry.card.id)}
+                      onMouseEnter={(event) => {
+                        queueDeckCardTooltip({
+                          anchorElement: event.currentTarget,
+                          title: entry.card.name,
+                          lineOne: `Cost ${entry.card.moveCost}`,
+                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                          lineThree: `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                        })
+                      }}
+                      onMouseLeave={clearDeckCardTooltip}
+                      onFocus={(event) => {
+                        queueDeckCardTooltip({
+                          anchorElement: event.currentTarget,
+                          title: entry.card.name,
+                          lineOne: `Cost ${entry.card.moveCost}`,
+                          lineTwo: `${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
+                          lineThree: `In deck: ${entry.inDeck}/${entry.maxCopies}`,
+                        })
+                      }}
+                      onBlur={clearDeckCardTooltip}
+                    >
+                      <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
+                      <span className="deck-editor-card-main">
+                        <span className="deck-editor-card-name">{entry.card.name}</span>
+                        <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
+                      </span>
+                      <span className="deck-editor-card-count">{entry.inDeck}x</span>
+                    </button>
+                  ))
+                ) : (
+                  <p className="deck-editor-empty">No cards in deck yet.</p>
+                )}
+              </div>
+            </section>
+          </div>
+          {deckCardTooltip ? (
+            <div
+              className="deck-editor-floating-tooltip"
+              role="tooltip"
+              style={{
+                left: `${deckCardTooltip.left}px`,
+                top: `${deckCardTooltip.top}px`,
+              }}
+            >
+              <strong>{deckCardTooltip.title}</strong>
+              <span>{deckCardTooltip.lineOne}</span>
+              <span>{deckCardTooltip.lineTwo}</span>
+              <span>{deckCardTooltip.lineThree}</span>
+            </div>
+          ) : null}
+          </div>,
+          document.body,
+        )
+        : null}
     </Rnd>
   )
 }
