@@ -22,7 +22,7 @@ export const CORRODED_SHORTSWORD_BLUEPRINT: SummonedEntityBlueprint = {
 export const CORRODED_SHORTSWORD_ACTIVE: EntityActiveProfile = {
   moveCost: 1,
   minimumDamage: 2,
-  maximumDamage: 6,
+  maximumDamage: 7,
   damageType: "physical",
   attackDamageScaling: 0.5,
   abilityPowerScaling: 0,
