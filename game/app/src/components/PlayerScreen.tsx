@@ -10,7 +10,6 @@ import {
   splitTooltipDetailLabel,
   splitDetailTextIntoLines,
 } from '../utils/render-numeric-text.tsx'
-import { LuckBar } from './LuckBar.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
 
@@ -76,10 +75,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
   const [openTouchTooltip, setOpenTouchTooltip] = useState<
-    'luck-help' | 'basic-attack' | 'deck' | 'press-luck' | null
+    'basic-attack' | 'deck' | 'press-luck' | null
   >(null)
 
-  const toggleTouchTooltip = (tooltipId: 'luck-help' | 'basic-attack' | 'deck' | 'press-luck') => {
+  const toggleTouchTooltip = (tooltipId: 'basic-attack' | 'deck' | 'press-luck') => {
     setOpenTouchTooltip((current) => (current === tooltipId ? null : tooltipId))
   }
 
@@ -414,13 +413,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedPlacementPosition(null)
   }
 
-  const anchorIsSelf = preview.luck.anchorHeroEntityId === selfId
-  const clamped = Math.max(-LUCK_VISUALS.capacity, Math.min(LUCK_VISUALS.capacity, preview.luck.balance))
-  const favorsAnchor = clamped > 0
-  const favorsSelf = clamped === 0 ? false : anchorIsSelf ? favorsAnchor : !favorsAnchor
-  const selfLuck = clamped === 0 ? 0 : favorsSelf ? Math.abs(clamped) : 0
-  const enemyLuck = clamped === 0 ? 0 : favorsSelf ? 0 : Math.abs(clamped)
-
   const screenStyle = {
     '--self-side-color': `var(${SIDE_VISUALS[selfSideKey].sideColorVar})`,
     '--enemy-side-color': `var(${SIDE_VISUALS[enemySideKey].sideColorVar})`,
@@ -575,50 +567,23 @@ export function PlayerScreen(props: PlayerScreenProps) {
             <p>{SIDE_VISUALS[selfSideKey].name}</p>
           </div>
         </div>
-      </header>
-
-        <section className="luck-strip" aria-label="Luck track">
-          <div className={`luck-tooltip-anchor hint-wrap ${openTouchTooltip === 'luck-help' ? 'force-tooltip-open' : ''}`.trim()} tabIndex={0}>
-            <h2 className="luck-title">
-              {LUCK_VISUALS.label}
-              <button
-                type="button"
-                className="touch-tooltip-toggle inline-toggle luck-inline-toggle"
-                aria-label="Show luck details"
-                aria-pressed={openTouchTooltip === 'luck-help'}
-                onClick={() => toggleTouchTooltip('luck-help')}
-              >
-                <Icon icon="game-icons:info" aria-hidden="true" />
-              </button>
-            </h2>
-            <span className="hover-card luck-hover-card" role="tooltip">
-              <strong>{LUCK_VISUALS.label}</strong>
-              <span>{LUCK_VISUALS.description}</span>
+        <span className="help-chip keyboard-shortcuts-chip screen-head-shortcuts hint-wrap" tabIndex={0} data-hover-align="right">
+          <Icon icon="game-icons:keyboard" aria-hidden="true" />
+          <span className="sr-only">Keyboard shortcuts</span>
+          <span className="hover-card" role="tooltip">
+            <strong>Shortcuts</strong>
+            <span className="shortcut-tooltip-grid">
+              {KEYBOARD_SHORTCUT_HINT_ROWS.map((entry) => (
+                <span key={`${entry.key}:${entry.description}`} className="shortcut-tooltip-row">
+                  <span className="shortcut-tooltip-key">{entry.key}</span>
+                  <span className="shortcut-tooltip-value">{entry.description}</span>
+                </span>
+              ))}
             </span>
-            <LuckBar
-              selfLuck={selfLuck}
-              enemyLuck={enemyLuck}
-              capacity={LUCK_VISUALS.capacity}
-              iconId={LUCK_VISUALS.iconId}
-            />
-          </div>
-          <span className="help-chip keyboard-shortcuts-chip keyboard-shortcuts-floating hint-wrap" tabIndex={0} data-hover-align="left">
-            <Icon icon="game-icons:keyboard" aria-hidden="true" />
-            <span className="sr-only">Keyboard shortcuts</span>
-            <span className="hover-card" role="tooltip">
-              <strong>Shortcuts</strong>
-              <span className="shortcut-tooltip-list">
-                {KEYBOARD_SHORTCUT_HINT_ROWS.map((entry) => (
-                  <span key={`${entry.key}:${entry.description}`} className="shortcut-tooltip-row">
-                    <span className="shortcut-tooltip-key">{entry.key}</span>
-                    <span>{entry.description}</span>
-                  </span>
-                ))}
-                <span className="shortcut-tooltip-note">Board targeting remains click/tap for now.</span>
-              </span>
-            </span>
+            <span className="shortcut-tooltip-note">Board targeting stays click/tap.</span>
           </span>
-        </section>
+        </span>
+      </header>
 
         <section className="battle-overlay-layer">
           <aside className="battle-action-overlay action-overlay-left" aria-label="Basic attack action">
@@ -776,6 +741,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
             </button>
             <span className="hover-card battle-action-hover-card" role="tooltip">
               <strong>Luck</strong>
+              <span>{LUCK_VISUALS.description}</span>
               <span>Shift luck in your favor by 1 point.</span>
             </span>
             <button

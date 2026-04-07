@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
-import { ENTITY_ICON_META } from '../data/visual-metadata.ts'
+import { ENTITY_ICON_META, LUCK_VISUALS } from '../data/visual-metadata.ts'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
@@ -251,6 +251,11 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const meta = ENTITY_ICON_META[occupier.kind]
             const entityStats = preview.battlefield.entitiesById[occupier.entityId]
             const heroDetails = preview.heroDetailsByEntityId[occupier.entityId] ?? null
+            const luckBalance = preview.luck.balance
+            const isLuckEntity = entityStats?.kind === 'hero'
+            const isLuckAnchor = entityStats?.entityId === preview.luck.anchorHeroEntityId
+            const luckCloverCount = isLuckEntity ? Math.abs(luckBalance) : 0
+            const luckIsFavored = luckBalance === 0 ? null : isLuckAnchor ? luckBalance > 0 : luckBalance < 0
             const hasMovesRemaining =
               !!entityStats &&
               entityStats.ownerHeroEntityId === selfId &&
@@ -320,6 +325,14 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 {isSelectedTarget && isSelectableTarget ? (
                   <span className="target-check-icon" aria-hidden="true">
                     <Icon icon="game-icons:check-mark" />
+                  </span>
+                ) : null}
+
+                {luckCloverCount > 0 && luckIsFavored !== null ? (
+                  <span className={`entity-luck-clovers ${luckIsFavored ? 'favored' : 'unfavored'}`.trim()} aria-hidden="true">
+                    {Array.from({ length: luckCloverCount }).map((_, index) => (
+                      <Icon key={`luck-${occupier.entityId}-${index}`} icon={LUCK_VISUALS.iconId} className="entity-luck-clover" />
+                    ))}
                   </span>
                 ) : null}
 

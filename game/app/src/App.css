@@ -342,6 +342,10 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .screen-head {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  column-gap: 12px;
   border: 2px solid color-mix(in srgb, #5d4c30 30%, var(--border));
   border-radius: 12px;
   padding: 10px 14px;
@@ -355,7 +359,8 @@ html[data-shift-held='true'] .game-toast-detail {
   display: grid;
   align-items: center;
   justify-items: center;
-  width: 100%;
+  width: auto;
+  justify-self: center;
 }
 
 .screen-head-logo {
@@ -379,6 +384,12 @@ html[data-shift-held='true'] .game-toast-detail {
   text-align: center;
   width: 100%;
   min-width: 0;
+}
+
+.screen-head-shortcuts {
+  justify-self: end;
+  margin-left: 0;
+  z-index: var(--layer-tooltip);
 }
 
 .screen-head h1 {
@@ -541,40 +552,6 @@ html[data-shift-held='true'] .game-toast-detail {
   left: 100%;
 }
 
-.luck-strip {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-  padding: 4px 0 0;
-}
-
-.luck-tooltip-anchor {
-  position: relative;
-  display: grid;
-  justify-items: center;
-  gap: 4px;
-}
-
-h2.luck-title {
-  font-family: var(--display);
-  font-weight: bold;
-  font-size: clamp(32px, 1vw, 92px);
-  line-height: 0.9;
-  margin: 0;
-  letter-spacing: 0;
-  display: inline-flex;
-  align-items: center;
-}
-
-h2.luck-title > * {
-  font-family: var(--heading);
-  font-weight: 500;
-  letter-spacing: normal;
-  line-height: normal;
-}
-
-
 .help-chip {
   margin-left: 10px;
   width: 44px;
@@ -591,48 +568,80 @@ h2.luck-title > * {
 }
 
 .keyboard-shortcuts-chip .hover-card {
-  min-width: 250px;
+  min-width: 0;
+  max-width: 230px;
+  padding: 8px 10px;
 }
 
-.keyboard-shortcuts-floating {
+.entity-luck-clovers {
   position: absolute;
-  right: -56px;
-  top: 2px;
-  margin-left: 0;
+  top: 8px;
+  left: 8px;
+  display: flex;
+  align-items: center;
+  gap: 1px;
+  z-index: var(--layer-badge);
+  pointer-events: none;
 }
 
-.luck-hover-card {
-  min-width: 220px;
+.entity-luck-clovers.favored {
+  color: #2ea44f;
 }
 
-.shortcut-tooltip-list {
+.entity-luck-clovers.unfavored {
+  color: #d64545;
+}
+
+.entity-luck-clover {
+  width: 12px;
+  height: 12px;
+  filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
+}
+
+.shortcut-tooltip-grid {
   display: grid;
-  gap: 3px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 4px 8px;
   margin-top: 2px;
 }
 
 .shortcut-tooltip-row {
   display: grid;
   grid-template-columns: auto 1fr;
-  column-gap: 8px;
+  gap: 5px;
   align-items: baseline;
 }
 
 .shortcut-tooltip-key {
   font-family: var(--heading);
+  font-size: 11px;
   font-weight: 700;
+  line-height: 1;
   color: var(--tooltip-border);
-  min-width: 28px;
+}
+
+.shortcut-tooltip-value {
+  font-size: 11px;
+  line-height: 1.1;
+  color: var(--tooltip-text);
 }
 
 .shortcut-tooltip-note {
-  margin-top: 3px;
+  margin-top: 4px;
   font-size: 10px;
+  line-height: 1.1;
   color: color-mix(in srgb, var(--tooltip-muted) 82%, #ffffff 18%);
 }
 
-.luck-strip p {
-  margin: 0;
+@media (max-width: 1024px) {
+  .screen-head {
+    grid-template-columns: 1fr;
+    justify-items: center;
+  }
+
+  .screen-head-shortcuts {
+    justify-self: center;
+  }
 }
 
 .luck-wrap {
