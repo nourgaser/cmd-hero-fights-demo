@@ -34,6 +34,51 @@ const MAX_ULTIMATE_COPIES = 1
 const DECK_SAVE_TOAST_ID = 'deck-editor-save'
 const DECK_CARD_TOOLTIP_DELAY_MS = 1000
 
+type DeckPresetEntry = {
+  cardName: string
+  count: number
+}
+
+type DeckPreset = {
+  id: 'balanced' | 'offensive'
+  label: string
+  entries: DeckPresetEntry[]
+}
+
+const DECK_PRESETS: DeckPreset[] = [
+  {
+    id: 'balanced',
+    label: 'Balanced',
+    entries: [
+      { cardName: 'Bastion Stance', count: 2 },
+      { cardName: 'Guard Sigil', count: 2 },
+      { cardName: 'Shield Toss', count: 2 },
+      { cardName: 'Corroded Shortsword', count: 2 },
+      { cardName: 'Health Potion', count: 1 },
+      { cardName: 'Iron Skin', count: 2 },
+      { cardName: 'Jaquemin the Patrol', count: 1 },
+      { cardName: 'Shatter Plating', count: 2 },
+      { cardName: 'Chaaarge!', count: 1 },
+    ],
+  },
+  {
+    id: 'offensive',
+    label: 'Offensive',
+    entries: [
+      { cardName: 'Battle Focus', count: 2 },
+      { cardName: 'Hunker Down', count: 1 },
+      { cardName: 'Reroll', count: 1 },
+      { cardName: 'Reset Luck', count: 1 },
+      { cardName: 'Corroded Shortsword', count: 1 },
+      { cardName: 'Health Potion', count: 2 },
+      { cardName: 'Warcry', count: 2 },
+      { cardName: 'Jaquemin the Patrol', count: 2 },
+      { cardName: 'War Standard', count: 2 },
+      { cardName: 'Chaaarge!', count: 1 },
+    ],
+  },
+]
+
 type DebugPanelPersistedState = {
   x: number
   y: number
@@ -564,6 +609,46 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     setIsDeckEditorOpen(false)
   }
 
+  const applyDeckPreset = (presetId: DeckPreset['id']) => {
+    const preset = DECK_PRESETS.find((entry) => entry.id === presetId)
+    if (!preset) {
+      return
+    }
+
+    const cardIdByName = new Map(eligibleDeckEditorCards.map((card) => [card.name, card.id]))
+    const missingNames: string[] = []
+    const nextDeckCardIds: string[] = []
+
+    for (const entry of preset.entries) {
+      const cardId = cardIdByName.get(entry.cardName)
+      if (!cardId) {
+        missingNames.push(entry.cardName)
+        continue
+      }
+
+      for (let copy = 0; copy < entry.count; copy += 1) {
+        nextDeckCardIds.push(cardId)
+      }
+    }
+
+    if (missingNames.length > 0) {
+      toast.error(`Preset unavailable for this hero. Missing: ${missingNames.join(', ')}`, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    if (nextDeckCardIds.length !== MAX_DECK_SIZE) {
+      toast.error(`Preset must resolve to exactly ${MAX_DECK_SIZE} cards.`, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    updateHeroDraft(deckEditorHeroIndex, (current) => ({
+      ...current,
+      openingDeckCardIds: nextDeckCardIds,
+    }))
+
+    toast.success(`${preset.label} preset applied.`, { id: DECK_SAVE_TOAST_ID })
+  }
+
   return (
     <Rnd
       position={{ x, y }}
@@ -866,6 +951,12 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               </button>
               <button type="button" className="deck-editor-save" onClick={saveDeckFromModal}>
                 Save Deck
+              </button>
+              <button type="button" className="deck-editor-save" onClick={() => applyDeckPreset('balanced')}>
+                Load Balanced
+              </button>
+              <button type="button" className="deck-editor-save" onClick={() => applyDeckPreset('offensive')}>
+                Load Offensive
               </button>
               <button type="button" className="deck-editor-close" onClick={() => setIsDeckEditorOpen(false)}>
                 Close
