@@ -1,5 +1,6 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
+import { KEYWORD_IDS } from "../../keywords";
 
 const JAQUEMIN_FOLLOW_UP_MIN = 2;
 const JAQUEMIN_FOLLOW_UP_MAX = 4;
@@ -12,6 +13,7 @@ export const JAQUEMIN_PATROL_CARD = {
   heroId: COMMANDER_X_HERO_ID,
   moveCost: 7,
   targeting: "none",
+  keywords: [{ keywordId: KEYWORD_IDS.chivalry }],
   tags: ["chivalry"],
   summaryText: {
     template: "Summon Jaquemin the Patrol.",

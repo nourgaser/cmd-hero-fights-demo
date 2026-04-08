@@ -9,6 +9,7 @@ import {
   resolveCommanderXSummonedBlueprint,
   resolveCommanderXSummonFootprint,
 } from "./commander_x";
+import { KEYWORD_DEFINITIONS_BY_ID } from "./keywords";
 import type {
   CardDefinition,
   HeroDefinition,
@@ -28,6 +29,8 @@ const COMMANDER_X_CARD_DEFINITIONS_BY_ID = Object.fromEntries(
 
 export const CARD_DEFINITIONS_BY_ID =
   COMMANDER_X_CARD_DEFINITIONS_BY_ID satisfies Readonly<Record<string, CardDefinition>>;
+
+export { KEYWORD_DEFINITIONS_BY_ID };
 
 export function resolveSummonedEntityBlueprint(
   entityDefinitionId: string,

@@ -350,6 +350,17 @@ export function HandBar(props: HandBarProps) {
                 ? simplifyTooltipSummaryText(hoveredCard.card.summaryText)
                 : 'No text available.'}
             </p>
+            {hoveredCard.card.keywords.length > 0 ? (
+              <div className="summon-preview-section hand-card-keywords" aria-label="Card keywords">
+                <span className="hover-group-title">Keywords</span>
+                {hoveredCard.card.keywords.map((keyword) => (
+                  <div key={keyword.keywordId} className="tooltip-row hand-card-keyword-row">
+                    <strong className="tooltip-inline-label">{keyword.keywordName}</strong>
+                    <span>{keyword.keywordSummaryText}</span>
+                  </div>
+                ))}
+              </div>
+            ) : null}
             {shouldShowDetailedTooltips && hoveredCard.card.summaryDetailText ? (
               <p className="hand-card-tooltip-detail">
                 {splitDetailTextIntoLines(hoveredCard.card.summaryDetailText).map((line, index) => (

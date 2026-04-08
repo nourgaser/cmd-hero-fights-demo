@@ -1,6 +1,7 @@
 import {
   CARD_DEFINITIONS_BY_ID,
   HERO_DEFINITIONS_BY_ID,
+  KEYWORD_DEFINITIONS_BY_ID,
   resolveEntityActiveProfile,
   resolveHeroInitialListeners,
   resolveSummonFootprint,
@@ -36,6 +37,7 @@ export type GameResolveActionInput = {
 export type GameApi = {
   cardsById: typeof CARD_DEFINITIONS_BY_ID;
   heroesById: typeof HERO_DEFINITIONS_BY_ID;
+  keywordsById: typeof KEYWORD_DEFINITIONS_BY_ID;
   resolveSummonedEntityBlueprint: typeof resolveSummonedEntityBlueprint;
   resolveEntityActiveProfile: typeof resolveEntityActiveProfile;
   resolveEffectiveNumber(input: {
@@ -54,6 +56,7 @@ export function createGameApi(): GameApi {
   return {
     cardsById: CARD_DEFINITIONS_BY_ID,
     heroesById: HERO_DEFINITIONS_BY_ID,
+    keywordsById: KEYWORD_DEFINITIONS_BY_ID,
     resolveSummonedEntityBlueprint,
     resolveEntityActiveProfile,
     resolveEffectiveNumber(input) {
@@ -89,6 +92,7 @@ export function createGameApi(): GameApi {
 export {
   CARD_DEFINITIONS_BY_ID,
   HERO_DEFINITIONS_BY_ID,
+  KEYWORD_DEFINITIONS_BY_ID,
   resolveSummonFootprint,
   resolveSummonedEntityBlueprint,
   resolveEntityActiveProfile,

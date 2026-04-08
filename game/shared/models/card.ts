@@ -2,6 +2,7 @@ import { z } from "zod";
 
 import { EffectDefinitionSchema, EffectDisplayTextSchema } from "./effects/index";
 import { HeroIdSchema } from "./hero";
+import { KeywordReferenceSchema } from "./keyword";
 
 export const CardIdSchema = z.string().min(1);
 export type CardId = z.infer<typeof CardIdSchema>;
@@ -51,6 +52,7 @@ export const CardDefinitionSchema = z.object({
   heroId: HeroIdSchema.optional(),
   moveCost: z.number().int().nonnegative(),
   targeting: CardTargetingSchema,
+  keywords: z.array(KeywordReferenceSchema).optional(),
   effects: z.array(EffectDefinitionSchema).min(1),
   summaryText: EffectDisplayTextSchema.optional(),
   castCondition: CardCastConditionSchema.optional(),

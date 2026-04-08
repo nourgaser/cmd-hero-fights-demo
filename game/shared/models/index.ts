@@ -6,6 +6,7 @@ export * from "./effects/index.ts";
 export * from "./event";
 export * from "./footprint";
 export * from "./hero";
+export * from "./keyword";
 export * from "./number-explanation";
 export * from "./number-modifier";
 export * from "./passive-rule";

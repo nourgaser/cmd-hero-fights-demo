@@ -1,0 +1,50 @@
+import type {
+  KeywordDefinition,
+  KeywordReference,
+} from "../shared/models";
+
+export const KEYWORD_IDS = {
+  battlecry: "keyword.battlecry",
+  chivalry: "keyword.chivalry",
+  light: "keyword.light",
+  sharpness: "keyword.sharpness",
+} as const;
+
+export const BATTLECRY_KEYWORD: KeywordReference = {
+  keywordId: KEYWORD_IDS.battlecry,
+};
+
+export const KEYWORD_DEFINITIONS = [
+  {
+    id: KEYWORD_IDS.battlecry,
+    name: "Battlecry",
+    summaryText: {
+      template: "Effect when played.",
+    },
+  },
+  {
+    id: KEYWORD_IDS.chivalry,
+    name: "Chivalry",
+    summaryText: {
+      template: "Adjacency buffs from allied chivalry units are doubled.",
+    },
+  },
+  {
+    id: KEYWORD_IDS.light,
+    name: "Light",
+    summaryText: {
+      template: "Weapon that can attack twice.",
+    },
+  },
+  {
+    id: KEYWORD_IDS.sharpness,
+    name: "Sharpness",
+    summaryText: {
+      template: "Breaks {amount} resistance on attack.",
+    },
+  },
+] as const satisfies readonly KeywordDefinition[];
+
+export const KEYWORD_DEFINITIONS_BY_ID = Object.fromEntries(
+  KEYWORD_DEFINITIONS.map((definition) => [definition.id, definition] as const),
+) as Readonly<Record<string, KeywordDefinition>>;

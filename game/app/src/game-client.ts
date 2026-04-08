@@ -91,6 +91,11 @@ export type AppBattlePreview = {
       moveCost: number
       cardType: 'ability' | 'weapon' | 'totem' | 'companion'
       rarity: 'common' | 'rare' | 'ultimate' | 'general'
+      keywords: Array<{
+        keywordId: string
+        keywordName: string
+        keywordSummaryText: string
+      }>
       summaryText: string
       summaryDetailText: string | null
       summaryTone: 'neutral' | 'positive' | 'negative'
@@ -199,6 +204,32 @@ function formatPreviewNumber(value: number): string {
 function formatSignedDelta(value: number): string {
   const formatted = formatPreviewNumber(Math.abs(value))
   return `${value >= 0 ? '+' : '-'}${formatted}`
+}
+
+function renderTemplatedText(displayText?: {
+  template?: string
+  params?: Record<string, string | number | boolean | undefined>
+}): string | null {
+  if (!displayText?.template) {
+    return null
+  }
+
+  return displayText.template.replaceAll(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
+    const value = displayText.params?.[key]
+    return value === undefined ? match : String(value)
+  })
+}
+
+function formatKeywordLabel(name: string, params?: Record<string, string | number | boolean | undefined>): string {
+  const values = params
+    ? Object.values(params).filter((value) => value !== undefined).map((value) => String(value))
+    : []
+
+  if (values.length === 0) {
+    return name
+  }
+
+  return `${name} (${values.join(', ')})`
 }
 
 function toAppNumberTrace(explanation: NumberExplanation): AppNumberTrace {
@@ -362,27 +393,8 @@ function describeNumericCardText(options: {
   const { card, actorHero, actorNumberTraces, state, gameApi, sourceEntityId, viewMode = 'card', luck } = options
   const firstEffect = card.effects[0]
 
-  const renderDisplayText = (displayText?: {
-    template?: string
-    params?: Record<string, string | number | boolean | undefined>
-  }): string | null => {
-    if (!displayText) {
-      return null
-    }
-
-    const template = displayText.template
-    if (!template) {
-      return null
-    }
-
-    return template.replaceAll(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
-      const value = displayText.params?.[key]
-      return value === undefined ? match : String(value)
-    })
-  }
-
-  const cardSummaryText = renderDisplayText(card.summaryText)
-  const firstEffectSummaryText = renderDisplayText(firstEffect?.displayText)
+  const cardSummaryText = renderTemplatedText(card.summaryText)
+  const firstEffectSummaryText = renderTemplatedText(firstEffect?.displayText)
   const defaultSummary = cardSummaryText ?? firstEffectSummaryText ?? 'No summary.'
 
   if (!firstEffect) {
@@ -645,7 +657,7 @@ function describeNumericCardText(options: {
     const summonSummary = firstEffectSummaryText ?? cardSummaryText ?? defaultSummary
     const postSummonEffectText = card.effects
       .slice(1)
-      .map((effect) => renderDisplayText(effect.displayText))
+      .map((effect) => renderTemplatedText(effect.displayText))
       .find((line): line is string => !!line)
 
     if (viewMode === 'entity') {
@@ -1153,6 +1165,42 @@ function buildPreviewFromState(options: {
           throw new Error(`Missing card definition '${handCard.cardDefinitionId}' while building preview.`)
         }
 
+        const keywordReferences = (cardDef as {
+          keywords?: Array<{
+            keywordId: string
+            params?: Record<string, string | number | boolean | undefined>
+          }>
+        }).keywords ?? []
+
+        const keywords = keywordReferences
+          .map((keywordReference) => {
+            const keywordDefinition = gameApi.keywordsById[keywordReference.keywordId]
+            if (!keywordDefinition) {
+              return null
+            }
+
+            return {
+              keywordId: keywordDefinition.id,
+              keywordName: formatKeywordLabel(keywordDefinition.name, keywordReference.params),
+              keywordSummaryText: renderTemplatedText({
+                template: keywordDefinition.summaryText.template,
+                params: {
+                  ...(keywordDefinition.summaryText.params ?? {}),
+                  ...(keywordReference.params ?? {}),
+                },
+              }) ?? keywordDefinition.name,
+            }
+          })
+          .filter(
+            (
+              keyword,
+            ): keyword is {
+              keywordId: string
+              keywordName: string
+              keywordSummaryText: string
+            } => keyword !== null,
+          )
+
         return {
           handCardId: handCard.id,
           cardDefinitionId: handCard.cardDefinitionId,
@@ -1160,6 +1208,7 @@ function buildPreviewFromState(options: {
           moveCost: cardDef.moveCost,
           cardType: cardDef.type,
           rarity: cardDef.rarity,
+          keywords,
           ...describeNumericCardText({
             card: cardDef,
             actorHero: entity,
