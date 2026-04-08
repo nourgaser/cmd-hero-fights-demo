@@ -53,6 +53,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
   const self = preview.heroHandCounts.find((hero) => hero.heroEntityId === selfId)
   const selfHeroDetails = preview.heroDetailsByEntityId[selfId] ?? null
+  const selfActiveAuras = selfHeroDetails?.activeAuras ?? []
   const enemySideKey = selfSideKey === 'a' ? 'b' : 'a'
   const shouldFlipRows = self?.battlefieldSide === 'north'
   const selfHandSize = self?.handSize ?? 0
@@ -584,6 +585,47 @@ export function PlayerScreen(props: PlayerScreenProps) {
           </span>
         </span>
       </header>
+
+      <section className="hero-auras-panel" aria-label="Active aura status">
+        <div className="hero-auras-header">
+          <strong>Active Auras</strong>
+          <span>{selfActiveAuras.length}</span>
+        </div>
+        {selfActiveAuras.length > 0 ? (
+          <ul className="hero-aura-list">
+            {selfActiveAuras.map((aura) => (
+              <li key={`${aura.auraKind}:${aura.instances.map((entry) => entry.auraId).join(',')}`} className="hero-aura-item">
+                <div className="hero-aura-row">
+                  <span className="hero-aura-name">{aura.label}</span>
+                  <span className="hero-aura-stack">x{aura.stackCount}</span>
+                </div>
+                <div className="hero-aura-meta">
+                  <span>
+                    {aura.isAmplified
+                      ? `Amplified +${aura.amplifiedResistanceBonus} res`
+                      : `Base +${aura.baseResistanceBonus} res`}
+                  </span>
+                  <span>
+                    {aura.triggeredThisTurn
+                      ? `Active now: +${aura.currentResistanceBonus}`
+                      : 'Waiting for first damage this turn'}
+                  </span>
+                  <span>
+                    {aura.isAmplified
+                      ? `Amplified for ${aura.turnsUntilAmplifiedEnds} more turn${aura.turnsUntilAmplifiedEnds === 1 ? '' : 's'}`
+                      : 'Play a second copy to amplify'}
+                  </span>
+                  <span>
+                    {`Durations: ${aura.instances.map((entry) => `${entry.turnsRemaining}t`).join(', ')}`}
+                  </span>
+                </div>
+              </li>
+            ))}
+          </ul>
+        ) : (
+          <p className="hero-aura-empty">No active auras.</p>
+        )}
+      </section>
 
         <section className="battle-overlay-layer">
           <aside className="battle-action-overlay action-overlay-left" aria-label="Basic attack action">

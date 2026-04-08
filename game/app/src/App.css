@@ -754,6 +754,98 @@ html[data-shift-held='true'] .game-toast-detail {
   text-align: center;
 }
 
+.hero-auras-panel {
+  border: 1px solid color-mix(in srgb, #5d4c30 28%, var(--border));
+  border-radius: 12px;
+  padding: 10px 12px;
+  background:
+    linear-gradient(180deg, color-mix(in srgb, #f6eccb 80%, #ffffff 20%), color-mix(in srgb, #ecdebb 84%, #ffffff 16%));
+}
+
+.hero-auras-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  margin-bottom: 6px;
+}
+
+.hero-auras-header strong {
+  font-family: var(--display);
+  font-size: 20px;
+  line-height: 1;
+}
+
+.hero-auras-header span {
+  min-width: 20px;
+  height: 20px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #2a1f12 36%, transparent);
+  background: color-mix(in srgb, #f2d498 75%, #ffffff 25%);
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  color: #2a1f12;
+}
+
+.hero-aura-list {
+  list-style: none;
+  margin: 0;
+  padding: 0;
+  display: grid;
+  gap: 8px;
+}
+
+.hero-aura-item {
+  border: 1px solid color-mix(in srgb, #6f5a36 30%, transparent);
+  border-radius: 10px;
+  padding: 8px 9px;
+  background: color-mix(in srgb, #fff7e2 84%, #ffffff 16%);
+  display: grid;
+  gap: 4px;
+}
+
+.hero-aura-row {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  gap: 10px;
+}
+
+.hero-aura-name {
+  font-family: var(--heading);
+  font-size: 14px;
+  color: #2a1f12;
+}
+
+.hero-aura-stack {
+  font-size: 11px;
+  font-weight: 700;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #2a1f12 34%, transparent);
+  background: color-mix(in srgb, #f0cb58 72%, #ffffff 28%);
+  color: #2a1f12;
+  padding: 1px 7px;
+}
+
+.hero-aura-meta {
+  display: grid;
+  gap: 2px;
+}
+
+.hero-aura-meta span {
+  font-size: 11px;
+  color: color-mix(in srgb, #2a1f12 82%, #ffffff 18%);
+  line-height: 1.2;
+}
+
+.hero-aura-empty {
+  margin: 0;
+  font-size: 12px;
+  color: color-mix(in srgb, #2a1f12 76%, #ffffff 24%);
+}
+
 @media (max-width: 1024px) {
   .screen-head-brand {
     min-height: 60px;
@@ -773,6 +865,10 @@ html[data-shift-held='true'] .game-toast-detail {
   .screen-head p {
     font-size: 19px;
     line-height: 1;
+  }
+
+  .hero-auras-header strong {
+    font-size: 17px;
   }
 }
 

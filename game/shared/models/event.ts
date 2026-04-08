@@ -162,6 +162,27 @@ export const LuckBalanceChangedEventSchema = z.object({
 });
 export type LuckBalanceChangedEvent = z.infer<typeof LuckBalanceChangedEventSchema>;
 
+export const AuraAppliedEventSchema = z.object({
+  kind: z.literal("auraApplied"),
+  sequence: EventSequenceSchema,
+  auraId: z.string().min(1),
+  ownerHeroEntityId: EntityIdSchema,
+  auraKind: z.string().min(1),
+  expiresOnTurnNumber: z.number().int().positive(),
+  stackCount: z.number().int().positive(),
+});
+export type AuraAppliedEvent = z.infer<typeof AuraAppliedEventSchema>;
+
+export const AuraExpiredEventSchema = z.object({
+  kind: z.literal("auraExpired"),
+  sequence: EventSequenceSchema,
+  auraId: z.string().min(1),
+  ownerHeroEntityId: EntityIdSchema,
+  auraKind: z.string().min(1),
+  expiredOnTurnNumber: z.number().int().positive(),
+});
+export type AuraExpiredEvent = z.infer<typeof AuraExpiredEventSchema>;
+
 /**
  * NumberModifierApplied: a new number modifier was added to active modifiers.
  * Used for traceability and deterministic event ordering.
@@ -223,5 +244,7 @@ export const BattleEventSchema = z.discriminatedUnion("kind", [
   TurnEndedEventSchema,
   TurnStartedEventSchema,
   LuckBalanceChangedEventSchema,
+  AuraAppliedEventSchema,
+  AuraExpiredEventSchema,
 ]);
 export type BattleEvent = z.infer<typeof BattleEventSchema>;

@@ -63,6 +63,22 @@ export type AppBattlePreview = {
       heroDefinitionId: string
       heroName: string
       passiveText: string
+      activeAuras: Array<{
+        auraKind: string
+        label: string
+        stackCount: number
+        turnsUntilAmplifiedEnds: number
+        isAmplified: boolean
+        baseResistanceBonus: number
+        amplifiedResistanceBonus: number
+        currentResistanceBonus: number
+        triggeredThisTurn: boolean
+        instances: Array<{
+          auraId: string
+          turnsRemaining: number
+          expiresOnTurnNumber: number
+        }>
+      }>
       basicAttack: {
         moveCost: number
         damageType: 'physical' | 'magic' | 'true'
@@ -230,6 +246,15 @@ function formatKeywordLabel(name: string, params?: Record<string, string | numbe
   }
 
   return `${name} (${values.join(', ')})`
+}
+
+function labelForAuraKind(auraKind: string): string {
+  switch (auraKind) {
+    case 'reactiveBulwarkResistance':
+      return 'Reactive Bulwark'
+    default:
+      return auraKind
+  }
 }
 
 function toAppNumberTrace(explanation: NumberExplanation): AppNumberTrace {
@@ -1299,11 +1324,93 @@ function buildPreviewFromState(options: {
       luck: state.luck,
     })
 
+    const triggeredThisTurn = !!state.turn.damageTakenThisTurnByHeroEntityId[heroEntityId]
+    const heroActiveAuras = state.activeAuras
+      .filter((aura) => aura.ownerHeroEntityId === heroEntityId && aura.expiresOnTurnNumber > state.turn.turnNumber)
+      .sort((left, right) => left.expiresOnTurnNumber - right.expiresOnTurnNumber)
+
+    const activeAuras = Object.values(
+      heroActiveAuras.reduce(
+        (map, aura) => {
+          const existing = map[aura.kind]
+          if (existing) {
+            existing.instances.push({
+              auraId: aura.id,
+              turnsRemaining: aura.expiresOnTurnNumber - state.turn.turnNumber,
+              expiresOnTurnNumber: aura.expiresOnTurnNumber,
+            })
+            return map
+          }
+
+          map[aura.kind] = {
+            auraKind: aura.kind,
+            label: labelForAuraKind(aura.kind),
+            stackCount: 1,
+            turnsUntilAmplifiedEnds: 0,
+            isAmplified: false,
+            baseResistanceBonus: aura.baseResistanceBonus,
+            amplifiedResistanceBonus: aura.amplifiedResistanceBonus,
+            currentResistanceBonus: 0,
+            triggeredThisTurn,
+            instances: [
+              {
+                auraId: aura.id,
+                turnsRemaining: aura.expiresOnTurnNumber - state.turn.turnNumber,
+                expiresOnTurnNumber: aura.expiresOnTurnNumber,
+              },
+            ],
+          }
+          return map
+        },
+        {} as Record<
+          string,
+          {
+            auraKind: string
+            label: string
+            stackCount: number
+            turnsUntilAmplifiedEnds: number
+            isAmplified: boolean
+            baseResistanceBonus: number
+            amplifiedResistanceBonus: number
+            currentResistanceBonus: number
+            triggeredThisTurn: boolean
+            instances: Array<{
+              auraId: string
+              turnsRemaining: number
+              expiresOnTurnNumber: number
+            }>
+          }
+        >,
+      ),
+    ).map((group) => {
+      const instances = [...group.instances].sort((left, right) => left.expiresOnTurnNumber - right.expiresOnTurnNumber)
+      const stackCount = instances.length
+      const isAmplified = stackCount >= 2
+      const secondLatestExpiry = stackCount >= 2 ? instances[stackCount - 2]!.expiresOnTurnNumber : 0
+      const turnsUntilAmplifiedEnds = isAmplified ? Math.max(0, secondLatestExpiry - state.turn.turnNumber) : 0
+      const currentResistanceBonus =
+        triggeredThisTurn
+          ? isAmplified
+            ? group.amplifiedResistanceBonus
+            : group.baseResistanceBonus
+          : 0
+
+      return {
+        ...group,
+        stackCount,
+        isAmplified,
+        turnsUntilAmplifiedEnds,
+        currentResistanceBonus,
+        instances,
+      }
+    })
+
     heroDetailsByEntityId[heroEntityId] = {
       heroEntityId,
       heroDefinitionId: entity.heroDefinitionId,
       heroName: heroDef.name,
       passiveText: heroDef.passiveText,
+      activeAuras,
       basicAttack: {
         moveCost: heroDef.basicAttack.moveCost,
         damageType: heroDef.basicAttack.damageType,

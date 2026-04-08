@@ -11,6 +11,7 @@ import { IRON_SKIN_CARD } from "./iron-skin";
 import { JAQUEMIN_PATROL_CARD } from "./jaquemin-patrol";
 import { RESET_LUCK_CARD } from "./reset-luck";
 import { REROLL_CARD } from "./reroll";
+import { REACTIVE_BULWARK_CARD } from "./reactive-bulwark";
 import { SHATTER_PLATING_CARD } from "./shatter-plating";
 import { SHIELD_TOSS_CARD } from "./shield-toss";
 import { WAR_STANDARD_CARD } from "./war-standard";
@@ -28,6 +29,7 @@ export {
   JAQUEMIN_PATROL_CARD,
   RESET_LUCK_CARD,
   REROLL_CARD,
+  REACTIVE_BULWARK_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
   WAR_STANDARD_CARD,
@@ -42,6 +44,7 @@ export const COMMANDER_X_CARDS = [
   HEALTH_POTION_CARD,
   BASTION_STANCE_CARD,
   BATTLE_FOCUS_CARD,
+  REACTIVE_BULWARK_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
   CHAAARGE_CARD,

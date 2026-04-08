@@ -32,6 +32,7 @@ import {
   ModifyStatEffectPayloadSchema,
   ResetLuckBalanceEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
+  ApplyAuraEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
 } from "./base-payloads";
 
@@ -48,6 +49,15 @@ type NonRecursivePayload =
   | z.infer<typeof DrawCardsEffectPayloadSchema>
   | z.infer<typeof SummonEntityEffectPayloadSchema>
   | z.infer<typeof RefundMoveCostEffectPayloadSchema>;
+
+export type ApplyAuraEffectPayload = {
+  kind: "applyAura";
+  target: EffectTargetSelector;
+  auraKind: "reactiveBulwarkResistance";
+  durationTurns: number;
+  baseResistanceBonus: number;
+  amplifiedResistanceBonus: number;
+};
 
 export type AddListenerEffectPayload = {
   kind: "addListener";
@@ -66,6 +76,7 @@ export type RemoveListenerEffectPayload = {
 
 export type EffectPayload =
   | NonRecursivePayload
+  | ApplyAuraEffectPayload
   | AddListenerEffectPayload
   | RemoveListenerEffectPayload;
 
@@ -95,6 +106,7 @@ export const EffectPayloadKindSchema = z.enum([
   "drawCards",
   "summonEntity",
   "refundMoveCost",
+  "applyAura",
   "addListener",
   "removeListener",
 ]);
@@ -130,6 +142,7 @@ export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   DrawCardsEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
+  ApplyAuraEffectPayloadSchema,
   AddListenerEffectPayloadSchemaRaw,
   RemoveListenerEffectPayloadSchemaRaw,
 ]);

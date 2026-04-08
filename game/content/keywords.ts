@@ -5,6 +5,7 @@ import type {
 
 export const KEYWORD_IDS = {
   battlecry: "keyword.battlecry",
+  aura: "keyword.aura",
   chivalry: "keyword.chivalry",
   light: "keyword.light",
   sharpness: "keyword.sharpness",
@@ -20,6 +21,13 @@ export const KEYWORD_DEFINITIONS = [
     name: "Battlecry",
     summaryText: {
       template: "Effect when played.",
+    },
+  },
+  {
+    id: KEYWORD_IDS.aura,
+    name: "Aura",
+    summaryText: {
+      template: "A global passive effect that lasts for 5 turns and can stack with copies of itself.",
     },
   },
   {

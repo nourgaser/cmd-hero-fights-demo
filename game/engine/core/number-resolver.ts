@@ -6,6 +6,7 @@ import type {
   NumberContribution,
 } from "../../shared/models";
 import { resolveAdjacentAllyDefenseContribution } from "../battlefield/adjacency";
+import { getActiveReactiveBulwarkAuraBonus } from "./aura";
 
 /**
  * NumberResolver computes effective numeric values for any property on any entity.
@@ -99,6 +100,20 @@ export function resolveEffectiveNumber(options: {
 
   // Apply battlefield adjacency buff for defense stats.
   if (propertyPath === "armor" || propertyPath === "magicResist") {
+    const auraBonus = getActiveReactiveBulwarkAuraBonus({
+      state,
+      targetHeroEntityId: targetEntityId,
+    });
+
+    if (auraBonus > 0) {
+      accumulated += auraBonus;
+      contributions.push({
+        sourceId: `core:aura:reactive-bulwark:${targetEntityId}`,
+        label: "Reactive Bulwark Aura",
+        delta: auraBonus,
+      });
+    }
+
     const adjacency = resolveAdjacentAllyDefenseContribution({
       state,
       targetEntityId,

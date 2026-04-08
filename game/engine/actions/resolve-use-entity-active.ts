@@ -5,12 +5,13 @@ import {
   type UseEntityActiveAction,
 } from "../../shared/models";
 import { resolveEffectiveNumber } from "../core/number-resolver";
-import { getEffectiveDodgeChance } from "./effects/get-effective-number";
+import { getEffectiveArmor, getEffectiveDodgeChance, getEffectiveMagicResist } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import { markHeroDamageTakenThisTurn } from "../core/aura";
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
@@ -244,9 +245,17 @@ export function resolveUseEntityActiveAction(options: {
   if (!wasDodged) {
     const resistance =
       profile.damageType === "physical"
-        ? target.armor
+        ? getEffectiveArmor({
+            state,
+            targetEntityId: target.entityId,
+            baseArmor: target.armor,
+          }).effectiveValue
         : profile.damageType === "magic"
-          ? target.magicResist
+          ? getEffectiveMagicResist({
+              state,
+              targetEntityId: target.entityId,
+              baseMagicResist: target.magicResist,
+            }).effectiveValue
           : 0;
     appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
   }
@@ -270,6 +279,11 @@ export function resolveUseEntityActiveAction(options: {
       },
     },
   };
+
+  const nextStateWithDamageFlag =
+    target.kind === "hero" && appliedDamage > 0
+      ? markHeroDamageTakenThisTurn(nextState, target.entityId)
+      : nextState;
 
   events.push({
     kind: "damageApplied",
@@ -297,7 +311,7 @@ export function resolveUseEntityActiveAction(options: {
 
   return {
     ok: true,
-    state: nextState,
+    state: nextStateWithDamageFlag,
     events,
     nextSequence: sequence,
     resultMessage: wasDodged

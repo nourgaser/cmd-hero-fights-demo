@@ -3,6 +3,7 @@ import { z } from "zod";
 import { CardIdSchema } from "./card";
 import { BattlefieldOccupancySchema, BattlefieldSideSchema } from "./battlefield-occupancy";
 import { EntityIdSchema, HandCardIdSchema } from "./action";
+import { AuraInstanceSchema } from "./aura";
 import { EntityFootprintSchema } from "./footprint";
 import { HeroIdSchema } from "./hero";
 import { ListenerDefinitionSchema } from "./effects/index.ts";
@@ -99,6 +100,7 @@ export const TurnStateSchema = z.object({
   turnNumber: z.number().int().positive(),
   activeHeroEntityId: EntityIdSchema,
   pressLuckUsedThisTurn: z.boolean().default(false),
+  damageTakenThisTurnByHeroEntityId: z.record(EntityIdSchema, z.boolean()).default({}),
 });
 export type TurnState = z.infer<typeof TurnStateSchema>;
 
@@ -121,5 +123,6 @@ export const BattleStateSchema = z.object({
    * These are ordered by source entity position for deterministic resolution.
    */
   activePassiveRules: z.array(PassiveRuleSchema).default([]),
+  activeAuras: z.array(AuraInstanceSchema).default([]),
 });
 export type BattleState = z.infer<typeof BattleStateSchema>;

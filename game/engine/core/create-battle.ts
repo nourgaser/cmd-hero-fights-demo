@@ -238,6 +238,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
       turnNumber: 1,
       activeHeroEntityId: heroASetup.heroEntityId,
       pressLuckUsedThisTurn: false,
+      damageTakenThisTurnByHeroEntityId: {},
     },
     entitiesById: {
       [heroAState.entityId]: heroAState,
@@ -247,6 +248,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     activeListeners: initialListeners,
     activeModifiers: [],
     activePassiveRules: [],
+    activeAuras: [],
   };
 
   const annotatedState = input.cardDefinitionsById

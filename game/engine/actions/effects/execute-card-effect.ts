@@ -19,6 +19,7 @@ import {
   handleResetLuckBalanceEffect,
   handleRefundMoveCostEffect,
 } from "./handlers/economy";
+import { handleApplyAuraEffect } from "./handlers/aura";
 import {
   handleModifyStatEffect,
 } from "./handlers/stats";
@@ -36,6 +37,7 @@ const effectHandlers = {
   destroySelfArmorAndDealPerArmorToTarget: handleDestroySelfArmorAndDealPerArmorToTargetEffect,
   resetLuckBalance: handleResetLuckBalanceEffect,
   refundMoveCost: handleRefundMoveCostEffect,
+  applyAura: handleApplyAuraEffect,
   addListener: handleAddListenerEffect,
   removeListener: handleRemoveListenerEffect,
 } satisfies Record<string, EffectHandler>;

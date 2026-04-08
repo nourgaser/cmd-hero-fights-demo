@@ -87,3 +87,12 @@ export const DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema = z.obje
 export const ResetLuckBalanceEffectPayloadSchema = z.object({
   kind: z.literal("resetLuckBalance"),
 });
+
+export const ApplyAuraEffectPayloadSchema = z.object({
+  kind: z.literal("applyAura"),
+  target: EffectTargetSelectorSchema,
+  auraKind: z.literal("reactiveBulwarkResistance"),
+  durationTurns: z.number().int().positive().default(5),
+  baseResistanceBonus: z.number().int().nonnegative(),
+  amplifiedResistanceBonus: z.number().int().nonnegative(),
+});

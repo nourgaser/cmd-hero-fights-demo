@@ -13,6 +13,7 @@ import {
 } from "../../effects/get-effective-number";
 import { computeScaledDamageRange } from "../../../core/damage-range";
 import { resolveEffectiveNumber } from "../../../core/number-resolver";
+import { markHeroDamageTakenThisTurn } from "../../../core/aura";
 import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
@@ -301,18 +302,25 @@ export function handleDealDamageEffect(
 
   const targetHealth = roundWhole(target.currentHealth);
 
-  return {
-    ok: true,
-    state: {
-      ...state,
-      entitiesById: {
-        ...state.entitiesById,
-        [targetId]: {
-          ...target,
-          currentHealth: Math.max(0, targetHealth - appliedDamage),
-        },
+  const nextState = {
+    ...state,
+    entitiesById: {
+      ...state.entitiesById,
+      [targetId]: {
+        ...target,
+        currentHealth: Math.max(0, targetHealth - appliedDamage),
       },
     },
+  };
+
+  const nextStateWithDamageFlag =
+    target.kind === "hero" && appliedDamage > 0
+      ? markHeroDamageTakenThisTurn(nextState, target.entityId)
+      : nextState;
+
+  return {
+    ok: true,
+    state: nextStateWithDamageFlag,
     events: [
       {
         kind: "damageApplied",
@@ -437,23 +445,30 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
     nextSequence += 1;
   }
 
-  return {
-    ok: true,
-    state: {
-      ...state,
-      activeModifiers: nextActiveModifiers,
-      entitiesById: {
-        ...state.entitiesById,
-        [targetId]: {
-          ...target,
-          armor: 0,
-        },
-        [enemyHero.entityId]: {
-          ...enemyHero,
-          currentHealth: Math.max(0, roundWhole(enemyHero.currentHealth) - appliedDamage),
-        },
+  const nextState = {
+    ...state,
+    activeModifiers: nextActiveModifiers,
+    entitiesById: {
+      ...state.entitiesById,
+      [targetId]: {
+        ...target,
+        armor: 0,
+      },
+      [enemyHero.entityId]: {
+        ...enemyHero,
+        currentHealth: nextEnemyHealth,
       },
     },
+  };
+
+  const nextStateWithDamageFlag =
+    enemyHero.kind === "hero" && appliedDamage > 0
+      ? markHeroDamageTakenThisTurn(nextState, enemyHero.entityId)
+      : nextState;
+
+  return {
+    ok: true,
+    state: nextStateWithDamageFlag,
     events,
     nextSequence,
     lastDamageWasDodged: false,
@@ -548,23 +563,30 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
     nextSequence += 1;
   }
 
-  return {
-    ok: true,
-    state: {
-      ...state,
-      activeModifiers: nextActiveModifiers,
-      entitiesById: {
-        ...state.entitiesById,
-        [actorHero.entityId]: {
-          ...actorHero,
-          armor: 0,
-        },
-        [damageTarget.entityId]: {
-          ...damageTarget,
-          currentHealth: Math.max(0, roundWhole(damageTarget.currentHealth) - appliedDamage),
-        },
+  const nextState = {
+    ...state,
+    activeModifiers: nextActiveModifiers,
+    entitiesById: {
+      ...state.entitiesById,
+      [actorHero.entityId]: {
+        ...actorHero,
+        armor: 0,
+      },
+      [damageTarget.entityId]: {
+        ...damageTarget,
+        currentHealth: nextTargetHealth,
       },
     },
+  };
+
+  const nextStateWithDamageFlag =
+    damageTarget.kind === "hero" && appliedDamage > 0
+      ? markHeroDamageTakenThisTurn(nextState, damageTarget.entityId)
+      : nextState;
+
+  return {
+    ok: true,
+    state: nextStateWithDamageFlag,
     events,
     nextSequence,
     lastDamageWasDodged: false,

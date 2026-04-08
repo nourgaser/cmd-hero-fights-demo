@@ -9,6 +9,7 @@ import {
   TURN_START_SOFT_HAND_SIZE,
 } from "../../shared/game-constants";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import { cleanupExpiredAuras } from "../core/aura";
 
 export type ResolveEndTurnResult =
   | {
@@ -140,6 +141,7 @@ export function resolveEndTurnAction(options: {
       turnNumber: state.turn.turnNumber + 1,
       activeHeroEntityId: nextHero.entityId,
       pressLuckUsedThisTurn: false,
+      damageTakenThisTurnByHeroEntityId: state.turn.damageTakenThisTurnByHeroEntityId,
     },
     entitiesById: {
       ...refreshedSummonedEntries,
@@ -147,11 +149,26 @@ export function resolveEndTurnAction(options: {
     },
   };
 
+  const auraCleanup = cleanupExpiredAuras(nextState, nextState.turn.turnNumber);
+  const nextStateWithAuraCleanup = auraCleanup.state;
+
+  for (const aura of auraCleanup.expiredAuras) {
+    events.push({
+      kind: "auraExpired",
+      sequence,
+      auraId: aura.id,
+      ownerHeroEntityId: aura.ownerHeroEntityId,
+      auraKind: aura.kind,
+      expiredOnTurnNumber: nextStateWithAuraCleanup.turn.turnNumber,
+    });
+    sequence += 1;
+  }
+
   events.push({
     kind: "turnStarted",
     sequence,
     activeHeroEntityId: nextHero.entityId,
-    turnNumber: nextState.turn.turnNumber,
+    turnNumber: nextStateWithAuraCleanup.turn.turnNumber,
   });
   sequence += 1;
 
@@ -164,7 +181,7 @@ export function resolveEndTurnAction(options: {
 
   return {
     ok: true,
-    state: nextState,
+    state: nextStateWithAuraCleanup,
     events,
     nextSequence: sequence,
     resultMessage: drawCount > 0

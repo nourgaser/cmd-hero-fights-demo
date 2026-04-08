@@ -348,6 +348,12 @@ function App() {
     } else if (event.kind === 'luckBalanceChanged') {
       summary = `Luck shifted to ${event.nextBalance}.`
       detail = `Balance changed from ${event.previousBalance} to ${event.nextBalance}.`
+    } else if (event.kind === 'auraApplied') {
+      summary = `Aura applied (${event.auraKind}).`
+      detail = `Stacks: ${event.stackCount}. Expires on turn ${event.expiresOnTurnNumber}.`
+    } else if (event.kind === 'auraExpired') {
+      summary = `Aura expired (${event.auraKind}).`
+      detail = `Expired on turn ${event.expiredOnTurnNumber}.`
     }
 
     if (!summary) {

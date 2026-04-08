@@ -18,6 +18,7 @@ import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import { markHeroDamageTakenThisTurn } from "../core/aura";
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
@@ -219,6 +220,11 @@ export function resolveBasicAttackAction(options: {
     },
   };
 
+  const nextStateWithDamageFlag =
+    target.kind === "hero" && appliedDamage > 0
+      ? markHeroDamageTakenThisTurn(nextState, target.entityId)
+      : nextState;
+
   events.push({
     kind: "damageApplied",
     sequence,
@@ -245,7 +251,7 @@ export function resolveBasicAttackAction(options: {
 
   return {
     ok: true,
-    state: nextState,
+    state: nextStateWithDamageFlag,
     events,
     nextSequence: sequence,
     resultMessage: wasDodged
