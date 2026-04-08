@@ -2,7 +2,6 @@ import { z } from "zod";
 
 import {
   EffectDisplayTextSchema,
-  type EffectDisplayText,
   type EffectTextParamValue,
   EffectTextParamValueSchema,
   renderEffectDisplayText,
