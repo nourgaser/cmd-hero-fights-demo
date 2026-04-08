@@ -120,6 +120,15 @@ Validation notes:
 
 ## Next UI/Product Tasks
 
+### Scalability / Maintainability Risks
+
+- [ ] Replace manual hero/card lookup wiring with a single content registry path that covers definitions, initial listeners, summon blueprints, summon footprints, and active profiles.
+- [ ] Replace manual effect-handler dispatch with a registry that is generated or assembled from the same effect source of truth as the schema.
+- [ ] Remove duplicated listener-condition matching between schema/model definitions and runtime matching logic.
+- [ ] Reduce action/effect/targeting switch fan-out so new kinds do not require patching multiple unrelated files.
+- [ ] Consolidate card bootstrap metadata, icon metadata, and starter deck wiring so adding a new card or hero touches one obvious content surface.
+- [ ] Split or simplify the largest app-facing preview file if it keeps accumulating formatting, tooltip, summon-preview, and cast-condition logic in one place.
+
 ### Summon Preview Tooltip
 
 - [x] Add side tooltip for summon cards showing summoned entity preview before play
