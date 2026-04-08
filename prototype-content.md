@@ -37,7 +37,7 @@ The following subset of the content is the chosen content for the prototype. It 
 
 ### Weapons
 
-- [Corroded Shortsword](/content/Game/Cards/Commander%20X/Corroded%20Shortsword.md)
+- [Corroded Shortsword](/content/Game/Cards/Commander%20X/Corroded%20Shortsword.md) done
 
 <!-- Low priority / do later -->
 - [Defiled Greatsword](/content/Game/Cards/Commander%20X/Defiled%20Greatsword.md)
@@ -45,8 +45,8 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Glinting Adamantite Blade](/content/Game/Cards/Commander%20X/Glinting%20Adamantite%20Blade.md)
 
 ### Totems
-- [War Standard](/content/Game/Cards/Commander%20X/War%20Standard.md)
-- [Guard Sigil](/content/Game/Cards/Commander%20X/Guard%20Sigil.md)
+- [War Standard](/content/Game/Cards/Commander%20X/War%20Standard.md) done
+- [Guard Sigil](/content/Game/Cards/Commander%20X/Guard%20Sigil.md) done
 
 <!-- Low priority / do later -->
 - [Healing Fortress](/content/Game/Cards/Commander%20X/Healing%20Fortress.md)
