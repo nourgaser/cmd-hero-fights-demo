@@ -43,6 +43,37 @@ type DebugPanelPersistedState = {
   expandAll: boolean
 }
 
+const clamp = (value: number, min: number, max: number) => {
+  if (max < min) {
+    return min
+  }
+  return Math.min(Math.max(value, min), max)
+}
+
+const sanitizePersistedState = (state: DebugPanelPersistedState): DebugPanelPersistedState => {
+  if (typeof window === 'undefined') {
+    return state
+  }
+
+  const viewportWidth = window.innerWidth
+  const viewportHeight = window.innerHeight
+  const minPanelWidth = 300
+  const minPanelHeight = 220
+
+  const width = clamp(state.width, minPanelWidth, Math.max(minPanelWidth, viewportWidth))
+  const height = clamp(state.height, minPanelHeight, Math.max(minPanelHeight, viewportHeight))
+  const panelWidth = state.isCollapsed ? COLLAPSED_BUBBLE_SIZE : width
+  const panelHeight = state.isCollapsed ? COLLAPSED_BUBBLE_SIZE : height
+
+  return {
+    ...state,
+    width,
+    height,
+    x: clamp(state.x, 0, viewportWidth - panelWidth),
+    y: clamp(state.y, 0, viewportHeight - panelHeight),
+  }
+}
+
 const loadPersistedState = (): DebugPanelPersistedState => {
   if (typeof window === 'undefined') {
     return { ...DEFAULT_LAYOUT, isCollapsed: false, expandAll: false }
@@ -55,14 +86,14 @@ const loadPersistedState = (): DebugPanelPersistedState => {
 
   try {
     const parsed = JSON.parse(saved) as Partial<DebugPanelPersistedState>
-    return {
+    return sanitizePersistedState({
       x: typeof parsed.x === 'number' ? parsed.x : DEFAULT_LAYOUT.x,
       y: typeof parsed.y === 'number' ? parsed.y : DEFAULT_LAYOUT.y,
       width: typeof parsed.width === 'number' ? parsed.width : DEFAULT_LAYOUT.width,
       height: typeof parsed.height === 'number' ? parsed.height : DEFAULT_LAYOUT.height,
       isCollapsed: typeof parsed.isCollapsed === 'boolean' ? parsed.isCollapsed : false,
       expandAll: typeof parsed.expandAll === 'boolean' ? parsed.expandAll : false,
-    }
+    })
   } catch {
     return { ...DEFAULT_LAYOUT, isCollapsed: false, expandAll: false }
   }
@@ -163,6 +194,35 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   }, [])
 
   useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const handleResize = () => {
+      setPersistedState((current) => {
+        const next = sanitizePersistedState(current)
+        if (
+          next.x === current.x
+          && next.y === current.y
+          && next.width === current.width
+          && next.height === current.height
+        ) {
+          return current
+        }
+
+        persistState(next)
+        return next
+      })
+    }
+
+    handleResize()
+    window.addEventListener('resize', handleResize)
+    return () => {
+      window.removeEventListener('resize', handleResize)
+    }
+  }, [])
+
+  useEffect(() => {
     if (!isDeckEditorOpen) {
       setDeckCardTooltip(null)
       if (deckCardTooltipTimerRef.current !== null) {
@@ -216,7 +276,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
 
   const updateState = (updater: (current: DebugPanelPersistedState) => DebugPanelPersistedState) => {
     setPersistedState((current) => {
-      const next = updater(current)
+      const next = sanitizePersistedState(updater(current))
       persistState(next)
       return next
     })
