@@ -56,7 +56,7 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Bulwark of Fortune](/content/Game/Cards/Commander%20X/Bulwark%20of%20Fortune.md)
 
 ### Companions
-- [Jaquemin the Patrol](/content/Game/Cards/Commander%20X/Jaquemin%20the%20Patrol.md)
+- [Jaquemin the Patrol](/content/Game/Cards/Commander%20X/Jaquemin%20the%20Patrol.md) done
 
 <!-- Low priority / do later -->
 - [A Common, Expendable, but Deadly Man](/content/Game/Cards/Commander%20X/A%20Common,%20Expendable,%20but%20Deadly%20Man.md)
