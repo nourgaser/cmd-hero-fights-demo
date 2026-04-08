@@ -12,6 +12,7 @@ import { type BattleRng } from "../../core/rng";
 export type SummonedEntityBlueprint = {
   kind: SummonedEntityKind;
   definitionCardId: string;
+  keywordIds?: string[];
   maxHealth: number;
   armor: number;
   magicResist: number;

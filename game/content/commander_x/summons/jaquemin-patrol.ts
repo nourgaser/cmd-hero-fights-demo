@@ -2,11 +2,13 @@ import type { SummonedEntityBlueprint } from "../../../engine/actions/effects/co
 import type { EntityActiveProfile } from "../../../engine/actions/resolve-use-entity-active";
 import type { EntityFootprint } from "../../../shared/models";
 import { SUMMON_ENTITY_IDS } from "../constants";
+import { KEYWORD_IDS } from "../../keywords";
 import type { CommanderXSummonedDefinition } from "./types";
 
 export const JAQUEMIN_PATROL_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "companion",
   definitionCardId: "card.commander-x.jaquemin-patrol",
+  keywordIds: [KEYWORD_IDS.chivalry],
   maxHealth: 15,
   armor: 1,
   magicResist: 0,

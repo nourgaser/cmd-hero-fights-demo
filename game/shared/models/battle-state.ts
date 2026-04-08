@@ -67,6 +67,7 @@ export const SummonedEntityStateSchema = z.object({
   anchorPosition: PositionSchema,
   footprint: EntityFootprintSchema,
   definitionCardId: CardIdSchema,
+  keywordIds: z.array(z.string().min(1)).default([]),
   maxHealth: z.number().nonnegative(),
   currentHealth: z.number().nonnegative(),
   armor: z.number().int().nonnegative(),

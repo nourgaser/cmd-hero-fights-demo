@@ -5,7 +5,7 @@ import type {
   NumberExplanation,
   NumberContribution,
 } from "../../shared/models";
-import { countAdjacentAllyOccupiedCells } from "../battlefield/adjacency";
+import { resolveAdjacentAllyDefenseContribution } from "../battlefield/adjacency";
 
 /**
  * NumberResolver computes effective numeric values for any property on any entity.
@@ -99,18 +99,31 @@ export function resolveEffectiveNumber(options: {
 
   // Apply battlefield adjacency buff for defense stats.
   if (propertyPath === "armor" || propertyPath === "magicResist") {
-    const adjacencyDelta = countAdjacentAllyOccupiedCells({
+    const adjacency = resolveAdjacentAllyDefenseContribution({
       state,
       targetEntityId,
     });
 
+    const adjacencyDelta = adjacency.baseCount + adjacency.chivalryBonus;
+
     if (adjacencyDelta > 0) {
       accumulated += adjacencyDelta;
-      contributions.push({
-        sourceId: `core:adjacency:${propertyPath}`,
-        label: "Adjacent allies",
-        delta: adjacencyDelta,
-      });
+
+      if (adjacency.baseCount > 0) {
+        contributions.push({
+          sourceId: `core:adjacency:${propertyPath}`,
+          label: "Adjacent allies",
+          delta: adjacency.baseCount,
+        });
+      }
+
+      if (adjacency.chivalryBonus > 0) {
+        contributions.push({
+          sourceId: `core:adjacency:chivalry:${propertyPath}`,
+          label: "Chivalry adjacency",
+          delta: adjacency.chivalryBonus,
+        });
+      }
     }
   }
 

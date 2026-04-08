@@ -6,18 +6,28 @@ import {
   positionKey,
 } from "../../shared/models";
 
+const CHIVALRY_KEYWORD_ID = "keyword.chivalry";
+
 export function countAdjacentAllyOccupiedCells(options: {
   state: BattleState;
   targetEntityId: string;
 }): number {
+  return resolveAdjacentAllyDefenseContribution(options).baseCount;
+}
+
+export function resolveAdjacentAllyDefenseContribution(options: {
+  state: BattleState;
+  targetEntityId: string;
+}): { baseCount: number; chivalryBonus: number } {
   const { state, targetEntityId } = options;
   const target = state.entitiesById[targetEntityId];
   if (!target) {
-    return 0;
+    return { baseCount: 0, chivalryBonus: 0 };
   }
 
   const targetCells = footprintCells(target.anchorPosition, target.footprint);
   const adjacentOccupiedAllyCellKeys = new Set<string>();
+  let chivalryBonus = 0;
 
   for (const cell of targetCells) {
     const neighbors: Position[] = [
@@ -46,9 +56,25 @@ export function countAdjacentAllyOccupiedCells(options: {
         continue;
       }
 
-      adjacentOccupiedAllyCellKeys.add(positionKey(neighbor));
+      const neighborKey = positionKey(neighbor);
+      if (adjacentOccupiedAllyCellKeys.has(neighborKey)) {
+        continue;
+      }
+
+      adjacentOccupiedAllyCellKeys.add(neighborKey);
+
+      if (
+        occupantEntity.kind !== "hero" &&
+        occupantEntity.keywordIds.includes(CHIVALRY_KEYWORD_ID)
+      ) {
+        // Chivalry doubles adjacency-based defense buffs from adjacent allied chivalry units.
+        chivalryBonus += 1;
+      }
     }
   }
 
-  return adjacentOccupiedAllyCellKeys.size;
+  return {
+    baseCount: adjacentOccupiedAllyCellKeys.size,
+    chivalryBonus,
+  };
 }

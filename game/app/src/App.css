@@ -581,7 +581,10 @@ html[data-shift-held='true'] .game-toast-detail {
   }
 
   .deck-editor-header-actions {
-    flex-wrap: wrap;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    gap: 8px;
+    width: 100%;
   }
 
   .deck-editor-hero-tab,
@@ -589,6 +592,9 @@ html[data-shift-held='true'] .game-toast-detail {
   .deck-editor-close {
     flex: 1 1 auto;
     min-height: 44px;
+    min-width: 0;
+    white-space: normal;
+    text-align: center;
   }
 
   .deck-editor-rules {

@@ -54,6 +54,7 @@ export function handleSummonEffect(
           anchorPosition: anchor,
           footprint,
           definitionCardId: blueprint.definitionCardId,
+          keywordIds: blueprint.keywordIds ?? [],
           maxHealth: blueprint.maxHealth,
           currentHealth: blueprint.maxHealth,
           armor: blueprint.armor,
