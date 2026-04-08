@@ -70,6 +70,7 @@ export const DamageAppliedEventSchema = z.object({
   targetEntityId: EntityIdSchema,
   amount: z.number().nonnegative(),
   damageType: DamageTypeSchema,
+  isAttack: z.boolean(),
   wasDodged: z.boolean(),
   wasCritical: z.boolean().optional(),
   rngRawRoll: z.number().optional(),

@@ -39,6 +39,7 @@ export function createCommanderXInitialListeners(heroEntityId: string): Listener
       eventKind: "damageApplied",
       ownerHeroEntityId: heroEntityId,
       conditions: [
+        { kind: "damageIsAttack" },
         { kind: "damageNotDodged" },
         { kind: "damageSourceIsListenerOwnerHero" },
       ],

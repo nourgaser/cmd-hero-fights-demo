@@ -36,7 +36,10 @@ export const JAQUEMIN_PATROL_CARD = {
         listenerId: "listener.jaquemin.follow-up",
         eventKind: "damageApplied",
         sourceBinding: "lastSummonedEntity",
-        conditions: [{ kind: "damageSourceIsListenerOwnerHero" }],
+        conditions: [
+          { kind: "damageIsAttack" },
+          { kind: "damageSourceIsListenerOwnerHero" },
+        ],
         lifetime: "persistent",
         effects: [
           {

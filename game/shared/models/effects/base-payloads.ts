@@ -9,6 +9,7 @@ export const ModifiableStatSchema = z.enum([
   "attackDamage",
   "abilityPower",
   "dodgeChance",
+  "attackFlatBonusDamage",
 ]);
 
 export const DealDamageEffectPayloadSchema = z

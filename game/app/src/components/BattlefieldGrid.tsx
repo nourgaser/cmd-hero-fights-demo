@@ -272,6 +272,8 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const healthHue = Math.round((healthPercent / 100) * 120)
             const combatTraces = entityStats?.combatNumbers
             const attackDamageClass = combatTraces ? numberDeltaClass(combatTraces.attackDamage.delta) : 'delta-neutral'
+            const attackFlatBonusDamage = combatTraces?.attackFlatBonusDamage.effective ?? 0
+            const attackFlatBonusDamageClass = combatTraces ? numberDeltaClass(combatTraces.attackFlatBonusDamage.delta) : 'delta-neutral'
             const armorClass = combatTraces ? numberDeltaClass(combatTraces.armor.delta) : 'delta-neutral'
             const abilityPowerClass = combatTraces ? numberDeltaClass(combatTraces.abilityPower.delta) : 'delta-neutral'
             const magicResistClass = combatTraces ? numberDeltaClass(combatTraces.magicResist.delta) : 'delta-neutral'
@@ -285,6 +287,9 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const apContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.abilityPower.contributions)
               : { rows: [], hiddenCount: 0 }
+            const attackFlatContributionSummary = combatTraces
+              ? summarizeStatContributions(combatTraces.attackFlatBonusDamage.contributions)
+              : { rows: [], hiddenCount: 0 }
             const armorContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.armor.contributions)
               : { rows: [], hiddenCount: 0 }
@@ -296,6 +301,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               : { rows: [], hiddenCount: 0 }
             const hasAnyContributionRows =
               adContributionSummary.rows.length > 0 ||
+              attackFlatContributionSummary.rows.length > 0 ||
               apContributionSummary.rows.length > 0 ||
               armorContributionSummary.rows.length > 0 ||
               mrContributionSummary.rows.length > 0 ||
@@ -515,6 +521,27 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                               </span>
                             ) : null}
                           </span>
+                          {attackFlatBonusDamage !== 0 ? (
+                            <span className={`battlefield-hover-stat ${attackFlatBonusDamageClass}`.trim()}>
+                              <strong>ATK+</strong>
+                              <em>{attackFlatBonusDamage}</em>
+                              {shouldShowDetailedTooltips && attackFlatContributionSummary.rows.length > 0 ? (
+                                <span className="battlefield-hover-stat-sources">
+                                  {attackFlatContributionSummary.rows.map((row) => (
+                                    <span key={`attack-flat-${row.sourceId}`} className="battlefield-hover-stat-source-row">
+                                      <span className="battlefield-hover-stat-source-name">{row.label}</span>
+                                      <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
+                                        {formatSignedDelta(row.delta)}
+                                      </span>
+                                    </span>
+                                  ))}
+                                  {attackFlatContributionSummary.hiddenCount > 0 ? (
+                                    <span className="battlefield-hover-stat-source-more">+{attackFlatContributionSummary.hiddenCount} more</span>
+                                  ) : null}
+                                </span>
+                              ) : null}
+                            </span>
+                          ) : null}
                           <span className={`battlefield-hover-stat ${armorClass}`.trim()}>
                             <strong>Armor</strong>
                             <em>{entityStats.armor}</em>
@@ -610,6 +637,12 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <Icon icon="game-icons:broadsword" />
                         {entityStats.attackDamage}
                       </span>
+                      {attackFlatBonusDamage !== 0 ? (
+                        <span className={`entity-stat-pill ${attackFlatBonusDamageClass}`.trim()}>
+                          <Icon icon="game-icons:crossed-swords" />
+                          +{attackFlatBonusDamage}
+                        </span>
+                      ) : null}
                       <span className={`entity-stat-pill ${armorClass}`.trim()}>
                         <Icon icon="game-icons:checked-shield" />
                         {entityStats.armor}

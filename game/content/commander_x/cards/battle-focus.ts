@@ -1,7 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
-const BATTLE_FOCUS_ATTACK_BONUS = 12; // most things scale with 50% AD not 100% so it's more like 6
+const BATTLE_FOCUS_ATTACK_BONUS = 6;
 
 export const BATTLE_FOCUS_CARD = {
   id: "card.commander-x.battle-focus",
@@ -24,7 +24,7 @@ export const BATTLE_FOCUS_CARD = {
       payload: {
         kind: "modifyStat",
         target: "sourceOwnerHero",
-        stat: "attackDamage",
+        stat: "attackFlatBonusDamage",
         amount: BATTLE_FOCUS_ATTACK_BONUS,
         duration: "persistent",
         changeKind: "apply",
@@ -42,7 +42,10 @@ export const BATTLE_FOCUS_CARD = {
         kind: "addListener",
         listenerId: "listener.battle-focus.consume",
         eventKind: "damageApplied",
-        conditions: [{ kind: "damageSourceIsListenerOwnerHero" }],
+        conditions: [
+          { kind: "damageIsAttack" },
+          { kind: "damageSourceIsListenerOwnerHero" },
+        ],
         lifetime: "once",
         effects: [
           {
@@ -50,7 +53,7 @@ export const BATTLE_FOCUS_CARD = {
             payload: {
               kind: "modifyStat",
               target: "sourceOwnerHero",
-              stat: "attackDamage",
+              stat: "attackFlatBonusDamage",
               amount: BATTLE_FOCUS_ATTACK_BONUS,
               duration: "persistent",
               changeKind: "removeMatching",

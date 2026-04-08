@@ -27,6 +27,7 @@ export type AppNumberTrace = {
 
 const STAT_METADATA = {
   attackDamage: { label: 'attack damage', shortLabel: 'AD', iconId: 'game-icons:broadsword' },
+  attackFlatBonusDamage: { label: 'flat attack bonus', shortLabel: 'ATK+', iconId: 'game-icons:crossed-swords' },
   abilityPower: { label: 'ability power', shortLabel: 'AP', iconId: 'game-icons:magic-swirl' },
   armor: { label: 'armor', shortLabel: 'AR', iconId: 'game-icons:checked-shield' },
   magicResist: { label: 'magic resist', shortLabel: 'MR', iconId: 'game-icons:shield-reflect' },
@@ -72,6 +73,7 @@ export type AppBattlePreview = {
         minimumTrace: AppNumberTrace
         maximumTrace: AppNumberTrace
         attackDamageTrace: AppNumberTrace
+        attackFlatBonusDamageTrace: AppNumberTrace
         abilityPowerTrace: AppNumberTrace
         summaryText: string
         summaryDetailText: string | null
@@ -162,6 +164,7 @@ export type AppBattlePreview = {
           armor: AppNumberTrace
           magicResist: AppNumberTrace
           attackDamage: AppNumberTrace
+          attackFlatBonusDamage: AppNumberTrace
           abilityPower: AppNumberTrace
           dodgeChance: AppNumberTrace
         }
@@ -406,6 +409,17 @@ function describeNumericCardText(options: {
     const attackDamageValue = actorNumberTraces?.attackDamage.effective ?? actorHero.attackDamage
     const abilityPowerValue = actorNumberTraces?.abilityPower.effective ?? actorHero.abilityPower
     const armorValue = actorNumberTraces?.armor.effective ?? actorHero.armor
+    const attackFlatBonusDamageTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'attackFlatBonusDamage',
+            baseValue: 0,
+            clampMin: 0,
+          })
+        : makeStaticNumberTrace(0)
     const minimumTrace =
       gameApi && state
         ? resolveNumberTrace({
@@ -440,16 +454,22 @@ function describeNumericCardText(options: {
       anchorHeroEntityId: luck.anchorHeroEntityId,
     })
 
+    const flatBonusText =
+      attackFlatBonusDamageTrace.effective !== 0
+        ? ` + ${formatPreviewNumber(attackFlatBonusDamageTrace.effective)} flat attack bonus on hit`
+        : ''
+
     const damageLabel = damagePayload.damageType === 'physical' ? 'physical damage' : damagePayload.damageType === 'magic' ? 'magic damage' : 'true damage'
     const summaryText = adjusted.minimum === adjusted.maximum
-      ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${damageLabel}.`
-      : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${damageLabel}.`
+      ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${damageLabel}${flatBonusText}.`
+      : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${damageLabel}${flatBonusText}.`
 
     const detailParts = [
       `${formatPreviewNumber(effectiveMinimumBase)}-${formatPreviewNumber(effectiveMaximumBase)} base`,
       damagePayload.attackDamageScaling > 0 ? `${formatPreviewNumber(damagePayload.attackDamageScaling * 100)}% AD` : null,
       damagePayload.abilityPowerScaling > 0 ? `${formatPreviewNumber(damagePayload.abilityPowerScaling * 100)}% AP` : null,
       damagePayload.armorScaling > 0 ? `${formatPreviewNumber(damagePayload.armorScaling * 100)}% armor` : null,
+      attackFlatBonusDamageTrace.effective !== 0 ? `+${formatPreviewNumber(attackFlatBonusDamageTrace.effective)} flat attack bonus` : null,
       adjusted.shift !== 0 ? `Luck shift ${formatSignedDelta(adjusted.shift)} (${adjusted.bias >= 0 ? 'favored' : 'unfavored'})` : 'No luck shift',
     ].filter((part): part is string => !!part)
 
@@ -460,6 +480,9 @@ function describeNumericCardText(options: {
       actorNumberTraces ? numberTraceToDetailLine('AP used', actorNumberTraces.abilityPower) : null,
       actorNumberTraces && damagePayload.armorScaling > 0
         ? numberTraceToDetailLine('Armor used', actorNumberTraces.armor)
+        : null,
+      attackFlatBonusDamageTrace.effective !== 0
+        ? numberTraceToDetailLine('Flat attack bonus', attackFlatBonusDamageTrace)
         : null,
     ].filter((line): line is string => !!line)
 
@@ -472,6 +495,41 @@ function describeNumericCardText(options: {
           : adjusted.minimum < minimum || adjusted.maximum < maximum
             ? 'negative'
             : 'neutral',
+    }
+  }
+
+  if (payload.kind === 'destroyArmorAndDealPerArmorToEnemyHero' || payload.kind === 'destroySelfArmorAndDealPerArmorToTarget') {
+    const armorDamagePayload = payload as {
+      kind: 'destroyArmorAndDealPerArmorToEnemyHero' | 'destroySelfArmorAndDealPerArmorToTarget'
+      damagePerArmor: number
+    }
+    const attackFlatBonusDamageTrace =
+      gameApi && state
+        ? resolveNumberTrace({
+            gameApi,
+            state,
+            targetEntityId: sourceEntityId ?? actorHero.entityId,
+            propertyPath: 'attackFlatBonusDamage',
+            baseValue: 0,
+            clampMin: 0,
+          })
+        : makeStaticNumberTrace(0)
+    const flatBonusText =
+      attackFlatBonusDamageTrace.effective !== 0
+        ? ` + ${formatPreviewNumber(attackFlatBonusDamageTrace.effective)} flat attack bonus on hit`
+        : ''
+    const summaryText = `Destroy base and permanent armor on target, then deal ${formatPreviewNumber(armorDamagePayload.damagePerArmor)} physical damage per armor destroyed${flatBonusText}.`
+    const detailLines = [
+      `Damage per armor: ${formatPreviewNumber(armorDamagePayload.damagePerArmor)}`,
+      attackFlatBonusDamageTrace.effective !== 0
+        ? numberTraceToDetailLine('Flat attack bonus', attackFlatBonusDamageTrace)
+        : null,
+    ].filter((line): line is string => !!line)
+
+    return {
+      summaryText,
+      summaryDetailText: detailLines.join('\n'),
+      summaryTone: 'neutral',
     }
   }
 
@@ -625,6 +683,7 @@ function buildHeroBasicAttackSummary(options: {
   minimumTrace: AppNumberTrace
   maximumTrace: AppNumberTrace
   attackDamageTrace: AppNumberTrace
+  attackFlatBonusDamageTrace: AppNumberTrace
   abilityPowerTrace: AppNumberTrace
   luck: {
     anchorHeroEntityId: string
@@ -634,6 +693,7 @@ function buildHeroBasicAttackSummary(options: {
   minimumTrace: AppNumberTrace
   maximumTrace: AppNumberTrace
   attackDamageTrace: AppNumberTrace
+  attackFlatBonusDamageTrace: AppNumberTrace
   abilityPowerTrace: AppNumberTrace
   summaryText: string
   summaryDetailText: string
@@ -647,6 +707,7 @@ function buildHeroBasicAttackSummary(options: {
     minimumTrace,
     maximumTrace,
     attackDamageTrace,
+    attackFlatBonusDamageTrace,
     abilityPowerTrace,
     luck,
   } = options
@@ -684,18 +745,25 @@ function buildHeroBasicAttackSummary(options: {
   const detailRows = [
     numberTraceToDetailLine('AD used', attackDamageTrace),
     numberTraceToDetailLine('AP used', abilityPowerTrace),
+    numberTraceToDetailLine('Flat attack bonus', attackFlatBonusDamageTrace),
   ]
+
+  const flatBonusText =
+    attackFlatBonusDamageTrace.effective !== 0
+      ? ` + ${formatPreviewNumber(attackFlatBonusDamageTrace.effective)} flat attack bonus on hit`
+      : ''
 
   return {
     minimumTrace,
     maximumTrace,
     attackDamageTrace,
+    attackFlatBonusDamageTrace,
     abilityPowerTrace,
     summaryText:
       adjusted.minimum === adjusted.maximum
-        ? `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType} damage.`
-        : `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage.`,
-    summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
+        ? `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType} damage${flatBonusText}.`
+        : `${heroName} basic attack deals ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage${flatBonusText}.`,
+    summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${attackFlatBonusDamageTrace.effective !== 0 ? `\nFlat attack bonus is added after resistance: +${formatPreviewNumber(attackFlatBonusDamageTrace.effective)}.` : ''}${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
     summaryTone:
       adjusted.minimum > minimum || adjusted.maximum > maximum
         ? 'positive'
@@ -720,6 +788,7 @@ function buildEntityActiveSummary(options: {
   minimumTrace: AppNumberTrace
   maximumTrace: AppNumberTrace
   attackDamageTrace: AppNumberTrace
+  attackFlatBonusDamageTrace: AppNumberTrace
   abilityPowerTrace: AppNumberTrace
   luck: {
     anchorHeroEntityId: string
@@ -740,6 +809,7 @@ function buildEntityActiveSummary(options: {
     minimumTrace,
     maximumTrace,
     attackDamageTrace,
+    attackFlatBonusDamageTrace,
     abilityPowerTrace,
     luck,
   } = options
@@ -776,7 +846,13 @@ function buildEntityActiveSummary(options: {
   const detailRows = [
     numberTraceToDetailLine('AD used', attackDamageTrace),
     numberTraceToDetailLine('AP used', abilityPowerTrace),
+    numberTraceToDetailLine('Flat attack bonus', attackFlatBonusDamageTrace),
   ]
+
+  const flatBonusText =
+    attackFlatBonusDamageTrace.effective !== 0
+      ? ` + ${formatPreviewNumber(attackFlatBonusDamageTrace.effective)} flat attack bonus on hit`
+      : ''
 
   return {
     moveCost: attack.moveCost,
@@ -784,9 +860,9 @@ function buildEntityActiveSummary(options: {
     canBeDodged: attack.canBeDodged,
     summaryText:
       adjusted.minimum === adjusted.maximum
-        ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType}.`
-        : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType}.`,
-    summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
+        ? `Deal ${formatPreviewNumber(adjusted.minimum)} ${attack.damageType}${flatBonusText}.`
+        : `Deal ${formatPreviewNumber(adjusted.minimum)}-${formatPreviewNumber(adjusted.maximum)} ${attack.damageType}${flatBonusText}.`,
+    summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${attackFlatBonusDamageTrace.effective !== 0 ? `\nFlat attack bonus is added after resistance: +${formatPreviewNumber(attackFlatBonusDamageTrace.effective)}.` : ''}${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
     summaryTone:
       adjusted.minimum > minimum || adjusted.maximum > maximum
         ? 'positive'
@@ -909,6 +985,16 @@ function resolveSummonPreviewForCard(options: {
                 }),
               )
             : makeStaticNumberTrace(summonedBlueprint.attackDamage),
+        attackFlatBonusDamageTrace:
+          summonedBlueprint.kind === 'weapon'
+            ? resolveNumberTrace({
+                gameApi,
+                state,
+                targetEntityId: ownerHeroEntityId,
+                propertyPath: 'attackFlatBonusDamage',
+                baseValue: 0,
+              })
+            : makeStaticNumberTrace(0),
         abilityPowerTrace: makeStaticNumberTrace(summonedBlueprint.abilityPower),
         luck,
       })
@@ -1146,6 +1232,13 @@ function buildPreviewFromState(options: {
         baseValue: entity.attackDamage,
         clampMin: 0,
       }),
+      attackFlatBonusDamageTrace: resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'attackFlatBonusDamage',
+        baseValue: 0,
+      }),
       abilityPowerTrace: resolveNumberTrace({
         gameApi,
         state,
@@ -1172,6 +1265,7 @@ function buildPreviewFromState(options: {
         minimumTrace: basicAttack.minimumTrace,
         maximumTrace: basicAttack.maximumTrace,
         attackDamageTrace: basicAttack.attackDamageTrace,
+        attackFlatBonusDamageTrace: basicAttack.attackFlatBonusDamageTrace,
         abilityPowerTrace: basicAttack.abilityPowerTrace,
         summaryText: basicAttack.summaryText,
         summaryDetailText: basicAttack.summaryDetailText,
@@ -1267,6 +1361,13 @@ function buildPreviewFromState(options: {
       clampMin: 0,
       clampMax: 1,
     })
+    const attackFlatBonusDamageTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'attackFlatBonusDamage',
+      baseValue: 0,
+    })
     const effectiveCriticalChance = Math.max(0, Math.min(1, entity.criticalChance + criticalChanceLuckDelta))
     const effectiveDodgeChance = Math.max(0, Math.min(1, dodgeChanceTrace.effective + dodgeChanceLuckDelta))
 
@@ -1291,6 +1392,7 @@ function buildPreviewFromState(options: {
           armor: armorTrace,
           magicResist: magicResistTrace,
           attackDamage: attackDamageTrace,
+          attackFlatBonusDamage: attackFlatBonusDamageTrace,
           abilityPower: abilityPowerTrace,
           dodgeChance: dodgeChanceTrace,
         },
@@ -1367,6 +1469,7 @@ function buildPreviewFromState(options: {
         armor: armorTrace,
         magicResist: magicResistTrace,
         attackDamage: attackDamageTrace,
+        attackFlatBonusDamage: attackFlatBonusDamageTrace,
         abilityPower: abilityPowerTrace,
         dodgeChance: dodgeChanceTrace,
       },
@@ -1400,6 +1503,16 @@ function buildPreviewFromState(options: {
               clampMin: 0,
             }),
             attackDamageTrace: activeAttackDamageTrace,
+            attackFlatBonusDamageTrace:
+              entity.kind === 'weapon'
+                ? resolveNumberTrace({
+                    gameApi,
+                    state,
+                    targetEntityId: entity.ownerHeroEntityId,
+                    propertyPath: 'attackFlatBonusDamage',
+                    baseValue: 0,
+                  })
+                : makeStaticNumberTrace(0),
             abilityPowerTrace,
             luck: state.luck,
           })

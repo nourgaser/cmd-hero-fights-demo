@@ -12,11 +12,25 @@ import {
   getEffectiveMagicResist,
 } from "../../effects/get-effective-number";
 import { computeScaledDamageRange } from "../../../core/damage-range";
+import { resolveEffectiveNumber } from "../../../core/number-resolver";
 import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../context";
 import { targetEntityIdFromSelector } from "../targeting";
+
+function getAttackFlatBonusDamage(options: {
+  state: EffectExecutionContext["state"];
+  targetEntityId: string;
+}): number {
+  return resolveEffectiveNumber({
+    state: options.state,
+    targetEntityId: options.targetEntityId,
+    propertyPath: "attackFlatBonusDamage",
+    baseValue: 0,
+    clampMin: 0,
+  }).effectiveValue;
+}
 
 function destroyBaseAndPermanentArmor(options: {
   state: EffectExecutionContext["state"];
@@ -222,6 +236,10 @@ export function handleDealDamageEffect(
     baseMinimum: effect.payload.minimum,
     baseMaximum: effect.payload.maximum,
   });
+  const flatBonusDamage = getAttackFlatBonusDamage({
+    state,
+    targetEntityId: actorHero.entityId,
+  });
 
   const { minimum, maximum } = computeScaledDamageRange({
     minimum: effectiveRange.minimum.effectiveValue,
@@ -278,7 +296,7 @@ export function handleDealDamageEffect(
               baseMagicResist: target.magicResist,
             }).effectiveValue
           : 0;
-    appliedDamage = toAppliedDamage(adjustedRoll, resistance);
+    appliedDamage = toAppliedDamage(adjustedRoll, resistance) + roundWhole(flatBonusDamage);
   }
 
   const targetHealth = roundWhole(target.currentHealth);
@@ -303,6 +321,7 @@ export function handleDealDamageEffect(
         targetEntityId: targetId,
         amount: appliedDamage,
         damageType: effect.payload.damageType,
+        isAttack: true,
         wasDodged,
       },
     ],
@@ -373,6 +392,11 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
   }
 
   const damageAmount = destroyedArmor * effect.payload.damagePerArmor;
+  const flatBonusDamage = getAttackFlatBonusDamage({
+    state,
+    targetEntityId: actorHero.entityId,
+  });
+  const appliedDamage = damageAmount + roundWhole(flatBonusDamage);
   const nextEnemyHealth = Math.max(0, roundWhole(enemyHero.currentHealth) - damageAmount);
 
   let nextSequence = sequence;
@@ -399,14 +423,15 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
     nextSequence += 1;
   }
 
-  if (damageAmount > 0) {
+  if (appliedDamage > 0) {
     events.push({
       kind: "damageApplied",
       sequence: nextSequence,
       sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
       targetEntityId: enemyHero.entityId,
-      amount: damageAmount,
+      amount: appliedDamage,
       damageType: effect.payload.damageType,
+      isAttack: true,
       wasDodged: false,
     });
     nextSequence += 1;
@@ -425,7 +450,7 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
         },
         [enemyHero.entityId]: {
           ...enemyHero,
-          currentHealth: nextEnemyHealth,
+          currentHealth: Math.max(0, roundWhole(enemyHero.currentHealth) - appliedDamage),
         },
       },
     },
@@ -478,6 +503,11 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
   });
 
   const damageAmount = destroyedArmor * effect.payload.damagePerArmor;
+  const flatBonusDamage = getAttackFlatBonusDamage({
+    state,
+    targetEntityId: actorHero.entityId,
+  });
+  const appliedDamage = damageAmount + roundWhole(flatBonusDamage);
   const nextTargetHealth = Math.max(0, roundWhole(damageTarget.currentHealth) - damageAmount);
 
   let nextSequence = sequence;
@@ -504,14 +534,15 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
     nextSequence += 1;
   }
 
-  if (damageAmount > 0) {
+  if (appliedDamage > 0) {
     events.push({
       kind: "damageApplied",
       sequence: nextSequence,
       sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
       targetEntityId: damageTarget.entityId,
-      amount: damageAmount,
+      amount: appliedDamage,
       damageType: effect.payload.damageType,
+      isAttack: true,
       wasDodged: false,
     });
     nextSequence += 1;
@@ -530,7 +561,7 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
         },
         [damageTarget.entityId]: {
           ...damageTarget,
-          currentHealth: nextTargetHealth,
+          currentHealth: Math.max(0, roundWhole(damageTarget.currentHealth) - appliedDamage),
         },
       },
     },

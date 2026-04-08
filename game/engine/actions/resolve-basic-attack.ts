@@ -12,6 +12,7 @@ import {
   getEffectiveMagicResist,
   getEffectiveAbilityPower,
 } from "./effects/get-effective-number";
+import { resolveEffectiveNumber } from "../core/number-resolver";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
 import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
@@ -155,6 +156,12 @@ export function resolveBasicAttackAction(options: {
   const wasCritical = battleRng.nextFloat() < effectiveCriticalChance;
   const criticalMultiplier = wasCritical ? attacker.criticalMultiplier : 1;
   const finalRoll = adjustedRoll * criticalMultiplier;
+  const flatBonusDamage = resolveEffectiveNumber({
+    state,
+    targetEntityId: attacker.entityId,
+    propertyPath: "attackFlatBonusDamage",
+    baseValue: 0,
+  }).effectiveValue;
 
   const dodgeRoll = battleRng.nextFloat();
   const targetBaseDodgeChance = Math.min(
@@ -189,7 +196,7 @@ export function resolveBasicAttackAction(options: {
               baseMagicResist: target.magicResist,
             }).effectiveValue
           : 0;
-    appliedDamage = toAppliedDamage(finalRoll, resistance);
+            appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
   }
 
   const targetHealth = roundWhole(target.currentHealth);
@@ -219,6 +226,7 @@ export function resolveBasicAttackAction(options: {
     targetEntityId: target.entityId,
     amount: appliedDamage,
     damageType: attack.damageType,
+    isAttack: true,
     wasDodged,
     wasCritical,
     rngRawRoll: rawRoll,

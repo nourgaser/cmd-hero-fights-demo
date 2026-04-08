@@ -178,6 +178,16 @@ export function resolveUseEntityActiveAction(options: {
     baseValue: source.abilityPower,
     clampMin: 0,
   }).effectiveValue;
+  const flatBonusDamage =
+    source.kind === "weapon"
+      ? resolveEffectiveNumber({
+          state,
+          targetEntityId: actorHero.entityId,
+          propertyPath: "attackFlatBonusDamage",
+          baseValue: 0,
+          clampMin: 0,
+        }).effectiveValue
+      : 0;
 
   const scaledRange = computeScaledDamageRange({
     minimum,
@@ -238,7 +248,7 @@ export function resolveUseEntityActiveAction(options: {
         : profile.damageType === "magic"
           ? target.magicResist
           : 0;
-    appliedDamage = toAppliedDamage(finalRoll, resistance);
+    appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
   }
 
   const targetHealth = roundWhole(target.currentHealth);
@@ -268,6 +278,7 @@ export function resolveUseEntityActiveAction(options: {
     targetEntityId: target.entityId,
     amount: appliedDamage,
     damageType: profile.damageType,
+    isAttack: true,
     wasDodged,
     wasCritical,
     rngRawRoll: rawRoll,

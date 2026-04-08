@@ -18,6 +18,9 @@ function conditionMatches(options: {
   const { condition, listener, event, state } = options;
 
   switch (condition.kind) {
+    case "damageIsAttack": {
+      return event.kind === "damageApplied" && event.isAttack;
+    }
     case "damageNotDodged": {
       return event.kind === "damageApplied" && event.wasDodged === false;
     }
