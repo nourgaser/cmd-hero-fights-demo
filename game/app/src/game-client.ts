@@ -63,21 +63,18 @@ export type AppBattlePreview = {
       heroDefinitionId: string
       heroName: string
       passiveText: string
-      activeAuras: Array<{
-        auraKind: string
+      activePassiveEffects: Array<{
+        effectId: string
+        sourceKind: 'heroPassive' | 'aura' | 'modifier' | 'passiveRule' | 'listener'
         label: string
+        iconId: string
+        paletteKey: 'hero' | 'aura' | 'totem' | 'buff' | 'timed' | 'system'
+        priority: number
         stackCount: number
-        turnsUntilAmplifiedEnds: number
-        isAmplified: boolean
-        baseResistanceBonus: number
-        amplifiedResistanceBonus: number
-        currentResistanceBonus: number
-        triggeredThisTurn: boolean
-        instances: Array<{
-          auraId: string
-          turnsRemaining: number
-          expiresOnTurnNumber: number
-        }>
+        statusLabel: string
+        statusTone: 'active' | 'pending' | 'info'
+        shortText: string
+        detailLines: string[]
       }>
       basicAttack: {
         moveCost: number
@@ -255,6 +252,79 @@ function labelForAuraKind(auraKind: string): string {
     default:
       return auraKind
   }
+}
+
+function iconForAuraKind(auraKind: string): string {
+  switch (auraKind) {
+    case 'reactiveBulwarkResistance':
+      return 'game-icons:shield-echoes'
+    default:
+      return 'game-icons:checked-shield'
+  }
+}
+
+function formatPropertyPathLabel(propertyPath: string): string {
+  if (propertyPath in STAT_METADATA) {
+    const stat = STAT_METADATA[propertyPath as keyof typeof STAT_METADATA]
+    return stat.shortLabel
+  }
+
+  return propertyPath
+}
+
+function summarizeNumericOperation(operation: 'add' | 'subtract' | 'set', value: number, propertyPath: string): string {
+  const propertyLabel = formatPropertyPathLabel(propertyPath)
+  if (operation === 'set') {
+    return `${propertyLabel} = ${formatPreviewNumber(value)}`
+  }
+
+  const signed = operation === 'add' ? value : -value
+  return `${signed >= 0 ? '+' : '-'}${formatPreviewNumber(Math.abs(signed))} ${propertyLabel}`
+}
+
+function describeLifetime(lifetime: string): string {
+  switch (lifetime) {
+    case 'untilEndOfTurn':
+      return 'Until end of turn'
+    case 'untilSourceRemoved':
+      return 'While source remains'
+    case 'once':
+      return 'One-time trigger'
+    case 'persistent':
+      return 'Persistent'
+    default:
+      return lifetime
+  }
+}
+
+function titleCaseWords(input: string): string {
+  return input
+    .split(' ')
+    .filter((part) => part.length > 0)
+    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
+    .join(' ')
+}
+
+function prettifyEventOrConditionKind(value: string): string {
+  return titleCaseWords(value.replace(/([a-z0-9])([A-Z])/g, '$1 $2'))
+}
+
+function formatListenerLabel(listenerId: string): string {
+  const normalized = listenerId
+    .replace(/^listener\./, '')
+    .replace(/^[a-z0-9-]+:passive:/i, 'passive:')
+    .replace(/[._:-]+/g, ' ')
+    .trim()
+
+  if (!normalized) {
+    return 'Timed Passive'
+  }
+
+  return titleCaseWords(normalized)
+}
+
+function isHeroPassiveListener(listenerId: string): boolean {
+  return listenerId.includes(':passive:') || listenerId.includes('.passive.')
 }
 
 function toAppNumberTrace(explanation: NumberExplanation): AppNumberTrace {
@@ -1323,13 +1393,39 @@ function buildPreviewFromState(options: {
       }),
       luck: state.luck,
     })
+    const heroArmorTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'armor',
+      baseValue: entity.armor,
+      clampMin: 0,
+    })
+    const heroMagicResistTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'magicResist',
+      baseValue: entity.magicResist,
+      clampMin: 0,
+    })
+
+    const contributionSourceIds = new Set(
+      [
+        ...heroArmorTrace.contributions,
+        ...heroMagicResistTrace.contributions,
+        ...basicAttack.attackDamageTrace.contributions,
+        ...basicAttack.abilityPowerTrace.contributions,
+        ...basicAttack.attackFlatBonusDamageTrace.contributions,
+      ].map((contribution) => contribution.sourceId),
+    )
 
     const triggeredThisTurn = !!state.turn.damageTakenThisTurnByHeroEntityId[heroEntityId]
     const heroActiveAuras = state.activeAuras
       .filter((aura) => aura.ownerHeroEntityId === heroEntityId && aura.expiresOnTurnNumber > state.turn.turnNumber)
       .sort((left, right) => left.expiresOnTurnNumber - right.expiresOnTurnNumber)
 
-    const activeAuras = Object.values(
+    const auraGroups = Object.values(
       heroActiveAuras.reduce(
         (map, aura) => {
           const existing = map[aura.kind]
@@ -1405,12 +1501,202 @@ function buildPreviewFromState(options: {
       }
     })
 
+    const heroPassiveEffect: AppBattlePreview['heroDetailsByEntityId'][string]['activePassiveEffects'][number] = {
+      effectId: `hero-passive:${heroEntityId}`,
+      sourceKind: 'heroPassive',
+      label: `${heroDef.name} Passive`,
+      iconId: 'game-icons:aura',
+      paletteKey: 'hero',
+      priority: 1000,
+      stackCount: 1,
+      statusLabel: 'Always On',
+      statusTone: 'info',
+      shortText: heroDef.passiveText,
+      detailLines: ['Global hero passive effect.'],
+    }
+
+    const auraPassiveEffects = auraGroups.map((aura) => {
+      const durationLabel = `Duration: ${aura.instances.map((entry) => `${entry.turnsRemaining}t`).join(', ')}`
+      const triggeredLine = aura.triggeredThisTurn
+        ? `Active now: +${aura.currentResistanceBonus} res`
+        : 'Waiting for first damage this turn'
+      const ampLine = aura.isAmplified
+        ? `Amplified for ${aura.turnsUntilAmplifiedEnds} more turn${aura.turnsUntilAmplifiedEnds === 1 ? '' : 's'}`
+        : 'Play a second copy to amplify'
+
+      return {
+        effectId: `aura:${aura.auraKind}`,
+        sourceKind: 'aura' as const,
+        label: aura.label,
+        iconId: iconForAuraKind(aura.auraKind),
+        paletteKey: 'aura' as const,
+        priority: 900,
+        stackCount: aura.stackCount,
+        statusLabel: aura.isAmplified ? 'Amplified' : aura.triggeredThisTurn ? 'Active' : 'Armed',
+        statusTone: aura.triggeredThisTurn ? 'active' as const : 'pending' as const,
+        shortText: aura.triggeredThisTurn
+          ? `+${aura.currentResistanceBonus} res this turn`
+          : 'Triggers after first damage this turn',
+        detailLines: [
+          aura.isAmplified
+            ? `Amplified +${aura.amplifiedResistanceBonus} res`
+            : `Base +${aura.baseResistanceBonus} res`,
+          triggeredLine,
+          ampLine,
+          durationLabel,
+        ],
+      }
+    })
+
+    const groupedModifiers = state.activeModifiers
+      .filter((modifier) => modifier.targetEntityId === heroEntityId || contributionSourceIds.has(modifier.id))
+      .reduce(
+        (map, modifier) => {
+          const key = `${modifier.label}:${modifier.sourceEntityId ?? 'none'}`
+          const sourceEntity = modifier.sourceEntityId ? state.entitiesById[modifier.sourceEntityId] : null
+          const sourceCardName =
+            sourceEntity && sourceEntity.kind !== 'hero'
+              ? cardsById[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
+              : null
+          const operationText = summarizeNumericOperation(
+            modifier.operation,
+            modifier.value,
+            modifier.propertyPath,
+          )
+
+          const existing = map[key]
+          if (existing) {
+            existing.operations.push(operationText)
+            existing.stackCount += 1
+            return map
+          }
+
+          map[key] = {
+            effectId: `modifier:${key}`,
+            sourceKind: 'modifier' as const,
+            label: modifier.label,
+            iconId:
+              modifier.propertyPath in STAT_METADATA
+                ? STAT_METADATA[modifier.propertyPath as StatKey].iconId
+                : 'game-icons:upgrade',
+            paletteKey: sourceEntity?.kind === 'totem' ? ('totem' as const) : ('buff' as const),
+            priority: 700,
+            stackCount: 1,
+            statusLabel: describeLifetime(modifier.lifetime),
+            statusTone: modifier.lifetime === 'untilEndOfTurn' ? ('pending' as const) : ('active' as const),
+            shortText: operationText,
+            detailLines: [
+              `Target: ${modifier.targetEntityId === heroEntityId ? 'Your hero' : 'Derived contribution'}`,
+              `Source: ${sourceCardName ?? sourceEntity?.entityId ?? 'Unknown'}`,
+              `Lifetime: ${describeLifetime(modifier.lifetime)}`,
+            ],
+            operations: [operationText],
+          }
+          return map
+        },
+        {} as Record<
+          string,
+          AppBattlePreview['heroDetailsByEntityId'][string]['activePassiveEffects'][number] & {
+            operations: string[]
+          }
+        >,
+      )
+
+    const modifierPassiveEffects = Object.values(groupedModifiers).map((entry) => ({
+      ...entry,
+      shortText:
+        entry.operations.length > 1
+          ? entry.operations.join(', ')
+          : entry.operations[0] ?? entry.shortText,
+      detailLines: [...entry.detailLines, `Operations: ${entry.operations.join(', ')}`],
+    }))
+
+    const passiveRuleEffects = state.activePassiveRules
+      .filter((rule) => {
+        if (contributionSourceIds.has(rule.id)) {
+          return true
+        }
+
+        if (rule.source.kind !== 'sourceEntity') {
+          return false
+        }
+
+        const sourceEntity = state.entitiesById[rule.source.sourceEntityId]
+        if (!sourceEntity || sourceEntity.kind === 'hero') {
+          return false
+        }
+
+        return sourceEntity.ownerHeroEntityId === heroEntityId
+      })
+      .map((rule) => {
+        const sourceEntity = rule.source.kind === 'sourceEntity' ? state.entitiesById[rule.source.sourceEntityId] : null
+        const sourceCardName =
+          sourceEntity && sourceEntity.kind !== 'hero'
+            ? cardsById[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
+            : null
+        const operationSummary = rule.operations
+          .map((operation) => summarizeNumericOperation(operation.operation, operation.value, operation.propertyPath))
+          .join(', ')
+
+        return {
+          effectId: `rule:${rule.id}`,
+          sourceKind: 'passiveRule' as const,
+          label: rule.label,
+          iconId: sourceEntity?.kind === 'totem' ? 'game-icons:obelisk' : 'game-icons:surrounded-shield',
+          paletteKey: sourceEntity?.kind === 'totem' ? ('totem' as const) : ('buff' as const),
+          priority: sourceEntity?.kind === 'totem' ? 850 : 650,
+          stackCount: 1,
+          statusLabel: describeLifetime(rule.lifetime),
+          statusTone: 'active' as const,
+          shortText: operationSummary,
+          detailLines: [
+            `Source: ${sourceCardName ?? sourceEntity?.entityId ?? 'Unknown source'}`,
+            `Target selector: ${rule.targetSelector}`,
+            `Lifetime: ${describeLifetime(rule.lifetime)}`,
+          ],
+        }
+      })
+
+    const listenerEffects = state.activeListeners
+      .filter((listener) => listener.ownerHeroEntityId === heroEntityId)
+      .filter((listener) => !isHeroPassiveListener(listener.listenerId))
+      .map((listener) => ({
+        effectId: `listener:${listener.listenerId}`,
+        sourceKind: 'listener' as const,
+        label: formatListenerLabel(listener.listenerId),
+        iconId: 'game-icons:sands-of-time',
+        paletteKey: 'timed' as const,
+        priority: 500,
+        stackCount: 1,
+        statusLabel: describeLifetime(listener.lifetime),
+        statusTone: 'pending' as const,
+        shortText: `Triggers on ${prettifyEventOrConditionKind(listener.eventKind)}`,
+        detailLines: [
+          `Owner: ${listener.ownerHeroEntityId === heroEntityId ? 'Your hero' : listener.ownerHeroEntityId}`,
+          `Event: ${prettifyEventOrConditionKind(listener.eventKind)}`,
+          `Conditions: ${
+            listener.conditions.length > 0
+              ? listener.conditions.map((condition) => prettifyEventOrConditionKind(condition.kind)).join(', ')
+              : 'None'
+          }`,
+          `Queued effects: ${listener.effects.length}`,
+        ],
+      }))
+
+    const activePassiveEffects = [
+      heroPassiveEffect,
+      ...auraPassiveEffects,
+      ...passiveRuleEffects,
+      ...modifierPassiveEffects,
+      ...listenerEffects,
+    ]
+
     heroDetailsByEntityId[heroEntityId] = {
       heroEntityId,
       heroDefinitionId: entity.heroDefinitionId,
       heroName: heroDef.name,
       passiveText: heroDef.passiveText,
-      activeAuras,
+      activePassiveEffects,
       basicAttack: {
         moveCost: heroDef.basicAttack.moveCost,
         damageType: heroDef.basicAttack.damageType,

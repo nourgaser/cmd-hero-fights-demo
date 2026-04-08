@@ -754,93 +754,180 @@ html[data-shift-held='true'] .game-toast-detail {
   text-align: center;
 }
 
-.hero-auras-panel {
+.passive-effects-strip {
   border: 1px solid color-mix(in srgb, #5d4c30 28%, var(--border));
   border-radius: 12px;
-  padding: 10px 12px;
+  padding: 8px 10px;
   background:
-    linear-gradient(180deg, color-mix(in srgb, #f6eccb 80%, #ffffff 20%), color-mix(in srgb, #ecdebb 84%, #ffffff 16%));
+    linear-gradient(180deg, color-mix(in srgb, #f6eccb 74%, #ffffff 26%), color-mix(in srgb, #ecdebb 78%, #ffffff 22%));
+  display: grid;
+  gap: 8px;
 }
 
-.hero-auras-header {
+.passive-effects-head {
   display: flex;
   align-items: center;
   justify-content: space-between;
   gap: 10px;
-  margin-bottom: 6px;
 }
 
-.hero-auras-header strong {
-  font-family: var(--display);
-  font-size: 20px;
-  line-height: 1;
+.passive-effects-head strong {
+  font-family: var(--heading);
+  font-size: 13px;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: color-mix(in srgb, #2a1f12 90%, #ffffff 10%);
 }
 
-.hero-auras-header span {
-  min-width: 20px;
-  height: 20px;
+.passive-effects-head span {
+  min-width: 18px;
+  height: 18px;
   border-radius: 999px;
   border: 1px solid color-mix(in srgb, #2a1f12 36%, transparent);
   background: color-mix(in srgb, #f2d498 75%, #ffffff 25%);
   display: grid;
   place-items: center;
-  font-size: 12px;
+  font-size: 10px;
   font-weight: 700;
   color: #2a1f12;
 }
 
-.hero-aura-list {
-  list-style: none;
-  margin: 0;
-  padding: 0;
-  display: grid;
+.passive-effect-chip-row {
+  display: flex;
+  flex-wrap: wrap;
   gap: 8px;
 }
 
-.hero-aura-item {
-  border: 1px solid color-mix(in srgb, #6f5a36 30%, transparent);
-  border-radius: 10px;
-  padding: 8px 9px;
+.passive-effect-chip {
+  border: 1px solid color-mix(in srgb, #2a1f12 24%, transparent);
+  border-radius: 999px;
+  min-width: 38px;
+  height: 32px;
+  padding: 0 8px;
   background: color-mix(in srgb, #fff7e2 84%, #ffffff 16%);
-  display: grid;
-  gap: 4px;
-}
-
-.hero-aura-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 10px;
-}
-
-.hero-aura-name {
-  font-family: var(--heading);
-  font-size: 14px;
   color: #2a1f12;
+  cursor: pointer;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  gap: 6px;
+  transition: transform 120ms ease, filter 120ms ease, box-shadow 120ms ease;
 }
 
-.hero-aura-stack {
+.passive-effect-chip:hover {
+  transform: translateY(-1px);
+  filter: brightness(1.03);
+}
+
+.passive-effect-chip.active {
+  box-shadow: 0 0 0 2px color-mix(in srgb, #f0c764 72%, transparent);
+}
+
+.passive-effect-chip-active {
+  border-color: color-mix(in srgb, #2d7f4d 66%, transparent);
+  background: color-mix(in srgb, #def6e6 78%, #ffffff 22%);
+}
+
+.passive-effect-chip-pending {
+  border-color: color-mix(in srgb, #7c652f 56%, transparent);
+  background: color-mix(in srgb, #f6efdc 84%, #ffffff 16%);
+}
+
+.passive-effect-chip-info {
+  border-color: color-mix(in srgb, #3b5b80 50%, transparent);
+  background: color-mix(in srgb, #e6f1fb 80%, #ffffff 20%);
+}
+
+.passive-effect-chip-family-hero {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #5f3f13 30%, transparent);
+}
+
+.passive-effect-chip-family-aura {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #285472 34%, transparent);
+}
+
+.passive-effect-chip-family-totem {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #2f6f3c 34%, transparent);
+}
+
+.passive-effect-chip-family-buff {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #7f5a29 34%, transparent);
+}
+
+.passive-effect-chip-family-timed {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #7d5032 34%, transparent);
+}
+
+.passive-effect-chip-family-system {
+  box-shadow: inset 0 0 0 1px color-mix(in srgb, #3f466a 34%, transparent);
+}
+
+.passive-effect-icon {
+  font-size: 17px;
+}
+
+.passive-effect-stack {
   font-size: 11px;
   font-weight: 700;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, #2a1f12 34%, transparent);
-  background: color-mix(in srgb, #f0cb58 72%, #ffffff 28%);
+  min-width: 24px;
+  padding: 1px 6px;
+  border: 1px solid color-mix(in srgb, #2a1f12 22%, transparent);
+  background: color-mix(in srgb, #f0cb58 55%, #ffffff 45%);
   color: #2a1f12;
-  padding: 1px 7px;
 }
 
-.hero-aura-meta {
+.passive-effect-hover-card {
+  --hover-offset-x: -10%;
+  text-align: left;
+}
+
+.passive-effect-hover-card span {
+  font-size: 12px;
+  line-height: 1.25;
+}
+
+.passive-effect-detail {
+  border: 1px solid color-mix(in srgb, #2a1f12 18%, transparent);
+  border-radius: 10px;
+  background: color-mix(in srgb, #fff7e7 82%, #ffffff 18%);
+  padding: 7px 9px;
   display: grid;
-  gap: 2px;
+  gap: 3px;
 }
 
-.hero-aura-meta span {
+.passive-effect-detail-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 12px;
+  color: #2a1f12;
+}
+
+.passive-effect-detail-head strong {
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: color-mix(in srgb, #2d7f4d 76%, #0f2d1d 24%);
+}
+
+.passive-effect-detail p {
+  margin: 0;
   font-size: 11px;
-  color: color-mix(in srgb, #2a1f12 82%, #ffffff 18%);
-  line-height: 1.2;
+  color: color-mix(in srgb, #2a1f12 86%, #ffffff 14%);
 }
 
-.hero-aura-empty {
+.passive-effect-overflow-chip {
+  border-style: dashed;
+  min-width: 54px;
+  font-size: 11px;
+  font-weight: 700;
+  color: color-mix(in srgb, #2a1f12 90%, #ffffff 10%);
+  background: color-mix(in srgb, #f5ecd7 80%, #ffffff 20%);
+}
+
+.passive-effects-empty {
   margin: 0;
   font-size: 12px;
   color: color-mix(in srgb, #2a1f12 76%, #ffffff 24%);
@@ -867,8 +954,14 @@ html[data-shift-held='true'] .game-toast-detail {
     line-height: 1;
   }
 
-  .hero-auras-header strong {
-    font-size: 17px;
+  .passive-effect-chip {
+    height: 34px;
+    min-width: 36px;
+    padding: 0 7px;
+  }
+
+  .passive-effect-detail {
+    padding: 6px 8px;
   }
 }
 
