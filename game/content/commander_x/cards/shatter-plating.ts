@@ -15,7 +15,7 @@ export const SHATTER_PLATING_CARD = {
   tags: ["sacrifice"],
   summaryText: {
     template:
-      "Destroy your base and permanent armor. Deal {damagePerArmor} damage per armor destroyed to a selected target.",
+      "Destroy all of your base armor. Deal {damagePerArmor} damage per armor destroyed to a selected target.",
     params: {
       damagePerArmor: SHATTER_PLATING_DAMAGE_PER_ARMOR,
     },
@@ -31,7 +31,7 @@ export const SHATTER_PLATING_CARD = {
       },
       displayText: {
         template:
-          "Destroy your base and permanent armor. Deal {damagePerArmor} physical damage per armor destroyed.",
+          "Destroy all of your base armor. Deal {damagePerArmor} physical damage per armor destroyed.",
         params: {
           damagePerArmor: SHATTER_PLATING_DAMAGE_PER_ARMOR,
         },

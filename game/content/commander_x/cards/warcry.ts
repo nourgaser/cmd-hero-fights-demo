@@ -15,7 +15,7 @@ export const WARCRY_CARD = {
   tags: ["armor", "burst"],
   summaryText: {
     template:
-      "Destroy base and permanent armor on a target, then deal {damagePerArmor} damage to the enemy hero per armor destroyed.",
+      "Destroy all of that target's base armor, then deal {damagePerArmor} damage to the enemy hero per armor destroyed.",
     params: {
       damagePerArmor: WARCRY_DAMAGE_PER_ARMOR,
     },
@@ -31,7 +31,7 @@ export const WARCRY_CARD = {
       },
       displayText: {
         template:
-          "Destroy base and permanent armor on target. Deal {damagePerArmor} physical damage to the enemy hero per armor destroyed.",
+          "Destroy all of that target's base armor, then deal {damagePerArmor} physical damage to the enemy hero per armor destroyed.",
         params: {
           damagePerArmor: WARCRY_DAMAGE_PER_ARMOR,
         },
