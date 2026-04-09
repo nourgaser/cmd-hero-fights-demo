@@ -14,10 +14,10 @@ import {
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from './data/game-bootstrap.ts'
 import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from './utils/render-numeric-text.tsx'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
-import { DebugStatePanel } from './components/DebugStatePanel.tsx'
+import { SettingsPanel } from './components/SettingsPanel.tsx'
 
-const DEBUG_SEED_STORAGE_KEY = 'cmd-hero:debug-seed'
-const DEBUG_BOOTSTRAP_STORAGE_KEY = 'cmd-hero:debug-bootstrap-config'
+const SETTINGS_SEED_STORAGE_KEY = 'cmd-hero:settings-seed'
+const SETTINGS_BOOTSTRAP_STORAGE_KEY = 'cmd-hero:settings-bootstrap-config'
 const MUSIC_MUTED_STORAGE_KEY = 'cmd-hero:music-muted'
 const MUSIC_SOURCE = '/game_music.mp3'
 const ACTION_TOAST_ID = 'action-feedback'
@@ -58,7 +58,7 @@ function loadBootstrapConfig() {
     return DEFAULT_GAME_BOOTSTRAP_CONFIG
   }
 
-  const persistedBootstrapConfig = window.localStorage.getItem(DEBUG_BOOTSTRAP_STORAGE_KEY)
+  const persistedBootstrapConfig = window.localStorage.getItem(SETTINGS_BOOTSTRAP_STORAGE_KEY)
   if (persistedBootstrapConfig) {
     try {
       const parsed = JSON.parse(persistedBootstrapConfig) as GameBootstrapConfig
@@ -67,8 +67,8 @@ function loadBootstrapConfig() {
         seed: incrementSeed(parsed.seed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed),
       }
 
-      window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
-      window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextConfig.seed)
+      window.localStorage.setItem(SETTINGS_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
+      window.localStorage.setItem(SETTINGS_SEED_STORAGE_KEY, nextConfig.seed)
 
       return nextConfig
     } catch {
@@ -76,7 +76,7 @@ function loadBootstrapConfig() {
     }
   }
 
-  const persistedSeed = window.localStorage.getItem(DEBUG_SEED_STORAGE_KEY)?.trim()
+  const persistedSeed = window.localStorage.getItem(SETTINGS_SEED_STORAGE_KEY)?.trim()
   const baseSeed = persistedSeed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed
   const nextSeed = incrementSeed(baseSeed)
   const nextConfig = {
@@ -84,8 +84,8 @@ function loadBootstrapConfig() {
     seed: nextSeed,
   }
 
-  window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextSeed)
-  window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
+  window.localStorage.setItem(SETTINGS_SEED_STORAGE_KEY, nextSeed)
+  window.localStorage.setItem(SETTINGS_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
 
   return nextConfig
 }
@@ -186,6 +186,7 @@ function App() {
   const [showDetailedTooltips, setShowDetailedTooltips] = useState(false)
   const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
+  const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
@@ -416,8 +417,8 @@ function App() {
     setBootstrapConfig(nextConfig)
 
     if (typeof window !== 'undefined') {
-      window.localStorage.setItem(DEBUG_SEED_STORAGE_KEY, nextConfig.seed)
-      window.localStorage.setItem(DEBUG_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
+      window.localStorage.setItem(SETTINGS_SEED_STORAGE_KEY, nextConfig.seed)
+      window.localStorage.setItem(SETTINGS_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
     }
 
     return true
@@ -690,18 +691,21 @@ function App() {
       <div key={`announcement-${liveAnnouncement.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
         {liveAnnouncement.text}
       </div>
-      <DebugStatePanel
-        state={runtime.session.state as Record<string, unknown>}
-        bootstrapConfig={bootstrapConfig}
-        deckEditorCards={deckEditorCards}
-        seed={bootstrapConfig.seed}
-        isDeckEditorOpen={isDeckEditorOpen}
-        deckEditorHeroIndex={deckEditorHeroIndex}
-        onSeedChange={handleSeedChange}
-        onBootstrapConfigChange={handleBootstrapConfigChange}
-        onCloseDeckEditor={handleCloseDeckEditor}
-        onHardReset={handleHardReset}
-      />
+      {isSettingsPanelOpen ? (
+        <SettingsPanel
+          state={runtime.session.state as Record<string, unknown>}
+          bootstrapConfig={bootstrapConfig}
+          deckEditorCards={deckEditorCards}
+          seed={bootstrapConfig.seed}
+          isDeckEditorOpen={isDeckEditorOpen}
+          deckEditorHeroIndex={deckEditorHeroIndex}
+          onSeedChange={handleSeedChange}
+          onBootstrapConfigChange={handleBootstrapConfigChange}
+          onCloseDeckEditor={handleCloseDeckEditor}
+          onHardReset={handleHardReset}
+          onClosePanel={() => setIsSettingsPanelOpen(false)}
+        />
+      ) : null}
 
       <audio ref={musicAudioRef} src={MUSIC_SOURCE} loop autoPlay muted={isMusicMuted} />
 
@@ -725,6 +729,9 @@ function App() {
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl
+          isSettingsOpen={isSettingsPanelOpen}
+          onToggleSettings={() => setIsSettingsPanelOpen((current) => !current)}
+          showSettingsControl
         />
         <PlayerScreen
           key="screen-b"
@@ -742,6 +749,12 @@ function App() {
           onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroBId)}
           onOpenDeckEditor={() => handleOpenDeckEditor(1)}
+          isMusicMuted={isMusicMuted}
+          onToggleMusic={() => setIsMusicMuted((current) => !current)}
+          showMusicControl
+          isSettingsOpen={isSettingsPanelOpen}
+          onToggleSettings={() => setIsSettingsPanelOpen((current) => !current)}
+          showSettingsControl
         />
       </main>
     </>

@@ -37,6 +37,9 @@ type PlayerScreenProps = {
   isMusicMuted?: boolean
   onToggleMusic?: () => void
   showMusicControl?: boolean
+  isSettingsOpen?: boolean
+  onToggleSettings?: () => void
+  showSettingsControl?: boolean
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -58,6 +61,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
     isMusicMuted,
     onToggleMusic,
     showMusicControl,
+    isSettingsOpen,
+    onToggleSettings,
+    showSettingsControl,
   } = props
   const screenRef = useRef<HTMLElement | null>(null)
 
@@ -666,6 +672,17 @@ export function PlayerScreen(props: PlayerScreenProps) {
               aria-label={isMusicMuted ? 'Unmute music' : 'Mute music'}
             >
               <span aria-hidden="true">{isMusicMuted ? '🔇' : '🎵'}</span>
+            </button>
+          ) : null}
+          {showSettingsControl ? (
+            <button
+              type="button"
+              className={`help-chip settings-button${isSettingsOpen ? ' settings-button-active' : ''}`}
+              onClick={onToggleSettings}
+              aria-pressed={isSettingsOpen ? 'true' : 'false'}
+              aria-label={isSettingsOpen ? 'Close settings' : 'Open settings'}
+            >
+              <span aria-hidden="true">⚙</span>
             </button>
           ) : null}
           <button

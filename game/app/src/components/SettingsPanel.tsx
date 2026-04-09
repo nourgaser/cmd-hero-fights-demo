@@ -39,7 +39,6 @@ type SettingsPanelProps = {
 
 const SETTINGS_PANEL_STORAGE_KEY = 'cmd-hero:settings-panel-state'
 const DEFAULT_LAYOUT = { x: 12, y: 12, width: 360, height: 560 }
-const COLLAPSED_BUBBLE_SIZE = 56
 const MAX_DECK_SIZE = 15
 const MAX_ULTIMATE_COPIES = 1
 const DECK_SAVE_TOAST_ID = 'deck-editor-save'
@@ -69,7 +68,7 @@ const RARITY_FILTER_OPTIONS: Array<{ value: DeckRarityFilter; label: string; ico
 ]
 
 
-type DebugPanelPersistedState = {
+type SettingsPanelPersistedState = {
   x: number
   y: number
   width: number
@@ -131,7 +130,7 @@ const getVisualIconStyle = (meta: { rotate?: number; hFlip?: boolean; vFlip?: bo
   return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
 }
 
-const sanitizePersistedState = (state: DebugPanelPersistedState): DebugPanelPersistedState => {
+const sanitizePersistedState = (state: SettingsPanelPersistedState): SettingsPanelPersistedState => {
   if (typeof window === 'undefined') {
     return state
   }
@@ -143,19 +142,17 @@ const sanitizePersistedState = (state: DebugPanelPersistedState): DebugPanelPers
 
   const width = clamp(state.width, minPanelWidth, Math.max(minPanelWidth, viewportWidth))
   const height = clamp(state.height, minPanelHeight, Math.max(minPanelHeight, viewportHeight))
-  const panelWidth = state.isCollapsed ? COLLAPSED_BUBBLE_SIZE : width
-  const panelHeight = state.isCollapsed ? COLLAPSED_BUBBLE_SIZE : height
 
   return {
     ...state,
     width,
     height,
-    x: clamp(state.x, 0, viewportWidth - panelWidth),
-    y: clamp(state.y, 0, viewportHeight - panelHeight),
+    x: clamp(state.x, 0, viewportWidth - width),
+    y: clamp(state.y, 0, viewportHeight - height),
   }
 }
 
-const loadPersistedState = (): DebugPanelPersistedState => {
+const loadPersistedState = (): SettingsPanelPersistedState => {
   if (typeof window === 'undefined') {
     return { ...DEFAULT_LAYOUT, isCollapsed: false, expandAll: false }
   }
@@ -166,7 +163,7 @@ const loadPersistedState = (): DebugPanelPersistedState => {
   }
 
   try {
-    const parsed = JSON.parse(saved) as Partial<DebugPanelPersistedState>
+    const parsed = JSON.parse(saved) as Partial<SettingsPanelPersistedState>
     return sanitizePersistedState({
       x: typeof parsed.x === 'number' ? parsed.x : DEFAULT_LAYOUT.x,
       y: typeof parsed.y === 'number' ? parsed.y : DEFAULT_LAYOUT.y,
@@ -180,7 +177,7 @@ const loadPersistedState = (): DebugPanelPersistedState => {
   }
 }
 
-const persistState = (state: DebugPanelPersistedState) => {
+const persistState = (state: SettingsPanelPersistedState) => {
   if (typeof window === 'undefined') {
     return
   }
@@ -190,7 +187,7 @@ const persistState = (state: DebugPanelPersistedState) => {
 
 export function SettingsPanel(props: SettingsPanelProps) {
   const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCloseDeckEditor, onHardReset, onClosePanel } = props
-  const [persistedState, setPersistedState] = useState<DebugPanelPersistedState>(() => loadPersistedState())
+  const [persistedState, setPersistedState] = useState<SettingsPanelPersistedState>(() => loadPersistedState())
   const [draftSeed, setDraftSeed] = useState(seed)
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
   const [draftBootstrapConfig, setDraftBootstrapConfig] = useState<GameBootstrapConfig>(bootstrapConfig)
@@ -209,7 +206,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null)
   const [editingDeckName, setEditingDeckName] = useState('')
 
-  const { x, y, width, height, isCollapsed, expandAll } = persistedState
+  const { x, y, width, height, expandAll } = persistedState
 
   const copiedState = useMemo(() => JSON.stringify(state, null, 2), [state])
 
@@ -285,7 +282,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
     }
   }, [])
 
-  const updateState = (updater: (current: DebugPanelPersistedState) => DebugPanelPersistedState) => {
+  const updateState = (updater: (current: SettingsPanelPersistedState) => SettingsPanelPersistedState) => {
     setPersistedState((current) => {
       const next = sanitizePersistedState(updater(current))
       persistState(next)
@@ -702,14 +699,14 @@ export function SettingsPanel(props: SettingsPanelProps) {
   return (
     <Rnd
       position={{ x, y }}
-      size={isCollapsed ? { width: COLLAPSED_BUBBLE_SIZE, height: COLLAPSED_BUBBLE_SIZE } : { width, height }}
-      minWidth={isCollapsed ? COLLAPSED_BUBBLE_SIZE : 300}
-      minHeight={isCollapsed ? COLLAPSED_BUBBLE_SIZE : 220}
+      size={{ width, height }}
+      minWidth={300}
+      minHeight={220}
       bounds="window"
       dragHandleClassName="settings-panel-header"
-      cancel=".settings-panel-actions, .settings-panel-actions *, .settings-panel-bubble"
-      enableResizing={!isCollapsed}
-      className={isCollapsed ? 'settings-panel settings-panel-collapsed' : 'settings-panel'}
+      cancel=".settings-panel-actions, .settings-panel-actions *"
+      enableResizing
+      className="settings-panel"
       onDragStop={(_event, data) => {
         updateState((current) => ({ ...current, x: data.x, y: data.y }))
       }}
@@ -723,19 +720,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
         }))
       }}
     >
-      {isCollapsed ? (
-        <aside aria-label="Settings panel" className="settings-panel-bubble-shell settings-panel-header">
-          <button
-            type="button"
-            className="settings-panel-bubble"
-            aria-label="Open settings panel"
-            onClick={() => updateState((current) => ({ ...current, isCollapsed: false }))}
-          >
-            ⚙
-          </button>
-        </aside>
-      ) : (
-        <aside aria-label="Settings panel">
+      <aside aria-label="Settings panel">
           <header className="settings-panel-header">
             <strong>Settings</strong>
             <div className="settings-panel-actions">
@@ -758,7 +743,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     onClosePanel()
                     return
                   }
-                  updateState((current) => ({ ...current, isCollapsed: !current.isCollapsed }))
                 }}
               >
                 Close
@@ -975,7 +959,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
             />
           </div>
         </aside>
-      )}
 
       {isDeckEditorOpen && typeof document !== 'undefined'
         ? createPortal(
