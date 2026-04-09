@@ -1,4 +1,6 @@
-# Prototype Content
+# Prototype Content (Done)
+
+> This patch of cards is already fully implemented. Once fully tested and balanced and analyized, the next MVP plan should be developed to introduce more content and make any modification based on the evaluation of this MVP slice.
 
 The following subset of the content is the chosen content for the prototype. It is not the full content of the project, but it is enough to demonstrate the key features and functionality of the prototype.
 
@@ -51,4 +53,4 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Jaquemin the Patrol](/content/Game/Cards/Commander%20X/Jaquemin%20the%20Patrol.md) done
 - [A Common, Expendable, but Deadly Man](/content/Game/Cards/Commander%20X/A%20Common,%20Expendable,%20but%20Deadly%20Man.md) done
 - [Merewen the Shieldmaiden](/content/Game/Cards/Commander%20X/Merewen%20the%20Shieldmaiden.md) done
-- [Riquier the Bear](/content/Game/Cards/Commander%20X/Riquier%20the%20Bear.md)
+- [Riquier the Bear](/content/Game/Cards/Commander%20X/Riquier%20the%20Bear.md) done

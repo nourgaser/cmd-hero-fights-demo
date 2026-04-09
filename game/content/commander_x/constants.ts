@@ -15,6 +15,7 @@ export const SUMMON_ENTITY_IDS = {
   jaqueminPatrol: "entity.companion.jaquemin-patrol",
   commonExpendableDeadlyMan: "entity.companion.common-expendable-deadly-man",
   merewenTheShieldmaiden: "entity.companion.merewen-the-shieldmaiden",
+  riquierTheBear: "entity.companion.riquier-the-bear",
 } as const;
 
 export type CommanderXSummonedEntityId =

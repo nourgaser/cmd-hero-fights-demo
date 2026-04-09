@@ -18,6 +18,7 @@ import { IRON_SKIN_CARD } from "./iron-skin";
 import { MEDAL_OF_HONOR_CARD } from "./medal-of-honor";
 import { MEREWEN_THE_SHIELDMAIDEN_CARD } from "./merewen-the-shieldmaiden";
 import { JAQUEMIN_PATROL_CARD } from "./jaquemin-patrol";
+import { RIQUIER_THE_BEAR_CARD } from "./riquier-the-bear";
 import { RESET_LUCK_CARD } from "./reset-luck";
 import { REROLL_CARD } from "./reroll";
 import { REACTIVE_BULWARK_CARD } from "./reactive-bulwark";
@@ -48,6 +49,7 @@ export {
   MEDAL_OF_HONOR_CARD,
   MEREWEN_THE_SHIELDMAIDEN_CARD,
   JAQUEMIN_PATROL_CARD,
+  RIQUIER_THE_BEAR_CARD,
   RESET_LUCK_CARD,
   REROLL_CARD,
   REACTIVE_BULWARK_CARD,
@@ -88,6 +90,7 @@ export const COMMANDER_X_CARDS = [
   JAQUEMIN_PATROL_CARD,
   COMMON_EXPENDABLE_DEADLY_MAN_CARD,
   MEREWEN_THE_SHIELDMAIDEN_CARD,
+  RIQUIER_THE_BEAR_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];
 

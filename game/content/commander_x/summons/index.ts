@@ -19,6 +19,7 @@ import guardSigilDef from "./guard-sigil";
 import steelboundEffigyDef from "./steelbound-effigy";
 import merewenTheShieldmaidenDef from "./merewen-the-shieldmaiden";
 import jaqueminPatrolDef from "./jaquemin-patrol";
+import riquierTheBearDef from "./riquier-the-bear";
 import shamanicTitaniumPummelerDef from "./shamanic-titanium-pummeler";
 
 const COMMANDER_X_SUMMONED_DEFINITIONS = [
@@ -36,6 +37,7 @@ const COMMANDER_X_SUMMONED_DEFINITIONS = [
   jaqueminPatrolDef,
   commonExpendableDeadlyManDef,
   merewenTheShieldmaidenDef,
+  riquierTheBearDef,
 ] as const satisfies readonly CommanderXSummonedDefinition[];
 
 const COMMANDER_X_SUMMONED_BLUEPRINT_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS.map((definition) => [

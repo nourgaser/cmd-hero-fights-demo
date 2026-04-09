@@ -11,6 +11,7 @@ export const KEYWORD_IDS = {
   light: "keyword.light",
   immune: "keyword.immune",
   sharpness: "keyword.sharpness",
+  vengeful: "keyword.vengeful",
   taunt: "keyword.taunt",
 } as const;
 
@@ -72,6 +73,13 @@ export const KEYWORD_DEFINITIONS = [
       params: {
         amount: 1,
       },
+    },
+  },
+  {
+    id: KEYWORD_IDS.vengeful,
+    name: "Vengeful",
+    summaryText: {
+      template: "Attacks when attacked.",
     },
   },
   {
