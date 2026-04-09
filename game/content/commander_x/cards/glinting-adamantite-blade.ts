@@ -11,7 +11,7 @@ export const GLINTING_ADAMANTITE_BLADE_CARD = {
   targeting: "none",
   tags: [],
   summaryText: {
-    template: "Summon Glinting Adamantite Blade.",
+    template: "Summon Glinting Adamantite Blade. Passive: This weapon's maximum damage is equal to its current HP.",
   },
   effects: [
     {

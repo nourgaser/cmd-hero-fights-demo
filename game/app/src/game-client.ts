@@ -173,6 +173,11 @@ export type AppBattlePreview = {
         sourceCardSummary: string | null
         sourceCardSummaryDetailText: string | null
         sourceCardSummaryTone: 'neutral' | 'positive' | 'negative'
+        sourceCardKeywords: Array<{
+          keywordId: string
+          keywordName: string
+          keywordSummaryText: string
+        }>
         currentHealth: number
         maxHealth: number
         armor: number
@@ -819,10 +824,22 @@ function describeNumericCardText(options: {
       .slice(1)
       .map((effect) => renderTemplatedText(effect.displayText))
       .find((line): line is string => !!line)
+    const passiveFromSummary = cardSummaryText
+      ? (() => {
+          const marker = 'Passive:'
+          const index = cardSummaryText.indexOf(marker)
+          if (index < 0) {
+            return null
+          }
+
+          const extracted = cardSummaryText.slice(index + marker.length).trim()
+          return extracted.length > 0 ? extracted : null
+        })()
+      : null
 
     if (viewMode === 'entity') {
       return {
-          summaryText: postSummonEffectText ?? '',
+          summaryText: postSummonEffectText ?? passiveFromSummary ?? '',
         summaryDetailText: null,
         summaryTone: 'neutral',
       }
@@ -1974,6 +1991,7 @@ function buildPreviewFromState(options: {
         sourceCardSummary: null,
         sourceCardSummaryDetailText: null,
         sourceCardSummaryTone: 'neutral',
+        sourceCardKeywords: [],
         currentHealth: entity.currentHealth,
         maxHealth: entity.maxHealth,
         armor: armorTrace.effective,
@@ -2005,6 +2023,40 @@ function buildPreviewFromState(options: {
     }
 
     const sourceCard = cardsById[entity.definitionCardId]
+    const sourceCardKeywordReferences = (sourceCard as {
+      keywords?: Array<{
+        keywordId: string
+        params?: Record<string, string | number | boolean | undefined>
+      }>
+    } | undefined)?.keywords ?? []
+    const sourceCardKeywords = sourceCardKeywordReferences
+      .map((keywordReference) => {
+        const keywordDefinition = gameApi.keywordsById[keywordReference.keywordId]
+        if (!keywordDefinition) {
+          return null
+        }
+
+        return {
+          keywordId: keywordDefinition.id,
+          keywordName: formatKeywordLabel(keywordDefinition.name, keywordReference.params),
+          keywordSummaryText: renderTemplatedText({
+            template: keywordDefinition.summaryText.template,
+            params: {
+              ...(keywordDefinition.summaryText.params ?? {}),
+              ...(keywordReference.params ?? {}),
+            },
+          }) ?? keywordDefinition.name,
+        }
+      })
+      .filter(
+        (
+          keyword,
+        ): keyword is {
+          keywordId: string
+          keywordName: string
+          keywordSummaryText: string
+        } => keyword !== null,
+      )
     const sourceCardText = sourceCard
       ? describeNumericCardText({
           card: sourceCard,
@@ -2054,6 +2106,7 @@ function buildPreviewFromState(options: {
       sourceCardSummary: sourceCardText?.summaryText ?? null,
       sourceCardSummaryDetailText: sourceCardText?.summaryDetailText ?? null,
       sourceCardSummaryTone: sourceCardText?.summaryTone ?? 'neutral',
+      sourceCardKeywords,
       currentHealth: entity.currentHealth,
       maxHealth: entity.maxHealth,
       armor: armorTrace.effective,

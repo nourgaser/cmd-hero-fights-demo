@@ -432,6 +432,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       <>
                         {entityStats?.sourceCardSummary || entityStats?.sourceCardSummaryDetailText ? (
                           <div className="battlefield-hover-section">
+                            <span className="hover-group-title">Passive</span>
                             {entityStats.sourceCardSummary ? <span className="tooltip-main-line">{simplifyTooltipSummaryText(entityStats.sourceCardSummary)}</span> : null}
                             {shouldShowDetailedTooltips && entityStats.sourceCardSummaryDetailText ? (
                               <span className="battle-tooltip-detail">
@@ -455,6 +456,16 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             {!shouldShowDetailedTooltips && entityStats.sourceCardSummaryDetailText ? (
                               <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
                             ) : null}
+                          </div>
+                        ) : null}
+                        {entityStats?.sourceCardKeywords.length ? (
+                          <div className="battlefield-hover-section">
+                            <span className="hover-group-title">Keywords</span>
+                            {entityStats.sourceCardKeywords.map((keyword) => (
+                              <span key={keyword.keywordId} className="tooltip-main-line">
+                                <strong>{keyword.keywordName}.</strong> {keyword.keywordSummaryText}
+                              </span>
+                            ))}
                           </div>
                         ) : null}
                         {entityStats?.activeAbility ? (
