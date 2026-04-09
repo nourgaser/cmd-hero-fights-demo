@@ -14,19 +14,21 @@ export function destroyResistanceFromBaseAndPersistent(options: {
 }): {
   state: BattleState;
   destroyedAmount: number;
+  destroyedModifierIds: string[];
 } {
   const { state, targetEntityId, stat } = options;
   let remaining = Math.max(0, Math.floor(options.amount));
   if (remaining <= 0) {
-    return { state, destroyedAmount: 0 };
+    return { state, destroyedAmount: 0, destroyedModifierIds: [] };
   }
 
   const target = state.entitiesById[targetEntityId];
   if (!target) {
-    return { state, destroyedAmount: 0 };
+    return { state, destroyedAmount: 0, destroyedModifierIds: [] };
   }
 
   let destroyedAmount = 0;
+  const destroyedModifierIds: string[] = [];
   let nextTarget = target;
 
   const baseValue = target[stat];
@@ -65,11 +67,13 @@ export function destroyResistanceFromBaseAndPersistent(options: {
         ...modifier,
         value: nextValue,
       });
+    } else {
+      destroyedModifierIds.push(modifier.id);
     }
   }
 
   if (destroyedAmount === 0) {
-    return { state, destroyedAmount: 0 };
+    return { state, destroyedAmount: 0, destroyedModifierIds: [] };
   }
 
   return {
@@ -82,5 +86,21 @@ export function destroyResistanceFromBaseAndPersistent(options: {
       activeModifiers: nextModifiers,
     },
     destroyedAmount,
+    destroyedModifierIds,
   };
+}
+
+export function destroyAllResistanceFromBaseAndPersistent(options: {
+  state: BattleState;
+  targetEntityId: string;
+  stat: ResistanceStat;
+}): {
+  state: BattleState;
+  destroyedAmount: number;
+  destroyedModifierIds: string[];
+} {
+  return destroyResistanceFromBaseAndPersistent({
+    ...options,
+    amount: Number.MAX_SAFE_INTEGER,
+  });
 }

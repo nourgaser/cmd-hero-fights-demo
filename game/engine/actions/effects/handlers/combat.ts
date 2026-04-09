@@ -14,7 +14,7 @@ import {
 } from "../../effects/get-effective-number";
 import { computeScaledDamageRange } from "../../../core/damage-range";
 import { resolveEffectiveNumber } from "../../../core/number-resolver";
-import { destroyResistanceFromBaseAndPersistent } from "../../../core/sharpness";
+import { destroyAllResistanceFromBaseAndPersistent, destroyResistanceFromBaseAndPersistent } from "../../../core/sharpness";
 import { markHeroDamageTakenThisTurn } from "../../../core/aura";
 import {
   type EffectExecutionContext,
@@ -33,57 +33,6 @@ function getAttackFlatBonusDamage(options: {
     baseValue: 0,
     clampMin: 0,
   }).effectiveValue;
-}
-
-function destroyBaseAndPermanentArmor(options: {
-  state: EffectExecutionContext["state"];
-  targetEntityId: string;
-}): {
-  nextActiveModifiers: EffectExecutionContext["state"]["activeModifiers"];
-  removedModifierIds: string[];
-  destroyedArmor: number;
-} {
-  const { state, targetEntityId } = options;
-  const target = state.entitiesById[targetEntityId];
-  if (!target) {
-    return {
-      nextActiveModifiers: state.activeModifiers,
-      removedModifierIds: [],
-      destroyedArmor: 0,
-    };
-  }
-
-  const removedModifierIds: string[] = [];
-  let destroyedArmorFromPersistentModifiers = 0;
-
-  for (const modifier of state.activeModifiers) {
-    const affectsTargetArmor = modifier.targetEntityId === targetEntityId && modifier.propertyPath === "armor";
-    if (!affectsTargetArmor) {
-      continue;
-    }
-
-    const isPersistentModifier = modifier.lifetime === "persistent";
-    const hasPermanentCondition = !modifier.condition || modifier.condition.kind === "always";
-    const addsArmor = modifier.operation === "add" && modifier.value > 0;
-
-    if (isPersistentModifier && hasPermanentCondition && addsArmor) {
-      removedModifierIds.push(modifier.id);
-      destroyedArmorFromPersistentModifiers += modifier.value;
-    }
-  }
-
-  const nextActiveModifiers = state.activeModifiers.filter(
-    (modifier) => !removedModifierIds.includes(modifier.id),
-  );
-
-  const destroyedArmorFromBase = Math.max(0, target.armor);
-  const destroyedArmor = Math.max(0, roundWhole(destroyedArmorFromBase + destroyedArmorFromPersistentModifiers));
-
-  return {
-    nextActiveModifiers,
-    removedModifierIds,
-    destroyedArmor,
-  };
 }
 
 export function handleHealEffect(
@@ -413,12 +362,13 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
   }
 
   const {
-    nextActiveModifiers,
-    removedModifierIds,
-    destroyedArmor,
-  } = destroyBaseAndPermanentArmor({
+    state: stateAfterArmorDestroy,
+    destroyedModifierIds,
+    destroyedAmount: destroyedArmor,
+  } = destroyAllResistanceFromBaseAndPersistent({
     state,
     targetEntityId: targetId,
+    stat: "armor",
   });
 
   const enemyHeroId = state.heroEntityIds.find((heroEntityId) => {
@@ -446,7 +396,7 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
   let nextSequence = sequence;
   const events: BattleEvent[] = [];
 
-  for (const modifierId of removedModifierIds) {
+  for (const modifierId of destroyedModifierIds) {
     events.push({
       kind: "numberModifierExpired",
       sequence: nextSequence,
@@ -482,14 +432,9 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
   }
 
   const nextState = {
-    ...state,
-    activeModifiers: nextActiveModifiers,
+    ...stateAfterArmorDestroy,
     entitiesById: {
-      ...state.entitiesById,
-      [targetId]: {
-        ...target,
-        armor: 0,
-      },
+      ...stateAfterArmorDestroy.entitiesById,
       [enemyHero.entityId]: {
         ...enemyHero,
         currentHealth: nextEnemyHealth,
@@ -545,12 +490,13 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
   }
 
   const {
-    nextActiveModifiers,
-    removedModifierIds,
-    destroyedArmor,
-  } = destroyBaseAndPermanentArmor({
+    state: stateAfterArmorDestroy,
+    destroyedModifierIds,
+    destroyedAmount: destroyedArmor,
+  } = destroyAllResistanceFromBaseAndPersistent({
     state,
     targetEntityId: actorHero.entityId,
+    stat: "armor",
   });
 
   const damageAmount = destroyedArmor * effect.payload.damagePerArmor;
@@ -564,7 +510,7 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
   let nextSequence = sequence;
   const events: BattleEvent[] = [];
 
-  for (const modifierId of removedModifierIds) {
+  for (const modifierId of destroyedModifierIds) {
     events.push({
       kind: "numberModifierExpired",
       sequence: nextSequence,
@@ -600,14 +546,9 @@ export function handleDestroySelfArmorAndDealPerArmorToTargetEffect(
   }
 
   const nextState = {
-    ...state,
-    activeModifiers: nextActiveModifiers,
+    ...stateAfterArmorDestroy,
     entitiesById: {
-      ...state.entitiesById,
-      [actorHero.entityId]: {
-        ...actorHero,
-        armor: 0,
-      },
+      ...stateAfterArmorDestroy.entitiesById,
       [damageTarget.entityId]: {
         ...damageTarget,
         currentHealth: nextTargetHealth,

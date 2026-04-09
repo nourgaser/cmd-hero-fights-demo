@@ -13,6 +13,18 @@ function formatSignedDelta(value: number): string {
   return `${value >= 0 ? '+' : '-'}${Number.isInteger(abs) ? abs : abs}`
 }
 
+function formatCompactNumber(value: number): string {
+  const rounded = Math.round(value * 100) / 100
+  return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`
+}
+
+function formatLayeredStatValue(permanent: number, bonus: number): string {
+  if (bonus === 0) {
+    return formatCompactNumber(permanent)
+  }
+  return `(${formatCompactNumber(permanent)} ${formatSignedDelta(bonus)})`
+}
+
 function formatChancePercent(value: number): string {
   return `${Math.round(value * 100)}%`
 }
@@ -485,7 +497,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <div className="battlefield-hover-grid">
                           <span className={`battlefield-hover-stat ${attackDamageClass}`.trim()}>
                             <strong>AD</strong>
-                            <em>{entityStats.attackDamage}</em>
+                            <em>{formatLayeredStatValue(entityStats.statLayers.attackDamage.permanent, entityStats.statLayers.attackDamage.bonus)}</em>
                             {shouldShowDetailedTooltips && adContributionSummary.rows.length > 0 ? (
                               <span className="battlefield-hover-stat-sources">
                                 {adContributionSummary.rows.map((row) => (
@@ -504,7 +516,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           </span>
                           <span className={`battlefield-hover-stat ${abilityPowerClass}`.trim()}>
                             <strong>AP</strong>
-                            <em>{entityStats.abilityPower}</em>
+                            <em>{formatLayeredStatValue(entityStats.statLayers.abilityPower.permanent, entityStats.statLayers.abilityPower.bonus)}</em>
                             {shouldShowDetailedTooltips && apContributionSummary.rows.length > 0 ? (
                               <span className="battlefield-hover-stat-sources">
                                 {apContributionSummary.rows.map((row) => (
@@ -524,7 +536,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           {attackFlatBonusDamage !== 0 ? (
                             <span className={`battlefield-hover-stat ${attackFlatBonusDamageClass}`.trim()}>
                               <strong>ATK+</strong>
-                              <em>{attackFlatBonusDamage}</em>
+                              <em>{formatLayeredStatValue(entityStats.statLayers.attackFlatBonusDamage.permanent, entityStats.statLayers.attackFlatBonusDamage.bonus)}</em>
                               {shouldShowDetailedTooltips && attackFlatContributionSummary.rows.length > 0 ? (
                                 <span className="battlefield-hover-stat-sources">
                                   {attackFlatContributionSummary.rows.map((row) => (
@@ -544,7 +556,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           ) : null}
                           <span className={`battlefield-hover-stat ${armorClass}`.trim()}>
                             <strong>Armor</strong>
-                            <em>{entityStats.armor}</em>
+                            <em>{formatLayeredStatValue(entityStats.statLayers.armor.permanent, entityStats.statLayers.armor.bonus)}</em>
                             {shouldShowDetailedTooltips && armorContributionSummary.rows.length > 0 ? (
                               <span className="battlefield-hover-stat-sources">
                                 {armorContributionSummary.rows.map((row) => (
@@ -563,7 +575,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           </span>
                           <span className={`battlefield-hover-stat ${magicResistClass}`.trim()}>
                             <strong>MR</strong>
-                            <em>{entityStats.magicResist}</em>
+                            <em>{formatLayeredStatValue(entityStats.statLayers.magicResist.permanent, entityStats.statLayers.magicResist.bonus)}</em>
                             {shouldShowDetailedTooltips && mrContributionSummary.rows.length > 0 ? (
                               <span className="battlefield-hover-stat-sources">
                                 {mrContributionSummary.rows.map((row) => (
@@ -635,7 +647,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                     <span className="entity-stats-row" aria-hidden="true">
                       <span className={`entity-stat-pill ${attackDamageClass}`.trim()}>
                         <Icon icon="game-icons:broadsword" />
-                        {entityStats.attackDamage}
+                        {formatLayeredStatValue(entityStats.statLayers.attackDamage.permanent, entityStats.statLayers.attackDamage.bonus)}
                       </span>
                       {attackFlatBonusDamage !== 0 ? (
                         <span className={`entity-stat-pill ${attackFlatBonusDamageClass}`.trim()}>
@@ -645,7 +657,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       ) : null}
                       <span className={`entity-stat-pill ${armorClass}`.trim()}>
                         <Icon icon="game-icons:checked-shield" />
-                        {entityStats.armor}
+                        {formatLayeredStatValue(entityStats.statLayers.armor.permanent, entityStats.statLayers.armor.bonus)}
                       </span>
                     </span>
                     <span className="entity-healthbar" aria-hidden="true">

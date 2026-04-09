@@ -179,6 +179,13 @@ export type AppBattlePreview = {
         magicResist: number
         attackDamage: number
         abilityPower: number
+        statLayers: {
+          armor: { permanent: number; bonus: number }
+          magicResist: { permanent: number; bonus: number }
+          attackDamage: { permanent: number; bonus: number }
+          abilityPower: { permanent: number; bonus: number }
+          attackFlatBonusDamage: { permanent: number; bonus: number }
+        }
         combatNumbers: {
           armor: AppNumberTrace
           magicResist: AppNumberTrace
@@ -413,6 +420,61 @@ function combineNumberTraces(...traces: AppNumberTrace[]): AppNumberTrace {
 
 function clamp(value: number, minimum: number, maximum: number): number {
   return Math.max(minimum, Math.min(maximum, value))
+}
+
+function applyModifierOperationForPermanentLayer(options: {
+  currentValue: number
+  operation: 'add' | 'subtract' | 'set'
+  value: number
+}): number {
+  const { currentValue, operation, value } = options
+  switch (operation) {
+    case 'add':
+      return currentValue + value
+    case 'subtract':
+      return currentValue - value
+    case 'set':
+      return value
+    default:
+      return currentValue
+  }
+}
+
+function resolvePermanentLayerValue(options: {
+  state: BattleState
+  targetEntityId: string
+  propertyPath: string
+  baseValue: number
+  clampMin?: number
+  clampMax?: number
+}): number {
+  const { state, targetEntityId, propertyPath, baseValue, clampMin, clampMax } = options
+
+  const persistentAlwaysModifiers = state.activeModifiers.filter(
+    (modifier) =>
+      modifier.targetEntityId === targetEntityId &&
+      modifier.propertyPath === propertyPath &&
+      modifier.lifetime === 'persistent' &&
+      (!modifier.condition || modifier.condition.kind === 'always'),
+  )
+
+  let value = baseValue
+  for (const modifier of persistentAlwaysModifiers) {
+    value = applyModifierOperationForPermanentLayer({
+      currentValue: value,
+      operation: modifier.operation,
+      value: modifier.value,
+    })
+  }
+
+  if (clampMin !== undefined) {
+    value = Math.max(clampMin, value)
+  }
+  if (clampMax !== undefined) {
+    value = Math.min(clampMax, value)
+  }
+
+  return value
 }
 
 function summarizeLuckAdjustedRange(options: {
@@ -1812,6 +1874,63 @@ function buildPreviewFromState(options: {
       propertyPath: 'attackFlatBonusDamage',
       baseValue: 0,
     })
+    const attackDamagePermanent = resolvePermanentLayerValue({
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'attackDamage',
+      baseValue: entity.attackDamage,
+      clampMin: 0,
+    })
+    const abilityPowerPermanent = resolvePermanentLayerValue({
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'abilityPower',
+      baseValue: entity.abilityPower,
+      clampMin: 0,
+    })
+    const armorPermanent = resolvePermanentLayerValue({
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'armor',
+      baseValue: entity.armor,
+      clampMin: 0,
+    })
+    const magicResistPermanent = resolvePermanentLayerValue({
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'magicResist',
+      baseValue: entity.magicResist,
+      clampMin: 0,
+    })
+    const attackFlatBonusDamagePermanent = resolvePermanentLayerValue({
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'attackFlatBonusDamage',
+      baseValue: 0,
+      clampMin: 0,
+    })
+    const statLayers = {
+      attackDamage: {
+        permanent: attackDamagePermanent,
+        bonus: attackDamageTrace.effective - attackDamagePermanent,
+      },
+      abilityPower: {
+        permanent: abilityPowerPermanent,
+        bonus: abilityPowerTrace.effective - abilityPowerPermanent,
+      },
+      armor: {
+        permanent: armorPermanent,
+        bonus: armorTrace.effective - armorPermanent,
+      },
+      magicResist: {
+        permanent: magicResistPermanent,
+        bonus: magicResistTrace.effective - magicResistPermanent,
+      },
+      attackFlatBonusDamage: {
+        permanent: attackFlatBonusDamagePermanent,
+        bonus: attackFlatBonusDamageTrace.effective - attackFlatBonusDamagePermanent,
+      },
+    }
     const effectiveCriticalChance = Math.max(0, Math.min(1, entity.criticalChance + criticalChanceLuckDelta))
     const effectiveDodgeChance = Math.max(0, Math.min(1, dodgeChanceTrace.effective + dodgeChanceLuckDelta))
 
@@ -1832,6 +1951,7 @@ function buildPreviewFromState(options: {
         magicResist: magicResistTrace.effective,
         attackDamage: attackDamageTrace.effective,
         abilityPower: abilityPowerTrace.effective,
+        statLayers,
         combatNumbers: {
           armor: armorTrace,
           magicResist: magicResistTrace,
@@ -1909,6 +2029,7 @@ function buildPreviewFromState(options: {
       magicResist: magicResistTrace.effective,
       attackDamage: attackDamageTrace.effective,
       abilityPower: abilityPowerTrace.effective,
+      statLayers,
       combatNumbers: {
         armor: armorTrace,
         magicResist: magicResistTrace,
