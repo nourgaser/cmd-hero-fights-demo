@@ -241,7 +241,6 @@ export function HandBar(props: HandBarProps) {
 
                   onFocusCard(card.handCardId)
                 }}
-                disabled={!isActivePlayer}
                 aria-pressed={isFocused}
                 aria-label={`${card.cardName}. Cost ${card.moveCost}. ${requiresTarget ? 'Requires target.' : 'No target required.'}`}
               >

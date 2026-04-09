@@ -2116,52 +2116,12 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .touch-tooltip-toggle {
-  display: none;
+  display: none !important;
 }
 
 @media (pointer: coarse) {
   .keyboard-shortcuts-chip {
     display: none;
-  }
-
-  .touch-tooltip-toggle {
-    width: 44px;
-    height: 44px;
-    border: 1px solid color-mix(in srgb, #5b4a2b 40%, var(--border));
-    border-radius: 999px;
-    background: color-mix(in srgb, var(--panel) 86%, #ffffff 14%);
-    color: #241d14;
-    display: grid;
-    place-items: center;
-    cursor: pointer;
-    box-shadow: 0 2px 6px rgba(0, 0, 0, 0.18);
-  }
-
-  .touch-tooltip-toggle svg {
-    width: 16px;
-    height: 16px;
-  }
-
-  .touch-tooltip-toggle.inline-toggle {
-    margin-left: 6px;
-  }
-
-  .touch-tooltip-toggle.luck-inline-toggle {
-    margin-left: 8px;
-  }
-
-  .touch-tooltip-toggle.battle-tooltip-toggle {
-    position: absolute;
-    top: -12px;
-    right: -12px;
-    z-index: var(--layer-tooltip);
-  }
-
-  .touch-tooltip-toggle.deck-tooltip-toggle {
-    position: absolute;
-    top: -10px;
-    left: -10px;
-    z-index: var(--layer-tooltip);
   }
 }
 
