@@ -313,27 +313,13 @@ html[data-shift-held='true'] .game-toast-detail {
   max-width: 100%;
 }
 
-.debug-edit-deck-button {
-  margin-top: 10px;
-  width: 100%;
-  color: #f6ead2;
-  border: 1px solid #2b2013;
-  border-radius: 10px;
-  padding: 8px 12px;
-  font-size: 12px;
-  font-weight: 700;
-  text-transform: uppercase;
-  letter-spacing: 0.04em;
-  background: linear-gradient(180deg, #7f4c21 0%, #5f3718 100%);
-  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.2);
-  cursor: pointer;
-}
 
 .deck-editor-modal {
   position: fixed;
   inset: 0;
   box-sizing: border-box;
   z-index: var(--layer-modal);
+  isolation: isolate;
   display: grid;
   grid-template-rows: auto auto minmax(0, 1fr);
   gap: 8px;
@@ -380,7 +366,8 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .deck-editor-hero-tab,
 .deck-editor-save,
-.deck-editor-close {
+.deck-editor-close,
+.deck-editor-saved-decks-btn {
   border: 1px solid #6a5332;
   border-radius: 999px;
   min-height: 34px;
@@ -399,10 +386,192 @@ html[data-shift-held='true'] .game-toast-detail {
   background: linear-gradient(180deg, #f2d498, #deb163);
 }
 
+.deck-editor-save:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.deck-editor-saved-decks-btn {
+  border-color: #5a7aaa;
+  color: #c5d8f4;
+  background: linear-gradient(180deg, rgba(30, 48, 80, 0.9), rgba(22, 36, 62, 0.9));
+}
+
+.deck-editor-saved-decks-btn:hover,
+.deck-editor-saved-decks-btn:focus-visible {
+  border-color: #7a9ad4;
+  color: #ddeeff;
+}
+
 .deck-editor-hero-tab.active {
   color: #1f1208;
   border-color: #f0c778;
   background: linear-gradient(180deg, #f2d498, #deb163);
+}
+
+/* Saved Decks overlay */
+
+.saved-decks-overlay {
+  position: absolute;
+  inset: 0;
+  border-radius: 18px;
+  background: rgba(6, 9, 16, 0.82);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 24px;
+  z-index: 10;
+  backdrop-filter: blur(2px);
+}
+
+.saved-decks-panel {
+  width: 100%;
+  max-width: 560px;
+  max-height: 100%;
+  overflow-y: auto;
+  background: linear-gradient(180deg, rgba(22, 32, 56, 0.99), rgba(16, 24, 44, 0.99));
+  border: 1px solid #3e5484;
+  border-radius: 14px;
+  display: flex;
+  flex-direction: column;
+  gap: 0;
+}
+
+.saved-decks-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px 12px;
+  border-bottom: 1px solid color-mix(in srgb, #8ea2d6 28%, transparent);
+}
+
+.saved-decks-header strong {
+  font-family: var(--display);
+  font-size: 18px;
+  letter-spacing: 0.3px;
+  color: #dce8ff;
+}
+
+.saved-decks-save-row {
+  display: flex;
+  gap: 8px;
+  align-items: center;
+  padding: 12px 16px;
+  border-bottom: 1px solid color-mix(in srgb, #8ea2d6 18%, transparent);
+}
+
+.saved-decks-name-input {
+  flex: 1;
+  min-width: 0;
+  height: 34px;
+  background: rgba(12, 18, 36, 0.8);
+  border: 1px solid #3e5080;
+  border-radius: 8px;
+  color: #dce8ff;
+  font-size: 13px;
+  padding: 0 10px;
+  outline: none;
+}
+
+.saved-decks-name-input:focus {
+  border-color: #6a8ad0;
+}
+
+.saved-decks-list {
+  display: flex;
+  flex-direction: column;
+  padding: 8px 0;
+  min-height: 60px;
+}
+
+.saved-decks-empty {
+  padding: 16px;
+  font-size: 13px;
+  opacity: 0.6;
+  text-align: center;
+}
+
+.saved-deck-row {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 16px;
+  border-bottom: 1px solid color-mix(in srgb, #8ea2d6 10%, transparent);
+}
+
+.saved-deck-row:last-child {
+  border-bottom: none;
+}
+
+.saved-deck-rename-row {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.saved-deck-info {
+  display: flex;
+  align-items: baseline;
+  gap: 8px;
+  flex: 1;
+  min-width: 0;
+}
+
+.saved-deck-name {
+  font-size: 13px;
+  font-weight: 600;
+  color: #dce8ff;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+}
+
+.saved-deck-count {
+  font-size: 11px;
+  opacity: 0.55;
+  white-space: nowrap;
+}
+
+.saved-deck-actions {
+  display: flex;
+  gap: 6px;
+  flex-shrink: 0;
+}
+
+.saved-deck-action-btn {
+  border: 1px solid #3e5080;
+  border-radius: 999px;
+  padding: 4px 10px;
+  min-height: 28px;
+  font-size: 11px;
+  font-weight: 600;
+  color: #c5d3f0;
+  background: linear-gradient(180deg, rgba(28, 42, 72, 0.9), rgba(20, 32, 56, 0.9));
+  cursor: pointer;
+  white-space: nowrap;
+  transition: background 0.12s, border-color 0.12s, color 0.12s;
+}
+
+.saved-deck-action-btn:hover,
+.saved-deck-action-btn:focus-visible {
+  border-color: #6a84be;
+  color: #e8eeff;
+  background: linear-gradient(180deg, rgba(44, 62, 104, 0.96), rgba(32, 48, 80, 0.96));
+}
+
+.saved-deck-delete-btn {
+  border-color: #7a3a3a;
+  color: #f4baba;
+  background: linear-gradient(180deg, rgba(56, 22, 22, 0.9), rgba(40, 16, 16, 0.9));
+}
+
+.saved-deck-delete-btn:hover,
+.saved-deck-delete-btn:focus-visible {
+  border-color: #c05050;
+  color: #ffd4d4;
 }
 
 .deck-editor-rules {
@@ -1336,10 +1505,31 @@ html[data-shift-held='true'] .game-toast-detail {
   min-width: 0;
 }
 
-.screen-head-shortcuts {
+.screen-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
   justify-self: end;
+}
+
+.screen-head-shortcuts {
   margin-left: 0;
   z-index: var(--layer-tooltip);
+}
+
+.deck-editor-chip {
+  cursor: pointer;
+  background: linear-gradient(180deg, rgba(32, 45, 74, 0.92), rgba(24, 34, 58, 0.92));
+  border: 1px solid #3e5080;
+  color: #c5d3f0;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+}
+
+.deck-editor-chip:hover,
+.deck-editor-chip:focus-visible {
+  background: linear-gradient(180deg, rgba(48, 66, 108, 0.96), rgba(36, 52, 88, 0.96));
+  border-color: #6a84be;
+  color: #e8eeff;
 }
 
 .screen-head h1 {
@@ -1784,7 +1974,7 @@ html[data-shift-held='true'] .game-toast-detail {
     justify-self: stretch;
   }
 
-  .screen-head-shortcuts {
+  .screen-head-actions {
     justify-self: center;
   }
 }

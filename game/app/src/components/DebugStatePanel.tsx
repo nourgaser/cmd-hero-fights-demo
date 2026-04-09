@@ -28,8 +28,11 @@ type DebugStatePanelProps = {
     }>
   }>
   seed: string
+  isDeckEditorOpen: boolean
+  deckEditorHeroIndex: 0 | 1
   onSeedChange: (seed: string) => void
   onBootstrapConfigChange: (config: GameBootstrapConfig) => boolean
+  onCloseDeckEditor: () => void
   onHardReset: () => void
 }
 
@@ -64,51 +67,6 @@ const RARITY_FILTER_OPTIONS: Array<{ value: DeckRarityFilter; label: string; ico
   { value: 'general', label: 'General', icon: 'game-icons:checked-shield' },
 ]
 
-type DeckPresetEntry = {
-  cardName: string
-  count: number
-}
-
-type DeckPreset = {
-  id: 'balanced' | 'offensive'
-  label: string
-  entries: DeckPresetEntry[]
-}
-
-const DECK_PRESETS: DeckPreset[] = [
-  {
-    id: 'balanced',
-    label: 'Balanced',
-    entries: [
-      { cardName: 'Bastion Stance', count: 2 },
-      { cardName: 'Guard Sigil', count: 2 },
-      { cardName: 'Shield Toss', count: 2 },
-      { cardName: 'Corroded Shortsword', count: 2 },
-      { cardName: 'Health Potion', count: 1 },
-      { cardName: 'Iron Skin', count: 2 },
-      { cardName: 'Jaquemin the Patrol', count: 1 },
-      { cardName: 'Shatter Plating', count: 1 },
-      {cardName: 'Reactive Bulwark', count: 1},
-      { cardName: 'Chaaarge!', count: 1 },
-    ],
-  },
-  {
-    id: 'offensive',
-    label: 'Offensive',
-    entries: [
-      { cardName: 'Battle Focus', count: 2 },
-      { cardName: 'Hunker Down', count: 1 },
-      { cardName: 'Reroll', count: 1 },
-      { cardName: 'Reset Luck', count: 1 },
-      { cardName: 'Corroded Shortsword', count: 1 },
-      { cardName: 'Health Potion', count: 2 },
-      { cardName: 'Warcry', count: 2 },
-      { cardName: 'Jaquemin the Patrol', count: 2 },
-      { cardName: 'War Standard', count: 2 },
-      { cardName: 'Chaaarge!', count: 1 },
-    ],
-  },
-]
 
 type DebugPanelPersistedState = {
   x: number
@@ -117,6 +75,38 @@ type DebugPanelPersistedState = {
   height: number
   isCollapsed: boolean
   expandAll: boolean
+}
+
+type SavedDeck = {
+  id: string
+  name: string
+  heroDefinitionId: string
+  cardIds: string[]
+  savedAt: number
+}
+
+const SAVED_DECKS_STORAGE_KEY = 'cmd-hero:saved-decks'
+
+const loadSavedDecks = (): SavedDeck[] => {
+  if (typeof window === 'undefined') {
+    return []
+  }
+  try {
+    const raw = window.localStorage.getItem(SAVED_DECKS_STORAGE_KEY)
+    if (!raw) {
+      return []
+    }
+    return JSON.parse(raw) as SavedDeck[]
+  } catch {
+    return []
+  }
+}
+
+const persistSavedDecks = (decks: SavedDeck[]) => {
+  if (typeof window === 'undefined') {
+    return
+  }
+  window.localStorage.setItem(SAVED_DECKS_STORAGE_KEY, JSON.stringify(decks))
 }
 
 const clamp = (value: number, min: number, max: number) => {
@@ -198,7 +188,7 @@ const persistState = (state: DebugPanelPersistedState) => {
 }
 
 export function DebugStatePanel(props: DebugStatePanelProps) {
-  const { state, bootstrapConfig, deckEditorCards, seed, onSeedChange, onBootstrapConfigChange, onHardReset } = props
+  const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCloseDeckEditor, onHardReset } = props
   const [persistedState, setPersistedState] = useState<DebugPanelPersistedState>(() => loadPersistedState())
   const [draftSeed, setDraftSeed] = useState(seed)
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
@@ -207,13 +197,16 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     () => JSON.stringify(bootstrapConfig, null, 2),
   )
   const [bootstrapConfigError, setBootstrapConfigError] = useState<string | null>(null)
-  const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
-  const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
   const [deckSearch, setDeckSearch] = useState('')
   const [deckTypeFilter, setDeckTypeFilter] = useState<DeckTypeFilter>('all')
   const [deckRarityFilter, setDeckRarityFilter] = useState<DeckRarityFilter>('all')
   const [deckCostFilter, setDeckCostFilter] = useState<DeckCostFilter>('all')
   const [selectedDeckCardId, setSelectedDeckCardId] = useState<string | null>(null)
+  const [savedDecks, setSavedDecks] = useState<SavedDeck[]>(() => loadSavedDecks())
+  const [isSavedDecksOpen, setIsSavedDecksOpen] = useState(false)
+  const [savedDecksNewName, setSavedDecksNewName] = useState('')
+  const [editingDeckId, setEditingDeckId] = useState<string | null>(null)
+  const [editingDeckName, setEditingDeckName] = useState('')
 
   const { x, y, width, height, isCollapsed, expandAll } = persistedState
 
@@ -237,12 +230,22 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
 
   useEffect(() => {
     if (!isDeckEditorOpen) {
+      setIsSavedDecksOpen(false)
+    }
+  }, [isDeckEditorOpen])
+
+  useEffect(() => {
+    if (!isDeckEditorOpen) {
       return
     }
 
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.key === 'Escape') {
-        setIsDeckEditorOpen(false)
+        if (isSavedDecksOpen) {
+          setIsSavedDecksOpen(false)
+        } else {
+          onCloseDeckEditor()
+        }
       }
     }
 
@@ -250,7 +253,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isDeckEditorOpen])
+  }, [isDeckEditorOpen, isSavedDecksOpen, onCloseDeckEditor])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -577,6 +580,104 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     })
   }
 
+  const currentHeroSavedDecks = savedDecks.filter(
+    (deck) => deck.heroDefinitionId === deckEditorHero.heroDefinitionId,
+  )
+
+  const handleSaveAsNew = () => {
+    const name = savedDecksNewName.trim()
+    if (!name) {
+      return
+    }
+
+    if (deckEditorHero.openingDeckCardIds.length !== MAX_DECK_SIZE) {
+      toast.error(`Deck must be ${MAX_DECK_SIZE} cards to save.`, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    const newDeck: SavedDeck = {
+      id: `${Date.now()}-${Math.random().toString(36).slice(2)}`,
+      name,
+      heroDefinitionId: deckEditorHero.heroDefinitionId,
+      cardIds: [...deckEditorHero.openingDeckCardIds],
+      savedAt: Date.now(),
+    }
+
+    const next = [...savedDecks, newDeck]
+    setSavedDecks(next)
+    persistSavedDecks(next)
+    setSavedDecksNewName('')
+    toast.success(`Deck "${name}" saved.`, { id: DECK_SAVE_TOAST_ID })
+  }
+
+  const handleSaveOverwrite = (deckId: string) => {
+    if (deckEditorHero.openingDeckCardIds.length !== MAX_DECK_SIZE) {
+      toast.error(`Deck must be ${MAX_DECK_SIZE} cards to overwrite.`, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    const target = savedDecks.find((d) => d.id === deckId)
+    if (!target) {
+      return
+    }
+
+    const next = savedDecks.map((deck) =>
+      deck.id === deckId
+        ? { ...deck, cardIds: [...deckEditorHero.openingDeckCardIds], savedAt: Date.now() }
+        : deck,
+    )
+    setSavedDecks(next)
+    persistSavedDecks(next)
+    toast.success(`Deck "${target.name}" overwritten.`, { id: DECK_SAVE_TOAST_ID })
+  }
+
+  const handleLoadDeck = (deck: SavedDeck) => {
+    updateHeroDraft(deckEditorHeroIndex, (current) => ({
+      ...current,
+      openingDeckCardIds: [...deck.cardIds],
+    }))
+    setIsSavedDecksOpen(false)
+    toast.success(`Deck "${deck.name}" loaded.`, { id: DECK_SAVE_TOAST_ID })
+  }
+
+  const handleDeleteSavedDeck = (deckId: string) => {
+    const next = savedDecks.filter((d) => d.id !== deckId)
+    setSavedDecks(next)
+    persistSavedDecks(next)
+    if (editingDeckId === deckId) {
+      setEditingDeckId(null)
+      setEditingDeckName('')
+    }
+  }
+
+  const handleStartRename = (deck: SavedDeck) => {
+    setEditingDeckId(deck.id)
+    setEditingDeckName(deck.name)
+  }
+
+  const handleConfirmRename = () => {
+    if (!editingDeckId) {
+      return
+    }
+    const name = editingDeckName.trim()
+    if (!name) {
+      return
+    }
+
+    const next = savedDecks.map((deck) =>
+      deck.id === editingDeckId ? { ...deck, name } : deck,
+    )
+    setSavedDecks(next)
+    persistSavedDecks(next)
+    setEditingDeckId(null)
+    setEditingDeckName('')
+  }
+
+  const handleCancelRename = () => {
+    setEditingDeckId(null)
+    setEditingDeckName('')
+  }
+
   const saveDeckFromModal = () => {
     if (deckEditorHero.openingDeckCardIds.length !== MAX_DECK_SIZE) {
       toast.error(`Deck must contain exactly ${MAX_DECK_SIZE} cards before saving.`, { id: DECK_SAVE_TOAST_ID })
@@ -594,47 +695,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     }
 
     toast.success('Deck saved. Battle restarted with updated deck.', { id: DECK_SAVE_TOAST_ID })
-    setIsDeckEditorOpen(false)
-  }
-
-  const applyDeckPreset = (presetId: DeckPreset['id']) => {
-    const preset = DECK_PRESETS.find((entry) => entry.id === presetId)
-    if (!preset) {
-      return
-    }
-
-    const cardIdByName = new Map(eligibleDeckEditorCards.map((card) => [card.name, card.id]))
-    const missingNames: string[] = []
-    const nextDeckCardIds: string[] = []
-
-    for (const entry of preset.entries) {
-      const cardId = cardIdByName.get(entry.cardName)
-      if (!cardId) {
-        missingNames.push(entry.cardName)
-        continue
-      }
-
-      for (let copy = 0; copy < entry.count; copy += 1) {
-        nextDeckCardIds.push(cardId)
-      }
-    }
-
-    if (missingNames.length > 0) {
-      toast.error(`Preset unavailable for this hero. Missing: ${missingNames.join(', ')}`, { id: DECK_SAVE_TOAST_ID })
-      return
-    }
-
-    if (nextDeckCardIds.length !== MAX_DECK_SIZE) {
-      toast.error(`Preset must resolve to exactly ${MAX_DECK_SIZE} cards.`, { id: DECK_SAVE_TOAST_ID })
-      return
-    }
-
-    updateHeroDraft(deckEditorHeroIndex, (current) => ({
-      ...current,
-      openingDeckCardIds: nextDeckCardIds,
-    }))
-
-    toast.success(`${preset.label} preset applied.`, { id: DECK_SAVE_TOAST_ID })
+    onCloseDeckEditor()
   }
 
   return (
@@ -905,9 +966,6 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                   : (level) => level < 2
               }
             />
-            <button type="button" className="debug-edit-deck-button" onClick={() => setIsDeckEditorOpen(true)}>
-              Edit Deck
-            </button>
           </div>
         </aside>
       )}
@@ -917,36 +975,23 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
           <div className="deck-editor-modal" role="dialog" aria-modal="true" aria-label="Deck editor">
           <div className="deck-editor-modal-header">
             <div className="deck-editor-title-wrap">
-              <strong>Deck Editor</strong>
+              <strong>Deck Editor — {deckEditorHeroIndex === 0 ? 'Player A' : 'Player B'}</strong>
               <span>
-                Build {deckEditorHero.heroEntityId} deck: {deckEditorHero.openingDeckCardIds.length}/{MAX_DECK_SIZE}
+                {deckEditorHero.openingDeckCardIds.length}/{MAX_DECK_SIZE} cards
               </span>
             </div>
             <div className="deck-editor-header-actions">
               <button
                 type="button"
-                className={`deck-editor-hero-tab ${deckEditorHeroIndex === 0 ? 'active' : ''}`.trim()}
-                onClick={() => setDeckEditorHeroIndex(0)}
+                className="deck-editor-saved-decks-btn"
+                onClick={() => setIsSavedDecksOpen(true)}
               >
-                Hero 1
-              </button>
-              <button
-                type="button"
-                className={`deck-editor-hero-tab ${deckEditorHeroIndex === 1 ? 'active' : ''}`.trim()}
-                onClick={() => setDeckEditorHeroIndex(1)}
-              >
-                Hero 2
+                Saved Decks
               </button>
               <button type="button" className="deck-editor-save" onClick={saveDeckFromModal}>
-                Save Deck
+                Apply &amp; Restart
               </button>
-              <button type="button" className="deck-editor-save" onClick={() => applyDeckPreset('balanced')}>
-                Load Balanced
-              </button>
-              <button type="button" className="deck-editor-save" onClick={() => applyDeckPreset('offensive')}>
-                Load Offensive
-              </button>
-              <button type="button" className="deck-editor-close" onClick={() => setIsDeckEditorOpen(false)}>
+              <button type="button" className="deck-editor-close" onClick={onCloseDeckEditor}>
                 Close
               </button>
             </div>
@@ -955,7 +1000,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
           <div className="deck-editor-rules">
             <span>Ultimate cards: max {MAX_ULTIMATE_COPIES} total copy in deck.</span>
             <span>Other cards: max 2 copies each.</span>
-            <span>Apply Bootstrap Config when done to restart with this deck.</span>
+            <span>Use &quot;Apply &amp; Restart&quot; to lock in the deck and restart the battle.</span>
           </div>
 
           <div className="deck-editor-panels">
@@ -1040,7 +1085,7 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
 
                     return (
                       <article key={`gallery:${entry.card.id}`} className={`deck-editor-gallery-card rarity-${entry.card.rarity} ${isSelected ? 'selected' : ''}`.trim()} role="listitem">
-                        <button type="button" className="deck-editor-gallery-main" onClick={() => setSelectedDeckCardId(entry.card.id)}>
+                        <button type="button" className="deck-editor-gallery-main" onClick={() => setSelectedDeckCardId(entry.card.id)} onDoubleClick={() => addDeckCopy(entry.card.id)} title="Double-click to add to deck">
                           <span className="deck-editor-gallery-cost">{entry.card.moveCost}</span>
                           <Icon icon={iconMeta.id} style={getVisualIconStyle(iconMeta)} className="deck-editor-gallery-icon" aria-hidden="true" />
                           <span className="deck-editor-gallery-name">{entry.card.name}</span>
@@ -1156,6 +1201,8 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
                                   type="button"
                                   className={`deck-editor-deck-row rarity-${entry.card.rarity} ${isSelected ? 'selected' : ''}`.trim()}
                                   onClick={() => setSelectedDeckCardId(entry.card.id)}
+                                  onDoubleClick={() => removeDeckCopy(entry.card.id)}
+                                  title="Double-click to remove a copy"
                                 >
                                   <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
                                   <Icon icon={iconMeta.id} style={getVisualIconStyle(iconMeta)} className="deck-editor-deck-row-icon" aria-hidden="true" />
@@ -1178,6 +1225,105 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
               </div>
             </section>
           </div>
+
+          {isSavedDecksOpen ? (
+            <div className="saved-decks-overlay">
+              <div className="saved-decks-panel">
+                <div className="saved-decks-header">
+                  <strong>Saved Decks — {deckEditorHeroIndex === 0 ? 'Player A' : 'Player B'}</strong>
+                  <button
+                    type="button"
+                    className="deck-editor-close"
+                    onClick={() => setIsSavedDecksOpen(false)}
+                  >
+                    Close
+                  </button>
+                </div>
+
+                <div className="saved-decks-save-row">
+                  <input
+                    type="text"
+                    className="saved-decks-name-input"
+                    value={savedDecksNewName}
+                    onChange={(event) => setSavedDecksNewName(event.target.value)}
+                    onKeyDown={(event) => {
+                      if (event.key === 'Enter') {
+                        event.preventDefault()
+                        handleSaveAsNew()
+                      }
+                    }}
+                    placeholder="Name for new save..."
+                  />
+                  <button
+                    type="button"
+                    className="deck-editor-save"
+                    onClick={handleSaveAsNew}
+                    disabled={!savedDecksNewName.trim()}
+                  >
+                    Save as New
+                  </button>
+                </div>
+
+                <div className="saved-decks-list">
+                  {currentHeroSavedDecks.length === 0 ? (
+                    <p className="saved-decks-empty">No saved decks yet. Save the current deck to get started.</p>
+                  ) : (
+                    currentHeroSavedDecks.map((deck) => (
+                      <div key={deck.id} className="saved-deck-row">
+                        {editingDeckId === deck.id ? (
+                          <div className="saved-deck-rename-row">
+                            <input
+                              type="text"
+                              className="saved-decks-name-input"
+                              value={editingDeckName}
+                              onChange={(event) => setEditingDeckName(event.target.value)}
+                              onKeyDown={(event) => {
+                                if (event.key === 'Enter') {
+                                  event.preventDefault()
+                                  handleConfirmRename()
+                                } else if (event.key === 'Escape') {
+                                  event.stopPropagation()
+                                  handleCancelRename()
+                                }
+                              }}
+                              autoFocus
+                            />
+                            <button type="button" className="deck-editor-save" onClick={handleConfirmRename} disabled={!editingDeckName.trim()}>
+                              Save
+                            </button>
+                            <button type="button" className="deck-editor-close" onClick={handleCancelRename}>
+                              Cancel
+                            </button>
+                          </div>
+                        ) : (
+                          <div className="saved-deck-info">
+                            <span className="saved-deck-name">{deck.name}</span>
+                            <span className="saved-deck-count">{deck.cardIds.length} cards</span>
+                          </div>
+                        )}
+                        {editingDeckId !== deck.id ? (
+                          <div className="saved-deck-actions">
+                            <button type="button" className="saved-deck-action-btn" onClick={() => handleLoadDeck(deck)}>
+                              Load
+                            </button>
+                            <button type="button" className="saved-deck-action-btn" onClick={() => handleSaveOverwrite(deck.id)}>
+                              Overwrite
+                            </button>
+                            <button type="button" className="saved-deck-action-btn" onClick={() => handleStartRename(deck)}>
+                              Rename
+                            </button>
+                            <button type="button" className="saved-deck-action-btn saved-deck-delete-btn" onClick={() => handleDeleteSavedDeck(deck.id)}>
+                              Delete
+                            </button>
+                          </div>
+                        ) : null}
+                      </div>
+                    ))
+                  )}
+                </div>
+              </div>
+            </div>
+          ) : null}
           </div>,
           document.body,
         )

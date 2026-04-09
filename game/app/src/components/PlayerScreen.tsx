@@ -31,6 +31,7 @@ type PlayerScreenProps = {
     targetEntityId?: string
     targetPosition?: { row: number; column: number }
   }) => void
+  onOpenDeckEditor: () => void
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -48,6 +49,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     onPressLuck,
     onEndTurn,
     onPlayCard,
+    onOpenDeckEditor,
   } = props
   const screenRef = useRef<HTMLElement | null>(null)
 
@@ -632,22 +634,34 @@ export function PlayerScreen(props: PlayerScreenProps) {
             <p>{SIDE_VISUALS[selfSideKey].name}</p>
           </div>
         </div>
-        <span className="help-chip keyboard-shortcuts-chip screen-head-shortcuts hint-wrap" tabIndex={0} data-hover-align="right">
-          <Icon icon="game-icons:keyboard" aria-hidden="true" />
-          <span className="sr-only">Keyboard shortcuts</span>
-          <span className="hover-card" role="tooltip">
-            <strong>Shortcuts</strong>
-            <span className="shortcut-tooltip-grid">
-              {KEYBOARD_SHORTCUT_HINT_ROWS.map((entry) => (
-                <span key={`${entry.key}:${entry.description}`} className="shortcut-tooltip-row">
-                  <span className="shortcut-tooltip-key">{entry.key}</span>
-                  <span className="shortcut-tooltip-value">{entry.description}</span>
-                </span>
-              ))}
+        <div className="screen-head-actions">
+          <button
+            type="button"
+            className="help-chip deck-editor-chip hint-wrap"
+            onClick={onOpenDeckEditor}
+            data-hover-align="right"
+          >
+            <Icon icon="game-icons:card-pick" aria-hidden="true" />
+            <span className="sr-only">Edit deck</span>
+            <span className="hover-card" role="tooltip">Edit Deck</span>
+          </button>
+          <span className="help-chip keyboard-shortcuts-chip hint-wrap" tabIndex={0} data-hover-align="right">
+            <Icon icon="game-icons:keyboard" aria-hidden="true" />
+            <span className="sr-only">Keyboard shortcuts</span>
+            <span className="hover-card" role="tooltip">
+              <strong>Shortcuts</strong>
+              <span className="shortcut-tooltip-grid">
+                {KEYBOARD_SHORTCUT_HINT_ROWS.map((entry) => (
+                  <span key={`${entry.key}:${entry.description}`} className="shortcut-tooltip-row">
+                    <span className="shortcut-tooltip-key">{entry.key}</span>
+                    <span className="shortcut-tooltip-value">{entry.description}</span>
+                  </span>
+                ))}
+              </span>
+              <span className="shortcut-tooltip-note">Board targeting stays click/tap.</span>
             </span>
-            <span className="shortcut-tooltip-note">Board targeting stays click/tap.</span>
           </span>
-        </span>
+        </div>
       </header>
 
       <section className="passive-effects-strip" aria-label="Active passive effects">

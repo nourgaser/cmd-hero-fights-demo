@@ -182,6 +182,8 @@ function App() {
   const [liveAnnouncement, setLiveAnnouncement] = useState<{ id: number; text: string }>({ id: 0, text: '' })
   const [isShiftHeld, setIsShiftHeld] = useState(false)
   const [showDetailedTooltips, setShowDetailedTooltips] = useState(false)
+  const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
+  const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
 
   const announce = (text: string) => {
     if (!text.trim()) {
@@ -395,6 +397,13 @@ function App() {
 
     return true
   }
+
+  const handleOpenDeckEditor = (heroIndex: 0 | 1) => {
+    setDeckEditorHeroIndex(heroIndex)
+    setIsDeckEditorOpen(true)
+  }
+
+  const handleCloseDeckEditor = () => setIsDeckEditorOpen(false)
 
   const handleHardReset = () => {
     const failureReason = resetRuntime(bootstrapConfig)
@@ -661,8 +670,11 @@ function App() {
         bootstrapConfig={bootstrapConfig}
         deckEditorCards={deckEditorCards}
         seed={bootstrapConfig.seed}
+        isDeckEditorOpen={isDeckEditorOpen}
+        deckEditorHeroIndex={deckEditorHeroIndex}
         onSeedChange={handleSeedChange}
         onBootstrapConfigChange={handleBootstrapConfigChange}
+        onCloseDeckEditor={handleCloseDeckEditor}
         onHardReset={handleHardReset}
       />
 
@@ -682,6 +694,7 @@ function App() {
           onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')}
           onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroAId)}
+          onOpenDeckEditor={() => handleOpenDeckEditor(0)}
         />
         <PlayerScreen
           key="screen-b"
@@ -698,6 +711,7 @@ function App() {
           onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')}
           onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroBId)}
+          onOpenDeckEditor={() => handleOpenDeckEditor(1)}
         />
       </main>
     </>
