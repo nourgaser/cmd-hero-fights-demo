@@ -582,6 +582,7 @@ html[data-shift-held='true'] .game-toast-detail {
   padding: 10px;
   display: grid;
   grid-template-columns: repeat(auto-fill, minmax(174px, 1fr));
+  grid-auto-rows: 1fr;
   gap: 8px;
   align-content: start;
 }
@@ -593,17 +594,16 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .deck-editor-gallery-card {
   border: 1px solid #2a3b62;
-  grid-auto-rows: 1fr;
   border-radius: 12px;
   background: linear-gradient(180deg, rgba(19, 30, 51, 0.96), rgba(15, 22, 39, 0.96));
   display: grid;
   grid-template-rows: 1fr auto;
   min-height: 196px;
+  height: 100%;
   overflow: hidden;
 }
 
 .deck-editor-gallery-card.selected {
-  height: 100%;
   box-shadow:
     inset 0 0 0 2px color-mix(in srgb, #f0c778 72%, transparent),
     0 8px 20px rgba(0, 0, 0, 0.24);
@@ -614,38 +614,34 @@ html[data-shift-held='true'] .game-toast-detail {
   background: transparent;
   color: inherit;
   text-align: left;
+  width: 100%;
+  padding: 10px;
   display: flex;
   flex-direction: column;
   align-items: flex-start;
   gap: 5px;
   min-height: 0;
   overflow: hidden;
-  align-content: start;
-  gap: 6px;
   cursor: pointer;
 }
 
 .deck-editor-gallery-cost {
-  justify-self: start;
+  align-self: flex-start;
   min-width: 24px;
   height: 24px;
   border-radius: 999px;
   display: grid;
-  min-height: 2.4em;
-  max-height: 2.4em;
+  place-items: center;
   font-size: 12px;
   font-weight: 800;
   background: linear-gradient(180deg, #3f66b9, #274689);
   color: #fff6df;
-  line-height: 1.2;
 }
 
 .deck-editor-gallery-icon {
   font-size: 34px;
 }
 
-  min-height: 1.2em;
-  width: 100%;
 .deck-editor-gallery-name {
   font-size: 13px;
   font-weight: 700;
@@ -655,38 +651,41 @@ html[data-shift-held='true'] .game-toast-detail {
   -webkit-box-orient: vertical;
   overflow: hidden;
   min-height: 2.4em;
-}
-  min-height: calc(1.35em * 3);
-  max-height: calc(1.35em * 3);
+  max-height: 2.4em;
   width: 100%;
+}
 
 .deck-editor-gallery-meta {
   font-size: 10px;
+  line-height: 1.2;
   opacity: 0.78;
   text-transform: uppercase;
   letter-spacing: 0.06em;
-  min-height: 32px;
+  min-height: 1.2em;
   white-space: nowrap;
   overflow: hidden;
   text-overflow: ellipsis;
+  width: 100%;
 }
 
 .deck-editor-gallery-summary {
   font-size: 10px;
-  min-width: 0;
   line-height: 1.35;
   color: color-mix(in srgb, #f4e5cb 92%, #a6b9e2 8%);
   display: -webkit-box;
   -webkit-line-clamp: 3;
   -webkit-box-orient: vertical;
   overflow: hidden;
+  min-height: calc(1.35em * 3);
+  max-height: calc(1.35em * 3);
+  width: 100%;
 }
 
-  min-width: 56px;
+.deck-editor-gallery-actions {
   border-top: 1px solid color-mix(in srgb, #ffffff 12%, transparent);
   display: grid;
   grid-template-columns: 1fr 1fr 56px;
-  line-height: 1;
+  min-height: 32px;
 }
 
 .deck-editor-gallery-actions button {
@@ -694,6 +693,7 @@ html[data-shift-held='true'] .game-toast-detail {
   background: color-mix(in srgb, #18274a 82%, #ffffff 18%);
   color: #f4e5cb;
   min-height: 32px;
+  min-width: 0;
   cursor: pointer;
   font-size: 16px;
   font-weight: 800;
@@ -710,6 +710,7 @@ html[data-shift-held='true'] .game-toast-detail {
   min-width: 56px;
   font-size: 11px;
   font-weight: 700;
+  line-height: 1;
   border-left: 1px solid color-mix(in srgb, #ffffff 12%, transparent);
 }
 
