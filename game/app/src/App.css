@@ -2646,38 +2646,42 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .entity-healthbar {
   position: absolute;
-  left: 10px;
-  right: 10px;
-  bottom: 8px;
-  height: 10px;
+  left: 8px;
+  right: 8px;
+  bottom: 6px;
+  height: 16px;
   border-radius: 999px;
-  border: 1px solid color-mix(in srgb, #2b2218 75%, transparent);
-  background: color-mix(in srgb, #2c2418 72%, transparent);
+  border: 1px solid color-mix(in srgb, #1a1410 40%, transparent);
+  background: color-mix(in srgb, #1a1410 12%, transparent);
   overflow: hidden;
   box-shadow:
-    inset 0 1px 1px rgba(0, 0, 0, 0.24),
-    0 0 0 1px color-mix(in srgb, #ffffff 18%, transparent);
+    inset 0 1px 1px rgba(0, 0, 0, 0.16),
+    0 0 0 1px color-mix(in srgb, #ffffff 8%, transparent);
 }
 
 .entity-healthbar-fill {
+  display: block;
   height: 100%;
+  width: 100%;
   transition: width 180ms ease, background 120ms ease;
 }
+
 
 .entity-healthbar-value {
   position: absolute;
   top: 50%;
   left: 50%;
   transform: translate(-50%, -50%);
-  font-size: 9px;
+  font-size: 12px;
   line-height: 1;
   font-weight: 700;
-  color: #f7f4ed;
+  color: #ffffff;
   text-shadow:
-    0 1px 1px rgba(0, 0, 0, 0.72),
-    0 0 2px rgba(0, 0, 0, 0.52);
-  letter-spacing: 0.15px;
+    0 1px 2px rgba(0, 0, 0, 0.8),
+    0 0 3px rgba(0, 0, 0, 0.6);
+  letter-spacing: 0.2px;
   pointer-events: none;
+  white-space: nowrap;
 }
 
 .battlefield-hover-card {
