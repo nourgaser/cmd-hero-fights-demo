@@ -541,7 +541,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
       if (
         target.closest(
-          '.hand-bar, .hand-card-item, .hand-focus-panel, .hand-card-info, .battle-action-overlay, .deck-overlay, .touch-tooltip-toggle, .hint-wrap, button, input, textarea, [role="button"]',
+          '.hand-bar, .hand-card-item, .hand-focus-panel, .hand-card-info, .battle-action-overlay, .deck-overlay, .touch-tooltip-toggle, .hint-wrap, .inspect-panel, button, input, textarea, [role="button"]',
         )
       ) {
         return
