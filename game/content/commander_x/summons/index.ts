@@ -9,6 +9,7 @@ import type { CommanderXSummonedDefinition } from "./types";
 import corrodedShortswordDef from "./corroded-shortsword";
 import defiledGreatswordDef from "./defiled-greatsword";
 import glintingAdamantiteBladeDef from "./glinting-adamantite-blade";
+import healingFortressDef from "./healing-fortress";
 import warStandardDef from "./war-standard";
 import guardSigilDef from "./guard-sigil";
 import jaqueminPatrolDef from "./jaquemin-patrol";
@@ -21,6 +22,7 @@ const COMMANDER_X_SUMMONED_DEFINITIONS = [
   shamanicTitaniumPummelerDef,
   warStandardDef,
   guardSigilDef,
+  healingFortressDef,
   jaqueminPatrolDef,
 ] as const satisfies readonly CommanderXSummonedDefinition[];
 

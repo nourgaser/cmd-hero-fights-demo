@@ -2,6 +2,7 @@ import {
   type BattleState,
   type HeroEntityState,
 } from "../../../shared/models";
+import { resolveAttackTargetEntityIdsWithTaunt } from "../../battlefield/taunt";
 
 export function resolveBasicAttackTargetEntityIds(options: {
   state: BattleState;
@@ -14,7 +15,8 @@ export function resolveBasicAttackTargetEntityIds(options: {
     return undefined;
   }
 
-  return Object.values(state.entitiesById)
-    .filter((entry) => entry.battlefieldSide !== actorHero.battlefieldSide)
-    .map((entry) => entry.entityId);
+  return resolveAttackTargetEntityIdsWithTaunt({
+    state,
+    attackerEntityId: actorHero.entityId,
+  });
 }

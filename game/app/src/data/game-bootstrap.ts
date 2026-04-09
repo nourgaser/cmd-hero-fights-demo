@@ -43,6 +43,7 @@ export const CARD_IDS = {
   shamanicTitaniumPummeler: 'card.commander-x.shamanic-titanium-pummeler',
   warStandard: 'card.commander-x.war-standard',
   guardSigil: 'card.commander-x.guard-sigil',
+  healingFortress: 'card.commander-x.healing-fortress',
   jaqueminPatrol: 'card.commander-x.jaquemin-patrol',
 } as const
 

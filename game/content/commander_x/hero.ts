@@ -2,6 +2,7 @@ import type { HeroDefinition, ListenerDefinition } from "../../shared/models";
 import { COMMANDER_X_HERO_ID } from "./constants";
 
 const COMMANDER_X_PASSIVE_HEAL_AMOUNT = 1;
+export const COMMANDER_X_PASSIVE_ATTACK_HEAL_STAT = "attackHealOnAttack";
 
 export const COMMANDER_X_HERO = {
   id: COMMANDER_X_HERO_ID,
@@ -52,6 +53,8 @@ export function createCommanderXInitialListeners(heroEntityId: string): Listener
             target: "sourceOwnerHero",
             minimum: COMMANDER_X_PASSIVE_HEAL_AMOUNT,
             maximum: COMMANDER_X_PASSIVE_HEAL_AMOUNT,
+            minimumPropertyPath: COMMANDER_X_PASSIVE_ATTACK_HEAL_STAT,
+            maximumPropertyPath: COMMANDER_X_PASSIVE_ATTACK_HEAL_STAT,
           },
           displayText: {
             template: "Restore {amount} HP.",

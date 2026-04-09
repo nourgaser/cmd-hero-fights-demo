@@ -1889,6 +1889,12 @@ html[data-shift-held='true'] .game-toast-detail {
   border: 1px solid color-mix(in srgb, #3c8f6d 54%, transparent);
 }
 
+.battlefield-hover-status-pill.taunt {
+  color: #3f2a12;
+  background: color-mix(in srgb, #ffe8bd 88%, #ffffff 12%);
+  border: 1px solid color-mix(in srgb, #b37a2a 56%, transparent);
+}
+
 .battlefield-hover-status-source-list {
   display: grid;
   gap: 2px;

@@ -329,6 +329,9 @@ function App() {
     let detail: string | null = null
 
     if (event.kind === 'listenerTriggered') {
+      if (event.listenerId.includes(':passive:heal-on-attack')) {
+        return
+      }
       const split = splitSummaryAndDetail(event.message)
       summary = split.summary
       detail = split.detail

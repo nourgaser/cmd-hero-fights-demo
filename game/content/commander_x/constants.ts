@@ -4,6 +4,7 @@ export const SUMMON_ENTITY_IDS = {
   corrodedShortsword: "entity.weapon.corroded-shortsword",
   defiledGreatsword: "entity.weapon.defiled-greatsword",
   glintingAdamantiteBlade: "entity.weapon.glinting-adamantite-blade",
+  healingFortress: "entity.totem.healing-fortress",
   shamanicTitaniumPummeler: "entity.weapon.shamanic-titanium-pummeler",
   warStandard: "entity.totem.war-standard",
   guardSigil: "entity.totem.guard-sigil",

@@ -7,6 +7,7 @@ import { CORRODED_SHORTSWORD_CARD } from "./corroded-shortsword";
 import { DEFILED_GREATSWORD_CARD } from "./defiled-greatsword";
 import { GLINTING_ADAMANTITE_BLADE_CARD } from "./glinting-adamantite-blade";
 import { GUARD_SIGIL_CARD } from "./guard-sigil";
+import { HEALING_FORTRESS_CARD } from "./healing-fortress";
 import { HEALTH_POTION_CARD } from "./health-potion";
 import { HUNKER_DOWN_CARD } from "./hunker-down";
 import { IRON_SKIN_CARD } from "./iron-skin";
@@ -30,6 +31,7 @@ export {
   DEFILED_GREATSWORD_CARD,
   GLINTING_ADAMANTITE_BLADE_CARD,
   GUARD_SIGIL_CARD,
+  HEALING_FORTRESS_CARD,
   HEALTH_POTION_CARD,
   HUNKER_DOWN_CARD,
   IRON_SKIN_CARD,
@@ -66,6 +68,7 @@ export const COMMANDER_X_CARDS = [
   SHAMANIC_TITANIUM_PUMMELER_CARD,
   WAR_STANDARD_CARD,
   GUARD_SIGIL_CARD,
+  HEALING_FORTRESS_CARD,
   JAQUEMIN_PATROL_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];

@@ -11,6 +11,7 @@ export const KEYWORD_IDS = {
   light: "keyword.light",
   immune: "keyword.immune",
   sharpness: "keyword.sharpness",
+  taunt: "keyword.taunt",
 } as const;
 
 export const BATTLECRY_KEYWORD: KeywordReference = {
@@ -71,6 +72,13 @@ export const KEYWORD_DEFINITIONS = [
       params: {
         amount: 1,
       },
+    },
+  },
+  {
+    id: KEYWORD_IDS.taunt,
+    name: "Taunt",
+    summaryText: {
+      template: "Adjacent allies cannot be targeted by enemy attacks while this unit remains.",
     },
   },
 ] as const satisfies readonly KeywordDefinition[];

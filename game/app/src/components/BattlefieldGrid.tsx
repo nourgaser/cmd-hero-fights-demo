@@ -528,6 +528,14 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             ) : null}
                           </div>
                         ) : null}
+                        {entityStats.isTaunt ? (
+                          <div className="battlefield-hover-status-row">
+                            <span className="battlefield-hover-status-pill taunt">Taunt</span>
+                            <span className="battlefield-hover-status-source-row">
+                              Adjacent allies cannot be targeted by enemy attacks.
+                            </span>
+                          </div>
+                        ) : null}
                         <span className="hover-group-title">Combat</span>
                         <div className="battlefield-hover-grid">
                           <span className={`battlefield-hover-stat ${attackDamageClass}`.trim()}>

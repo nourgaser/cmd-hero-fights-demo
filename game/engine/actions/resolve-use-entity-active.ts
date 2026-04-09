@@ -14,6 +14,7 @@ import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
 import { markHeroDamageTakenThisTurn } from "../core/aura";
 import { isEntityImmuneToDamage } from "../core/immunity";
+import { isAttackTargetProtectedByAdjacentTaunt } from "../battlefield/taunt";
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
@@ -119,6 +120,20 @@ export function resolveUseEntityActiveAction(options: {
       ok: false,
       state,
       reason: "useEntityActive target must be on the opposing side.",
+    };
+  }
+
+  if (
+    isAttackTargetProtectedByAdjacentTaunt({
+      state,
+      attackerEntityId: source.entityId,
+      targetEntityId: target.entityId,
+    })
+  ) {
+    return {
+      ok: false,
+      state,
+      reason: "useEntityActive target is protected by an adjacent Taunt ally.",
     };
   }
 

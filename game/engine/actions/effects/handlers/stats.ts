@@ -17,6 +17,7 @@ type StatKey =
   | "abilityPower"
   | "dodgeChance"
   | "attackFlatBonusDamage"
+  | "attackHealOnAttack"
   | "sharpness"
   | "immune";
 

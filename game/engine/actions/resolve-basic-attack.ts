@@ -22,6 +22,7 @@ import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
 import { markHeroDamageTakenThisTurn } from "../core/aura";
+import { isAttackTargetProtectedByAdjacentTaunt } from "../battlefield/taunt";
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
@@ -96,6 +97,20 @@ export function resolveBasicAttackAction(options: {
       ok: false,
       state,
       reason: "Basic attack target must be on the opposing side.",
+    };
+  }
+
+  if (
+    isAttackTargetProtectedByAdjacentTaunt({
+      state,
+      attackerEntityId: attacker.entityId,
+      targetEntityId: target.entityId,
+    })
+  ) {
+    return {
+      ok: false,
+      state,
+      reason: "Basic attack target is protected by an adjacent Taunt ally.",
     };
   }
 

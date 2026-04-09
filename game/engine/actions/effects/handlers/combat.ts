@@ -75,8 +75,20 @@ export function handleHealEffect(
   const effectiveRange = getEffectiveHealRange({
     state,
     targetEntityId: actorHero.entityId,
-    baseMinimum: effect.payload.minimum,
-    baseMaximum: effect.payload.maximum,
+    baseMinimum: resolveEffectiveNumber({
+      state,
+      targetEntityId: actorHero.entityId,
+      propertyPath: effect.payload.minimumPropertyPath ?? "heal.minimum",
+      baseValue: effect.payload.minimum,
+      clampMin: 0,
+    }).effectiveValue,
+    baseMaximum: resolveEffectiveNumber({
+      state,
+      targetEntityId: actorHero.entityId,
+      propertyPath: effect.payload.maximumPropertyPath ?? "heal.maximum",
+      baseValue: effect.payload.maximum,
+      clampMin: 0,
+    }).effectiveValue,
   });
 
   const rawRoll = rollRange(

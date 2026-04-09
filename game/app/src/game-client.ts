@@ -28,6 +28,7 @@ export type AppNumberTrace = {
 const STAT_METADATA = {
   attackDamage: { label: 'attack damage', shortLabel: 'AD', iconId: 'game-icons:broadsword' },
   attackFlatBonusDamage: { label: 'flat attack bonus', shortLabel: 'ATK+', iconId: 'game-icons:crossed-swords' },
+  attackHealOnAttack: { label: 'attack heal', shortLabel: 'ATK HEAL', iconId: 'game-icons:health-normal' },
   abilityPower: { label: 'ability power', shortLabel: 'AP', iconId: 'game-icons:magic-swirl' },
   armor: { label: 'armor', shortLabel: 'AR', iconId: 'game-icons:checked-shield' },
   magicResist: { label: 'magic resist', shortLabel: 'MR', iconId: 'game-icons:shield-reflect' },
@@ -178,6 +179,7 @@ export type AppBattlePreview = {
           keywordName: string
           keywordSummaryText: string
         }>
+        isTaunt: boolean
         currentHealth: number
         maxHealth: number
         armor: number
@@ -232,6 +234,14 @@ function formatPreviewNumber(value: number): string {
 function formatSignedDelta(value: number): string {
   const formatted = formatPreviewNumber(Math.abs(value))
   return `${value >= 0 ? '+' : '-'}${formatted}`
+}
+
+function formatLayeredValue(base: number, delta: number): string {
+  if (delta === 0) {
+    return formatPreviewNumber(base)
+  }
+
+  return `(${formatPreviewNumber(base)} ${formatSignedDelta(delta)})`
 }
 
 function renderTemplatedText(displayText?: {
@@ -1616,6 +1626,27 @@ function buildPreviewFromState(options: {
       detailLines: ['Global hero passive effect.'],
     }
 
+    const passiveHealBaseMatch = heroDef.passiveText.match(/restore\s+([0-9]+(?:\.[0-9]+)?)\s+HP/i)
+    const passiveAttackHealBase = passiveHealBaseMatch ? Number(passiveHealBaseMatch[1]) : 0
+    const passiveAttackHealTrace = passiveAttackHealBase > 0
+      ? resolveNumberTrace({
+          gameApi,
+          state,
+          targetEntityId: heroEntityId,
+          propertyPath: 'attackHealOnAttack',
+          baseValue: passiveAttackHealBase,
+          clampMin: 0,
+        })
+      : null
+
+    if (passiveAttackHealTrace) {
+      heroPassiveEffect.shortText = `Your attacks restore ${formatLayeredValue(passiveAttackHealTrace.base, passiveAttackHealTrace.delta)} HP (if not dodged).`
+      heroPassiveEffect.detailLines = [
+        'Global hero passive effect.',
+        numberTraceToDetailLine('Attack heal amount', passiveAttackHealTrace),
+      ]
+    }
+
     const auraPassiveEffects = auraGroups.map((aura) => {
       const durationLabel = `Duration: ${aura.instances.map((entry) => `${entry.turnsRemaining}t`).join(', ')}`
       const triggeredLine = aura.triggeredThisTurn
@@ -1797,7 +1828,9 @@ function buildPreviewFromState(options: {
       heroEntityId,
       heroDefinitionId: entity.heroDefinitionId,
       heroName: heroDef.name,
-      passiveText: heroDef.passiveText,
+      passiveText: passiveAttackHealTrace
+        ? `Your attacks restore ${formatLayeredValue(passiveAttackHealTrace.base, passiveAttackHealTrace.delta)} HP (if not dodged).`
+        : heroDef.passiveText,
       activePassiveEffects,
       basicAttack: {
         moveCost: heroDef.basicAttack.moveCost,
@@ -1992,6 +2025,7 @@ function buildPreviewFromState(options: {
         sourceCardSummaryDetailText: null,
         sourceCardSummaryTone: 'neutral',
         sourceCardKeywords: [],
+        isTaunt: false,
         currentHealth: entity.currentHealth,
         maxHealth: entity.maxHealth,
         armor: armorTrace.effective,
@@ -2107,6 +2141,7 @@ function buildPreviewFromState(options: {
       sourceCardSummaryDetailText: sourceCardText?.summaryDetailText ?? null,
       sourceCardSummaryTone: sourceCardText?.summaryTone ?? 'neutral',
       sourceCardKeywords,
+      isTaunt: entity.keywordIds.includes('keyword.taunt'),
       currentHealth: entity.currentHealth,
       maxHealth: entity.maxHealth,
       armor: armorTrace.effective,

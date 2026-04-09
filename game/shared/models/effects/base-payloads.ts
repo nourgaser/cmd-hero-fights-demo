@@ -10,6 +10,7 @@ export const ModifiableStatSchema = z.enum([
   "abilityPower",
   "dodgeChance",
   "attackFlatBonusDamage",
+  "attackHealOnAttack",
   "sharpness",
   "immune",
 ]);
@@ -37,6 +38,8 @@ export const HealEffectPayloadSchema = z
     target: EffectTargetSelectorSchema,
     minimum: z.number().nonnegative(),
     maximum: z.number().nonnegative(),
+    minimumPropertyPath: z.string().min(1).optional(),
+    maximumPropertyPath: z.string().min(1).optional(),
   })
   .refine((payload) => payload.maximum >= payload.minimum, {
     message: "maximum must be greater than or equal to minimum.",
