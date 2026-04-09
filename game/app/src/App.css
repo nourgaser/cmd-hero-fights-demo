@@ -30,6 +30,25 @@
   padding: 24px;
 }
 
+.mute-music-control {
+  border: 2px solid color-mix(in srgb, #241d14 40%, var(--border));
+  background: linear-gradient(180deg, #f7e99b 0%, #f0d469 100%);
+  color: #241d14;
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mute-music-control:hover,
+.mute-music-control:focus-visible {
+  background: linear-gradient(180deg, #f8ecb8 0%, #f2d774 100%);
+}
+
 .game-toast {
   border: 2px solid #241d14;
   border-radius: 10px;

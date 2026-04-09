@@ -1,5 +1,5 @@
 import './App.css'
-import { useEffect, useState } from 'react'
+import { useEffect, useRef, useState } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../shared/models'
 import {
@@ -18,6 +18,8 @@ import { DebugStatePanel } from './components/DebugStatePanel.tsx'
 
 const DEBUG_SEED_STORAGE_KEY = 'cmd-hero:debug-seed'
 const DEBUG_BOOTSTRAP_STORAGE_KEY = 'cmd-hero:debug-bootstrap-config'
+const MUSIC_MUTED_STORAGE_KEY = 'cmd-hero:music-muted'
+const MUSIC_SOURCE = '/game_music.mp3'
 const ACTION_TOAST_ID = 'action-feedback'
 const ACTION_TOAST_DURATION_MS = 7000
 const EVENT_TOAST_DURATION_MS = 4500
@@ -184,6 +186,14 @@ function App() {
   const [showDetailedTooltips, setShowDetailedTooltips] = useState(false)
   const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
+  const musicAudioRef = useRef<HTMLAudioElement | null>(null)
+  const [isMusicMuted, setIsMusicMuted] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return window.localStorage.getItem(MUSIC_MUTED_STORAGE_KEY) === 'true'
+  })
 
   const announce = (text: string) => {
     if (!text.trim()) {
@@ -257,6 +267,21 @@ function App() {
       window.removeEventListener('scroll', updateActiveHoverCards, true)
     }
   }, [])
+
+  useEffect(() => {
+    if (!musicAudioRef.current) {
+      return
+    }
+
+    const audio = musicAudioRef.current
+    audio.loop = true
+    audio.muted = isMusicMuted
+    window.localStorage.setItem(MUSIC_MUTED_STORAGE_KEY, String(isMusicMuted))
+
+    if (!isMusicMuted) {
+      void audio.play().catch(() => {})
+    }
+  }, [isMusicMuted])
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {
@@ -678,6 +703,8 @@ function App() {
         onHardReset={handleHardReset}
       />
 
+      <audio ref={musicAudioRef} src={MUSIC_SOURCE} loop autoPlay muted={isMusicMuted} />
+
       <main key={`battle-${resetEpoch}`} className="dual-screens">
         <PlayerScreen
           key="screen-a"
@@ -695,6 +722,9 @@ function App() {
           onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroAId)}
           onOpenDeckEditor={() => handleOpenDeckEditor(0)}
+          isMusicMuted={isMusicMuted}
+          onToggleMusic={() => setIsMusicMuted((current) => !current)}
+          showMusicControl
         />
         <PlayerScreen
           key="screen-b"

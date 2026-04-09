@@ -34,6 +34,9 @@ type PlayerScreenProps = {
     targetPosition?: { row: number; column: number }
   }) => void
   onOpenDeckEditor: () => void
+  isMusicMuted?: boolean
+  onToggleMusic?: () => void
+  showMusicControl?: boolean
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -52,6 +55,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
     onEndTurn,
     onPlayCard,
     onOpenDeckEditor,
+    isMusicMuted,
+    onToggleMusic,
+    showMusicControl,
   } = props
   const screenRef = useRef<HTMLElement | null>(null)
 
@@ -652,6 +658,16 @@ export function PlayerScreen(props: PlayerScreenProps) {
           </div>
         </div>
         <div className="screen-head-actions">
+          {showMusicControl ? (
+            <button
+              type="button"
+              className="help-chip mute-music-control"
+              onClick={onToggleMusic}
+              aria-label={isMusicMuted ? 'Unmute music' : 'Mute music'}
+            >
+              <span aria-hidden="true">{isMusicMuted ? '🔇' : '🎵'}</span>
+            </button>
+          ) : null}
           <button
             type="button"
             className="help-chip deck-editor-chip hint-wrap"
