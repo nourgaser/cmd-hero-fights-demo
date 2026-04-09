@@ -11,8 +11,6 @@ The following subset of the content is the chosen content for the prototype. It 
 ### General Abilities (Non-hero specific)
 
 - [Reroll](/content/Game/Cards/General/Reroll.md) done
-
-<!-- Low priority / do later -->
 - [Hunker Down](/content/Game/Cards/General/Hunker%20Down.md) done
 - [Reset Luck](/content/Game/Cards/General/Reset%20Luck.md) done
 
@@ -27,8 +25,6 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Bastion Stance](/content/Game/Cards/Commander%20X/Bastion%20Stance.md) done
 - [Battle Focus](/content/Game/Cards/Commander%20X/Battle%20Focus.md) done
 - [Shield Toss](/content/Game/Cards/Commander%20X/Shield%20Toss.md) done
-
-<!-- Low priority / do later -->
 - [Warcry](/content/Game/Cards/Commander%20X/Warcry.md) done
 - [Shatter Plating](/content/Game/Cards/Commander%20X/Shatter%20Plating.md) done
 - [Reactive Bulwark](/content/Game/Cards/Commander%20X/Reactive%20Bulwark.md) done
@@ -38,8 +34,6 @@ The following subset of the content is the chosen content for the prototype. It 
 ### Weapons
 
 - [Corroded Shortsword](/content/Game/Cards/Commander%20X/Corroded%20Shortsword.md) done
-
-<!-- Low priority / do later -->
 - [Defiled Greatsword](/content/Game/Cards/Commander%20X/Defiled%20Greatsword.md) done
 - [Shamanic Titanium Pummeler](/content/Game/Cards/Commander%20X/Shamanic%20Titanium%20Pummeler.md) done
 - [Glinting Adamantite Blade](/content/Game/Cards/Commander%20X/Glinting%20Adamantite%20Blade.md) done
@@ -47,18 +41,14 @@ The following subset of the content is the chosen content for the prototype. It 
 ### Totems
 - [War Standard](/content/Game/Cards/Commander%20X/War%20Standard.md) done
 - [Guard Sigil](/content/Game/Cards/Commander%20X/Guard%20Sigil.md) done
-
-<!-- Low priority / do later -->
 - [Healing Fortress](/content/Game/Cards/Commander%20X/Healing%20Fortress.md) done
 - [Evergrowth Idol](/content/Game/Cards/Commander%20X/Evergrowth%20Idol.md) done
 - [Banner of X](/content/Game/Cards/Commander%20X/Banner%20of%20X.md) done
-- [Steelbound Effigy](/content/Game/Cards/Commander%20X/Steelbound%20Effigy.md)
+- [Steelbound Effigy](/content/Game/Cards/Commander%20X/Steelbound%20Effigy.md) done
 - [Bulwark of Fortune](/content/Game/Cards/Commander%20X/Bulwark%20of%20Fortune.md)
 
 ### Companions
 - [Jaquemin the Patrol](/content/Game/Cards/Commander%20X/Jaquemin%20the%20Patrol.md) done
-
-<!-- Low priority / do later -->
 - [A Common, Expendable, but Deadly Man](/content/Game/Cards/Commander%20X/A%20Common,%20Expendable,%20but%20Deadly%20Man.md)
 - [Merewen the Shieldmaiden](/content/Game/Cards/Commander%20X/Merewen%20the%20Shieldmaiden.md)
 - [Riquier the Bear](/content/Game/Cards/Commander%20X/Riquier%20the%20Bear.md)
