@@ -53,7 +53,7 @@ export const ModifyStatEffectPayloadSchema = z.object({
   amount: z.number(),
   duration: z.enum(["persistent", "untilSourceRemoved"]).default("persistent"),
   changeKind: z.enum(["apply", "removeMatching"]).default("apply"),
-  sourceBinding: z.enum(["effectSource", "lastSummonedEntity", "selectedTarget"]).optional(),
+  sourceBinding: z.enum(["effectSource", "actorHero", "lastSummonedEntity", "selectedTarget"]).optional(),
 });
 
 export const DrawCardsEffectPayloadSchema = z.object({

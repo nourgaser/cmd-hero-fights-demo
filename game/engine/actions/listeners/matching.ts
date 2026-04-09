@@ -54,6 +54,28 @@ function conditionMatches(options: {
     case "turnStartedIsListenerOwnerHero": {
       return event.kind === "turnStarted" && event.activeHeroEntityId === listener.ownerHeroEntityId;
     }
+    case "turnStartedEveryNOwnerTurnsSinceListenerCreated": {
+      if (event.kind !== "turnStarted") {
+        return false;
+      }
+
+      if (event.activeHeroEntityId !== listener.ownerHeroEntityId) {
+        return false;
+      }
+
+      const createdTurnNumber = listener.createdTurnNumber;
+      if (!createdTurnNumber) {
+        return false;
+      }
+
+      const turnsElapsed = event.turnNumber - createdTurnNumber;
+      if (turnsElapsed <= 0) {
+        return false;
+      }
+
+      const ownerTurnInterval = condition.interval * 2;
+      return turnsElapsed % ownerTurnInterval === 0;
+    }
     default:
       return false;
   }

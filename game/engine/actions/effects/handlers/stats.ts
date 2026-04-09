@@ -28,7 +28,7 @@ type ModifyStatPayload = {
   amount: number;
   duration?: "persistent" | "untilSourceRemoved";
   changeKind?: "apply" | "removeMatching";
-  sourceBinding?: "effectSource" | "lastSummonedEntity" | "selectedTarget";
+  sourceBinding?: "effectSource" | "actorHero" | "lastSummonedEntity" | "selectedTarget";
 };
 
 function titleCaseFromSlug(slug: string): string {
@@ -105,6 +105,8 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
       ? lastSummonedEntityId
       : payload.sourceBinding === "selectedTarget"
         ? targetId
+        : payload.sourceBinding === "actorHero"
+          ? actorHero.entityId
         : effectSourceEntityId ?? actorHero.entityId;
 
   if (!resolvedSourceEntityId) {
@@ -115,6 +117,8 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
           ? `${payload.kind} requires an existing lastSummonedEntity source.`
           : payload.sourceBinding === "selectedTarget"
             ? `${payload.kind} requires a valid selected target source.`
+            : payload.sourceBinding === "actorHero"
+              ? `${payload.kind} requires a valid actor hero source.`
             : `${payload.kind} requires an effect source entity.`,
     };
   }

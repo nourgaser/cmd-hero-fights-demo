@@ -63,6 +63,7 @@ export function handleAddListenerEffect(
           eventKind: effect.payload.eventKind,
           ownerHeroEntityId: actorHero.entityId,
           sourceEntityId,
+          createdTurnNumber: state.turn.turnNumber,
           conditions: effect.payload.conditions,
           lifetime: effect.payload.lifetime,
           effects: effect.payload.effects,

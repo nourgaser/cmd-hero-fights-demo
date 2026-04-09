@@ -5,6 +5,7 @@ import { BATTLE_FOCUS_CARD } from "./battle-focus";
 import { CHAAARGE_CARD } from "./chaaarge";
 import { CORRODED_SHORTSWORD_CARD } from "./corroded-shortsword";
 import { DEFILED_GREATSWORD_CARD } from "./defiled-greatsword";
+import { EVERGROWTH_IDOL_CARD } from "./evergrowth-idol";
 import { GLINTING_ADAMANTITE_BLADE_CARD } from "./glinting-adamantite-blade";
 import { GUARD_SIGIL_CARD } from "./guard-sigil";
 import { HEALING_FORTRESS_CARD } from "./healing-fortress";
@@ -29,6 +30,7 @@ export {
   CHAAARGE_CARD,
   CORRODED_SHORTSWORD_CARD,
   DEFILED_GREATSWORD_CARD,
+  EVERGROWTH_IDOL_CARD,
   GLINTING_ADAMANTITE_BLADE_CARD,
   GUARD_SIGIL_CARD,
   HEALING_FORTRESS_CARD,
@@ -69,6 +71,7 @@ export const COMMANDER_X_CARDS = [
   WAR_STANDARD_CARD,
   GUARD_SIGIL_CARD,
   HEALING_FORTRESS_CARD,
+  EVERGROWTH_IDOL_CARD,
   JAQUEMIN_PATROL_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];

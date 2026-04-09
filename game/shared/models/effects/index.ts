@@ -91,6 +91,7 @@ export type ListenerDefinition = {
   eventKind: ListenerEventKind;
   ownerHeroEntityId: string;
   sourceEntityId?: string;
+  createdTurnNumber?: number;
   conditions: ListenerCondition[];
   lifetime: ListenerLifetime;
   effects: EffectDefinition[];
@@ -158,6 +159,7 @@ export const ListenerDefinitionSchema = z.object({
   eventKind: ListenerEventKindSchema,
   ownerHeroEntityId: z.string().min(1),
   sourceEntityId: z.string().min(1).optional(),
+  createdTurnNumber: z.number().int().positive().optional(),
   conditions: z.array(ListenerConditionSchema).default([]),
   lifetime: ListenerLifetimeSchema.default("persistent"),
   effects: z.array(z.unknown()).min(1),

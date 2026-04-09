@@ -44,6 +44,7 @@ export const CARD_IDS = {
   warStandard: 'card.commander-x.war-standard',
   guardSigil: 'card.commander-x.guard-sigil',
   healingFortress: 'card.commander-x.healing-fortress',
+  evergrowthIdol: 'card.commander-x.evergrowth-idol',
   jaqueminPatrol: 'card.commander-x.jaquemin-patrol',
 } as const
 

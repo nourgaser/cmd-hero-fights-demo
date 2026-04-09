@@ -26,6 +26,10 @@ export const ListenerConditionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("damageSourceIsListenerOwnerHero") }),
   z.object({ kind: z.literal("removedEntityIsListenerSource") }),
   z.object({ kind: z.literal("turnStartedIsListenerOwnerHero") }),
+  z.object({
+    kind: z.literal("turnStartedEveryNOwnerTurnsSinceListenerCreated"),
+    interval: z.number().int().positive(),
+  }),
 ]);
 export type ListenerCondition = z.infer<typeof ListenerConditionSchema>;
 
@@ -41,6 +45,7 @@ export function createListenerSchemas(effectDefinitionSchema: z.ZodTypeAny) {
     eventKind: ListenerEventKindSchema,
     ownerHeroEntityId: z.string().min(1),
     sourceEntityId: z.string().min(1).optional(),
+    createdTurnNumber: z.number().int().positive().optional(),
     conditions: z.array(ListenerConditionSchema).default([]),
     lifetime: ListenerLifetimeSchema.default("persistent"),
     effects: z.array(effectDefinitionSchema).min(1),

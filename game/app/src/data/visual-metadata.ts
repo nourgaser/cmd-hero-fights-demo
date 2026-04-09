@@ -44,6 +44,7 @@ export const CARD_ICON_META: Record<string, VisualIconMeta> = {
   [CARD_IDS.warStandard]: { id: 'game-icons:vertical-banner', label: 'War Standard', description: 'Summon a buff totem.' },
   [CARD_IDS.guardSigil]: { id: 'game-icons:magic-shield', label: 'Guard Sigil', description: 'Summon a defense totem.' },
   [CARD_IDS.healingFortress]: { id: 'game-icons:magic-shield', label: 'Healing Fortress', description: 'Summon a taunt totem that boosts attack healing.' },
+  [CARD_IDS.evergrowthIdol]: { id: 'game-icons:obelisk', label: 'Evergrowth Idol', description: 'Summon a totem that grants periodic growth.' },
   [CARD_IDS.jaqueminPatrol]: { id: 'game-icons:knight-banner', label: 'Jaquemin the Patrol', description: 'Summon your companion.' },
 }
 
