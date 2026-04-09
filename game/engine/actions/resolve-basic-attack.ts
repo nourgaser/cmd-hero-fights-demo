@@ -208,6 +208,12 @@ export function resolveBasicAttackAction(options: {
     propertyPath: "attackFlatBonusDamage",
     baseValue: 0,
   }).effectiveValue;
+  const basicAttackFlatBonusDamage = resolveEffectiveNumber({
+    state,
+    targetEntityId: attacker.entityId,
+    propertyPath: "basicAttackFlatBonusDamage",
+    baseValue: 0,
+  }).effectiveValue;
 
   const dodgeRoll = battleRng.nextFloat();
   const targetBaseDodgeChance = Math.min(
@@ -234,13 +240,21 @@ export function resolveBasicAttackAction(options: {
       targetEntityId: attacker.entityId,
       baseSharpness: 0,
     }).effectiveValue;
+    const basicAttackSharpness = resolveEffectiveNumber({
+      state,
+      targetEntityId: attacker.entityId,
+      propertyPath: "basicAttackSharpness",
+      baseValue: 0,
+      clampMin: 0,
+    }).effectiveValue;
+    const totalSharpness = sharpness + basicAttackSharpness;
 
-    if (sharpness > 0 && (attack.damageType === "physical" || attack.damageType === "magic")) {
+    if (totalSharpness > 0 && (attack.damageType === "physical" || attack.damageType === "magic")) {
       stateAfterSharpness = destroyResistanceFromBaseAndPersistent({
         state,
         targetEntityId: target.entityId,
         stat: attack.damageType === "physical" ? "armor" : "magicResist",
-        amount: sharpness,
+        amount: totalSharpness,
       }).state;
     }
 
@@ -267,7 +281,9 @@ export function resolveBasicAttackAction(options: {
               baseMagicResist: targetAfterSharpness.magicResist,
             }).effectiveValue
           : 0;
-    appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
+    appliedDamage =
+      toAppliedDamage(finalRoll, resistance) +
+      roundWhole(flatBonusDamage + basicAttackFlatBonusDamage);
   }
 
   const nextTarget = stateAfterSharpness.entitiesById[target.entityId];

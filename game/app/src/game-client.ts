@@ -28,11 +28,13 @@ export type AppNumberTrace = {
 const STAT_METADATA = {
   attackDamage: { label: 'attack damage', shortLabel: 'AD', iconId: 'game-icons:broadsword' },
   attackFlatBonusDamage: { label: 'flat attack bonus', shortLabel: 'ATK+', iconId: 'game-icons:crossed-swords' },
+  basicAttackFlatBonusDamage: { label: 'basic attack flat bonus', shortLabel: 'BASIC+', iconId: 'game-icons:crossed-swords' },
   attackHealOnAttack: { label: 'attack heal', shortLabel: 'ATK HEAL', iconId: 'game-icons:health-normal' },
   abilityPower: { label: 'ability power', shortLabel: 'AP', iconId: 'game-icons:magic-swirl' },
   armor: { label: 'armor', shortLabel: 'AR', iconId: 'game-icons:checked-shield' },
   magicResist: { label: 'magic resist', shortLabel: 'MR', iconId: 'game-icons:shield-reflect' },
   sharpness: { label: 'sharpness', shortLabel: 'Sharp', iconId: 'game-icons:knife' },
+  basicAttackSharpness: { label: 'basic attack sharpness', shortLabel: 'BSharp', iconId: 'game-icons:knife' },
 } as const
 
 type StatKey = keyof typeof STAT_METADATA
@@ -1517,6 +1519,34 @@ function buildPreviewFromState(options: {
       }),
       luck: state.luck,
     })
+    const basicAttackFlatBonusDamageTrace = combineNumberTraces(
+      basicAttack.attackFlatBonusDamageTrace,
+      resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'basicAttackFlatBonusDamage',
+        baseValue: 0,
+      }),
+    )
+    const basicAttackWithCombinedFlatBonus = buildHeroBasicAttackSummary({
+      heroName: heroDef.name,
+      rollingHeroEntityId: entity.entityId,
+      attack: heroDef.basicAttack,
+      minimumTrace: basicAttack.minimumTrace,
+      maximumTrace: basicAttack.maximumTrace,
+      attackDamageTrace: basicAttack.attackDamageTrace,
+      attackFlatBonusDamageTrace: basicAttackFlatBonusDamageTrace,
+      abilityPowerTrace: resolveNumberTrace({
+        gameApi,
+        state,
+        targetEntityId: entity.entityId,
+        propertyPath: 'abilityPower',
+        baseValue: entity.abilityPower,
+        clampMin: 0,
+      }),
+      luck: state.luck,
+    })
     const heroArmorTrace = resolveNumberTrace({
       gameApi,
       state,
@@ -1852,15 +1882,15 @@ function buildPreviewFromState(options: {
         maximumDamage: heroDef.basicAttack.maximumDamage,
         attackDamageScaling: heroDef.basicAttack.attackDamageScaling,
         abilityPowerScaling: heroDef.basicAttack.abilityPowerScaling,
-        minimumTrace: basicAttack.minimumTrace,
-        maximumTrace: basicAttack.maximumTrace,
-        attackDamageTrace: basicAttack.attackDamageTrace,
-        attackFlatBonusDamageTrace: basicAttack.attackFlatBonusDamageTrace,
-        abilityPowerTrace: basicAttack.abilityPowerTrace,
-        summaryText: basicAttack.summaryText,
-        summaryDetailText: basicAttack.summaryDetailText,
-        summaryTone: basicAttack.summaryTone,
-        currentRangeText: basicAttack.currentRangeText,
+        minimumTrace: basicAttackWithCombinedFlatBonus.minimumTrace,
+        maximumTrace: basicAttackWithCombinedFlatBonus.maximumTrace,
+        attackDamageTrace: basicAttackWithCombinedFlatBonus.attackDamageTrace,
+        attackFlatBonusDamageTrace: basicAttackWithCombinedFlatBonus.attackFlatBonusDamageTrace,
+        abilityPowerTrace: basicAttackWithCombinedFlatBonus.abilityPowerTrace,
+        summaryText: basicAttackWithCombinedFlatBonus.summaryText,
+        summaryDetailText: basicAttackWithCombinedFlatBonus.summaryDetailText,
+        summaryTone: basicAttackWithCombinedFlatBonus.summaryTone,
+        currentRangeText: basicAttackWithCombinedFlatBonus.currentRangeText,
       },
     }
   }

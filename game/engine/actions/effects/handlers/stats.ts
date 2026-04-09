@@ -27,9 +27,11 @@ type StatKey =
   | "abilityPower"
   | "dodgeChance"
   | "attackFlatBonusDamage"
+  | "basicAttackFlatBonusDamage"
   | "moveCapacity"
   | "attackHealOnAttack"
   | "sharpness"
+  | "basicAttackSharpness"
   | "immune";
 
 type ModifyStatPayload = {
