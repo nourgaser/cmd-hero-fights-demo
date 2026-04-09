@@ -38,6 +38,7 @@ export const CARD_IDS = {
   warcry: 'card.commander-x.warcry',
   chaaarge: 'card.commander-x.chaaarge',
   corrodedShortsword: 'card.commander-x.corroded-shortsword',
+  defiledGreatsword: 'card.commander-x.defiled-greatsword',
   warStandard: 'card.commander-x.war-standard',
   guardSigil: 'card.commander-x.guard-sigil',
   jaqueminPatrol: 'card.commander-x.jaquemin-patrol',

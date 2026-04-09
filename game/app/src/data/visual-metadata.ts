@@ -38,6 +38,7 @@ export const CARD_ICON_META: Record<string, VisualIconMeta> = {
   [CARD_IDS.shieldToss]: { id: 'game-icons:round-shield', label: 'Shield Toss', description: 'Deal damage using your defense.' },
   [CARD_IDS.chaaarge]: { id: 'game-icons:charging-bull', label: 'Chaaarge!', description: 'A heavy burst attack.' },
   [CARD_IDS.corrodedShortsword]: { id: 'game-icons:rusty-sword', label: 'Corroded Shortsword', description: 'Summon your weapon.' },
+  [CARD_IDS.defiledGreatsword]: { id: 'game-icons:broadsword', label: 'Defiled Greatsword', description: 'Summon your weapon.' },
   [CARD_IDS.warStandard]: { id: 'game-icons:vertical-banner', label: 'War Standard', description: 'Summon a buff totem.' },
   [CARD_IDS.guardSigil]: { id: 'game-icons:magic-shield', label: 'Guard Sigil', description: 'Summon a defense totem.' },
   [CARD_IDS.jaqueminPatrol]: { id: 'game-icons:knight-banner', label: 'Jaquemin the Patrol', description: 'Summon your companion.' },
