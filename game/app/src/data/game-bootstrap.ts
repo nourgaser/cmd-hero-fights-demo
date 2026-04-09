@@ -47,6 +47,13 @@ export const CARD_IDS = {
   evergrowthIdol: 'card.commander-x.evergrowth-idol',
   bannerOfX: 'card.commander-x.banner-of-x',
   jaqueminPatrol: 'card.commander-x.jaquemin-patrol',
+  reactiveBulwark: 'card.commander-x.reactive-bulwark',
+  steelboundEffigy: 'card.commander-x.steelbound-effigy',
+  bulwarkOfFortune: 'card.commander-x.bulwark-of-fortune',
+  commonExpendableDeadlyMan: 'card.commander-x.common-expendable-deadly-man',
+  merewenTheShieldmaiden: 'card.commander-x.merewen-the-shieldmaiden',
+  riquierTheBear: 'card.commander-x.riquier-the-bear',
+  veteranEdge: 'card.commander-x.veteran-edge',
 } as const
 
 // Edit these lists to define reusable deck presets for scenarios.

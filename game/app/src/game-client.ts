@@ -124,6 +124,7 @@ export type AppBattlePreview = {
       validTargetEntityIds: string[]
       validPlacementPositions: Array<{ row: number; column: number }>
       summonPreview: {
+        cardDefinitionId: string
         entityDefinitionId: string
         entityKind: 'weapon' | 'totem' | 'companion'
         displayName: string
@@ -174,6 +175,7 @@ export type AppBattlePreview = {
         kind: 'hero' | 'weapon' | 'totem' | 'companion'
         ownerHeroEntityId: string
         displayName: string
+        sourceCardDefinitionId: string | null
         sourceCardName: string | null
         sourceCardSummary: string | null
         sourceCardSummaryDetailText: string | null
@@ -1254,6 +1256,7 @@ function resolveSummonPreviewForCard(options: {
       : summonedBlueprint.kind
 
   return {
+  cardDefinitionId: sourceCardDef?.id ?? summonPayload.entityDefinitionId,
     entityDefinitionId: summonPayload.entityDefinitionId,
     entityKind: summonedBlueprint.kind,
     displayName: sourceCardDef?.name ?? summonPayload.entityDefinitionId,
@@ -2114,6 +2117,7 @@ function buildPreviewFromState(options: {
         kind: 'hero',
         ownerHeroEntityId: entity.entityId,
         displayName: heroDef?.name ?? entity.heroDefinitionId,
+        sourceCardDefinitionId: null,
         sourceCardName: null,
         sourceCardSummary: null,
         sourceCardSummaryDetailText: null,
@@ -2240,6 +2244,7 @@ function buildPreviewFromState(options: {
       kind: entity.kind,
       ownerHeroEntityId: entity.ownerHeroEntityId,
       displayName: sourceCard?.name ?? entity.definitionCardId,
+      sourceCardDefinitionId: entity.definitionCardId,
       sourceCardName: sourceCard?.name ?? entity.definitionCardId,
       sourceCardSummary: sourceCardText?.summaryText ?? null,
       sourceCardSummaryDetailText: sourceCardText?.summaryDetailText ?? null,

@@ -1,6 +1,6 @@
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
-import { ENTITY_ICON_META, LUCK_VISUALS } from '../data/visual-metadata.ts'
+import { CARD_ICON_META, ENTITY_ICON_META, LUCK_VISUALS } from '../data/visual-metadata.ts'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
@@ -37,6 +37,22 @@ function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 
     return 'delta-negative'
   }
   return 'delta-neutral'
+}
+
+function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) {
+  const transforms: string[] = []
+
+  if (meta.hFlip) {
+    transforms.push('scaleX(-1)')
+  }
+  if (meta.vFlip) {
+    transforms.push('scaleY(-1)')
+  }
+  if (typeof meta.rotate === 'number' && meta.rotate !== 0) {
+    transforms.push(`rotate(${meta.rotate}deg)`)
+  }
+
+  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
 }
 
 type StatContributionSummary = {
@@ -268,8 +284,11 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 : occupier.ownerHeroEntityId === enemyId
                   ? 'owner-enemy'
                   : ''
-            const meta = ENTITY_ICON_META[occupier.kind]
             const entityStats = preview.battlefield.entitiesById[occupier.entityId]
+            const cardMeta = entityStats?.sourceCardDefinitionId
+              ? CARD_ICON_META[entityStats.sourceCardDefinitionId]
+              : undefined
+            const meta = cardMeta ?? ENTITY_ICON_META[occupier.kind]
             const heroDetails = preview.heroDetailsByEntityId[occupier.entityId] ?? null
             const luckBalance = preview.luck.balance
             const isLuckEntity = entityStats?.kind === 'hero'
@@ -400,7 +419,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 ) : null}
 
                 <span className="hint-wrap" tabIndex={0}>
-                  <Icon icon={meta.id} className="occupier-icon" aria-hidden="true" />
+                  <Icon icon={meta.id} className="occupier-icon" style={getVisualIconStyle(meta)} aria-hidden="true" />
                   <span className="sr-only">{ariaLabel}</span>
                   <span className="hover-card battlefield-hover-card" role="tooltip">
                     <div className="battlefield-hover-header">

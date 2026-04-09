@@ -61,6 +61,22 @@ function getRarityLabel(rarity: HandBarCard['rarity']) {
   }
 }
 
+function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) {
+  const transforms: string[] = []
+
+  if (meta.hFlip) {
+    transforms.push('scaleX(-1)')
+  }
+  if (meta.vFlip) {
+    transforms.push('scaleY(-1)')
+  }
+  if (typeof meta.rotate === 'number' && meta.rotate !== 0) {
+    transforms.push(`rotate(${meta.rotate}deg)`)
+  }
+
+  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
+}
+
 export function HandBar(props: HandBarProps) {
   const {
     cards,
@@ -171,6 +187,20 @@ export function HandBar(props: HandBarProps) {
 
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
+    : null
+  const hoveredCardMeta = hoveredCard
+    ? CARD_ICON_META[hoveredCard.card.cardDefinitionId] ?? {
+        id: 'game-icons:card-pick',
+        label: hoveredCard.card.cardName,
+        description: 'Card',
+      }
+    : null
+  const focusedCardMeta = focusedCard
+    ? CARD_ICON_META[focusedCard.cardDefinitionId] ?? {
+        id: 'game-icons:card-pick',
+        label: focusedCard.cardName,
+        description: 'Card',
+      }
     : null
   const focusedNeedsTarget = !!focusedCard && focusedCard.validTargetEntityIds.length > 0
   const focusedNeedsPlacement = !!focusedCard && focusedCard.validPlacementPositions.length > 0
@@ -312,7 +342,7 @@ export function HandBar(props: HandBarProps) {
                   <Icon icon={typeVisual.icon} />
                 </span>
                 <span className="hand-card-rarity-mark" aria-hidden="true" title={rarityLabel} />
-                <Icon icon={meta.id} className="hand-card-icon" aria-hidden="true" />
+                <Icon icon={meta.id} className="hand-card-icon" style={getVisualIconStyle(meta)} aria-hidden="true" />
                 <span className="hand-card-name">{card.cardName}</span>
                 <span className="hand-card-cost" title={`Cost ${card.moveCost}`}>{card.moveCost}</span>
                 {canConfirmCard ? (
@@ -371,8 +401,8 @@ export function HandBar(props: HandBarProps) {
             <div className="hand-card-tooltip-header">
               <strong>{hoveredCard.card.cardName}</strong>
               <div className="hand-card-tooltip-badges">
-                <span className="hand-card-type-icon" title={getCardTypeVisual(hoveredCard.card.cardType).label} aria-label={getCardTypeVisual(hoveredCard.card.cardType).label}>
-                  <Icon icon={getCardTypeVisual(hoveredCard.card.cardType).icon} aria-hidden="true" />
+                <span className="hand-card-type-icon" title={hoveredCard.card.cardName} aria-label={hoveredCard.card.cardName}>
+                  <Icon icon={hoveredCardMeta?.id ?? 'game-icons:card-pick'} style={getVisualIconStyle(hoveredCardMeta ?? {})} aria-hidden="true" />
                 </span>
                 <span
                   className={`hand-card-rarity-swatch rarity-${hoveredCard.card.rarity}`}
@@ -422,10 +452,14 @@ export function HandBar(props: HandBarProps) {
                   <div className="hand-card-tooltip-badges">
                     <span
                       className="hand-card-type-icon"
-                      title={getCardTypeVisual(hoveredCard.card.summonPreview.cardType).label}
-                      aria-label={getCardTypeVisual(hoveredCard.card.summonPreview.cardType).label}
+                      title={hoveredCard.card.summonPreview.displayName}
+                      aria-label={hoveredCard.card.summonPreview.displayName}
                     >
-                      <Icon icon={getCardTypeVisual(hoveredCard.card.summonPreview.cardType).icon} aria-hidden="true" />
+                      <Icon
+                        icon={CARD_ICON_META[hoveredCard.card.summonPreview.cardDefinitionId]?.id ?? getCardTypeVisual(hoveredCard.card.summonPreview.cardType).icon}
+                        style={getVisualIconStyle(CARD_ICON_META[hoveredCard.card.summonPreview.cardDefinitionId] ?? {})}
+                        aria-hidden="true"
+                      />
                     </span>
                     <span
                       className={`hand-card-rarity-swatch rarity-${hoveredCard.card.summonPreview.rarity}`}
@@ -570,8 +604,8 @@ export function HandBar(props: HandBarProps) {
           <div className="hand-focus-head">
             <div className="hand-focus-title-block">
               <span className="hand-card-tooltip-badges">
-                <span className="hand-card-chip hand-card-chip-type" title={getCardTypeVisual(focusedCard.cardType).label}>
-                  <Icon icon={getCardTypeVisual(focusedCard.cardType).icon} aria-hidden="true" />
+                <span className="hand-card-chip hand-card-chip-type" title={focusedCard.cardName}>
+                  <Icon icon={focusedCardMeta?.id ?? getCardTypeVisual(focusedCard.cardType).icon} style={getVisualIconStyle(focusedCardMeta ?? {})} aria-hidden="true" />
                   <span>{getCardTypeVisual(focusedCard.cardType).label}</span>
                 </span>
                 <span
