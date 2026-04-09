@@ -426,10 +426,14 @@ function App() {
 
   const handleOpenDeckEditor = (heroIndex: 0 | 1) => {
     setDeckEditorHeroIndex(heroIndex)
+    setIsSettingsPanelOpen(true)
     setIsDeckEditorOpen(true)
   }
 
-  const handleCloseDeckEditor = () => setIsDeckEditorOpen(false)
+  const handleCloseDeckEditor = () => {
+    setIsDeckEditorOpen(false)
+    setIsSettingsPanelOpen(false)
+  }
 
   const handleHardReset = () => {
     const failureReason = resetRuntime(bootstrapConfig)
