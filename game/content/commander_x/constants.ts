@@ -10,6 +10,7 @@ export const SUMMON_ENTITY_IDS = {
   shamanicTitaniumPummeler: "entity.weapon.shamanic-titanium-pummeler",
   warStandard: "entity.totem.war-standard",
   guardSigil: "entity.totem.guard-sigil",
+  steelboundEffigy: "entity.totem.steelbound-effigy",
   jaqueminPatrol: "entity.companion.jaquemin-patrol",
 } as const;
 

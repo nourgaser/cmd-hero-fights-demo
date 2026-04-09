@@ -85,7 +85,10 @@ export function resolveEffectiveNumber(options: {
     // Apply all numeric operations
     for (const op of rule.operations) {
       if (op.propertyPath === propertyPath) {
-        const delta = applyNumericOperation(accumulated, op);
+        const delta = applyNumericOperation(accumulated, op, {
+          state,
+          sourceBinding: rule.source,
+        });
         if (delta !== 0) {
           accumulated += delta;
           contributions.push({
@@ -222,6 +225,8 @@ function passiveRuleTargetsEntity(options: {
     case "selfHero":
     case "sourceOwnerHero":
       return targetEntityId === sourceOwnerHeroEntityId;
+    case "sourceEntity":
+      return targetEntityId === rule.source.sourceEntityId;
     case "sourceOwnerAllies": {
       if (targetEntityId === sourceOwnerHeroEntityId) {
         return true;
@@ -250,7 +255,6 @@ function passiveRuleTargetsEntity(options: {
     case "selectedEnemy":
     case "selectedAlly":
     case "triggeringTarget":
-    case "sourceEntity":
     case "none":
     default:
       return false;
@@ -279,15 +283,66 @@ function applyModifierOperation(currentValue: number, modifier: NumberModifier):
  */
 function applyNumericOperation(
   currentValue: number,
-  op: { operation: string; value: number },
+  op: {
+    operation: string;
+    value?: number;
+    valueFromSourceStat?: string;
+    valueFromSourceSelector?: "sourceEntity" | "sourceOwnerHero" | "selfHero";
+  },
+  context?: {
+    state: BattleState;
+    sourceBinding: { kind: "sourceEntity" | "sourceCard"; sourceEntityId?: string };
+  },
 ): number {
+  let operandValue: number;
+
+  if (op.valueFromSourceStat && context) {
+    // Dynamic stat reference: resolve the selected source stat value
+    if (context.sourceBinding.kind === "sourceEntity" && context.sourceBinding.sourceEntityId) {
+      const sourceEntityId = context.sourceBinding.sourceEntityId;
+      const sourceEntity = context.state.entitiesById[sourceEntityId];
+      if (!sourceEntity) {
+        operandValue = 0;
+      } else {
+        const selector = op.valueFromSourceSelector ?? "sourceEntity";
+        const selectedSourceEntityId =
+          selector === "sourceOwnerHero" || selector === "selfHero"
+            ? sourceEntity.kind === "hero"
+              ? sourceEntity.entityId
+              : sourceEntity.ownerHeroEntityId
+            : sourceEntityId;
+
+        const selectedSourceEntity = context.state.entitiesById[selectedSourceEntityId];
+        if (!selectedSourceEntity) {
+          operandValue = 0;
+        } else {
+        // Resolve the source entity's stat value
+          const resolved = resolveEffectiveNumber({
+            state: context.state,
+            targetEntityId: selectedSourceEntityId,
+            propertyPath: op.valueFromSourceStat,
+            baseValue: (selectedSourceEntity as any)[op.valueFromSourceStat] ?? 0,
+            clampMin: 0,
+          });
+          operandValue = resolved.effectiveValue;
+        }
+      }
+    } else {
+      operandValue = 0;
+    }
+  } else if (op.value !== undefined) {
+    operandValue = op.value;
+  } else {
+    operandValue = 0;
+  }
+
   switch (op.operation) {
     case "add":
-      return op.value;
+      return operandValue;
     case "subtract":
-      return -op.value;
+      return -operandValue;
     case "set":
-      return op.value - currentValue;
+      return operandValue - currentValue;
     default:
       return 0;
   }

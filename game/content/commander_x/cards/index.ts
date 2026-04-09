@@ -21,6 +21,7 @@ import { REACTIVE_BULWARK_CARD } from "./reactive-bulwark";
 import { SHATTER_PLATING_CARD } from "./shatter-plating";
 import { SHIELD_TOSS_CARD } from "./shield-toss";
 import { SHAMANIC_TITANIUM_PUMMELER_CARD } from "./shamanic-titanium-pummeler";
+import { STEELBOUND_EFFIGY_CARD } from "./steelbound-effigy";
 import { VETERAN_EDGE_CARD } from "./veteran-edge";
 import { WAR_STANDARD_CARD } from "./war-standard";
 import { WARCRY_CARD } from "./warcry";
@@ -47,6 +48,7 @@ export {
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
   SHAMANIC_TITANIUM_PUMMELER_CARD,
+  STEELBOUND_EFFIGY_CARD,
   VETERAN_EDGE_CARD,
   WAR_STANDARD_CARD,
   WARCRY_CARD,
@@ -75,6 +77,7 @@ export const COMMANDER_X_CARDS = [
   HEALING_FORTRESS_CARD,
   EVERGROWTH_IDOL_CARD,
   BANNER_OF_X_CARD,
+  STEELBOUND_EFFIGY_CARD,
   JAQUEMIN_PATROL_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];

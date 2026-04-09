@@ -14,6 +14,7 @@ import glintingAdamantiteBladeDef from "./glinting-adamantite-blade";
 import healingFortressDef from "./healing-fortress";
 import warStandardDef from "./war-standard";
 import guardSigilDef from "./guard-sigil";
+import steelboundEffigyDef from "./steelbound-effigy";
 import jaqueminPatrolDef from "./jaquemin-patrol";
 import shamanicTitaniumPummelerDef from "./shamanic-titanium-pummeler";
 
@@ -27,6 +28,7 @@ const COMMANDER_X_SUMMONED_DEFINITIONS = [
   guardSigilDef,
   healingFortressDef,
   evergrowthIdolDef,
+  steelboundEffigyDef,
   jaqueminPatrolDef,
 ] as const satisfies readonly CommanderXSummonedDefinition[];
 

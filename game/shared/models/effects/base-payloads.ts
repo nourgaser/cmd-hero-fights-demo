@@ -53,11 +53,18 @@ export const ModifyStatEffectPayloadSchema = z.object({
   kind: z.literal("modifyStat"),
   target: EffectTargetSelectorSchema,
   stat: ModifiableStatSchema,
-  amount: z.number(),
+  amount: z.number().optional(),
+  amountFromSourceStat: z.string().optional(),
+  amountFromSourceSelector: z
+    .enum(["sourceEntity", "sourceOwnerHero", "selfHero"])
+    .optional(),
   duration: z.enum(["persistent", "untilSourceRemoved"]).default("persistent"),
   changeKind: z.enum(["apply", "removeMatching"]).default("apply"),
   sourceBinding: z.enum(["effectSource", "actorHero", "lastSummonedEntity", "selectedTarget"]).optional(),
-});
+}).refine(
+  (payload) => payload.amount !== undefined || payload.amountFromSourceStat !== undefined,
+  "Either amount or amountFromSourceStat must be specified",
+);
 
 export const DrawCardsEffectPayloadSchema = z.object({
   kind: z.literal("drawCards"),

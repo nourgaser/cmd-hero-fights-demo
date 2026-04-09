@@ -30,12 +30,23 @@ export type PassiveRuleSourceBinding = z.infer<typeof PassiveRuleSourceBindingSc
 /**
  * Numeric operation describes a single numeric change applied by a passive rule.
  * Example: +1 to attackDamage, +3 to health, -2 to magicResist
+ *
+ * Can specify a fixed value, or dynamically reference a stat from the source entity.
+ * For dynamic: armor equals hero's sharpness would use:
+ * { propertyPath: "armor", operation: "set", valueFromSourceStat: "attackDamage" }
  */
 export const NumericOperationSchema = z.object({
   propertyPath: z.string().min(1),
   operation: z.enum(["add", "subtract", "set"]),
-  value: z.number(),
-});
+  value: z.number().optional(),
+  valueFromSourceStat: z.string().optional(),
+  valueFromSourceSelector: z
+    .enum(["sourceEntity", "sourceOwnerHero", "selfHero"])
+    .optional(),
+}).refine(
+  (op) => op.value !== undefined || op.valueFromSourceStat !== undefined,
+  "Either value or valueFromSourceStat must be specified",
+);
 export type NumericOperation = z.infer<typeof NumericOperationSchema>;
 
 /**

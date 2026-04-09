@@ -1811,7 +1811,14 @@ function buildPreviewFromState(options: {
             ? cardsById[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
             : null
         const operationSummary = rule.operations
-          .map((operation) => summarizeNumericOperation(operation.operation, operation.value, operation.propertyPath))
+          .map((operation) => {
+            if (operation.valueFromSourceStat) {
+              const propertyLabel = formatPropertyPathLabel(operation.propertyPath)
+              const sourceStatLabel = formatPropertyPathLabel(operation.valueFromSourceStat)
+              return `${propertyLabel} = ${sourceStatLabel}`
+            }
+            return summarizeNumericOperation(operation.operation, operation.value ?? 0, operation.propertyPath)
+          })
           .join(', ')
 
         return {

@@ -38,7 +38,9 @@ type ModifyStatPayload = {
   kind: "modifyStat";
   target: EffectTargetSelector;
   stat: StatKey;
-  amount: number;
+  amount?: number;
+  amountFromSourceStat?: string;
+  amountFromSourceSelector?: "sourceEntity" | "sourceOwnerHero" | "selfHero";
   duration?: "persistent" | "untilSourceRemoved";
   changeKind?: "apply" | "removeMatching";
   sourceBinding?: "effectSource" | "actorHero" | "lastSummonedEntity" | "selectedTarget";
@@ -78,6 +80,8 @@ function resolvePassiveRuleTargetEntityIds(options: {
     case "selfHero":
     case "sourceOwnerHero":
       return [sourceOwnerHeroEntityId];
+    case "sourceEntity":
+      return [sourceEntityId];
     case "sourceOwnerAllies":
       return Object.values(state.entitiesById)
         .filter((entity) => {
@@ -220,6 +224,18 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
   const sourceEntityId: string = resolvedSourceEntityId;
 
   if (duration === "untilSourceRemoved") {
+    const operation: any = {
+      propertyPath,
+      operation: "add" as const,
+    };
+
+    if (payload.amountFromSourceStat) {
+      operation.valueFromSourceStat = payload.amountFromSourceStat;
+      operation.valueFromSourceSelector = payload.amountFromSourceSelector;
+    } else if (payload.amount !== undefined) {
+      operation.value = payload.amount;
+    }
+
     const passiveRule = {
       id: buildPassiveRuleId({ effectId: effect.id, sequence, sourceEntityId }),
       source: {
@@ -227,13 +243,7 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
         sourceEntityId,
       },
       targetSelector: payload.target,
-      operations: [
-        {
-          propertyPath,
-          operation: "add" as const,
-          value: payload.amount,
-        },
-      ],
+      operations: [operation],
       lifetime: "untilSourceRemoved" as const,
       condition: { kind: "sourcePresent" as const },
       label,
@@ -244,18 +254,41 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
       activePassiveRules: [...state.activePassiveRules, passiveRule],
     };
 
-    const nextState =
-      payload.stat === "moveCapacity"
-        ? applyImmediateMoveCapacityDelta({
+    let nextState = stateWithPassiveRule;
+
+    // For move capacity with dynamic operations, resolve the source entity's stat value first
+    if (payload.stat === "moveCapacity" && payload.amountFromSourceStat) {
+      const sourceEntity = state.entitiesById[sourceEntityId];
+      if (sourceEntity) {
+        const sourceStatValue = resolveEffectiveNumber({
+          state,
+          targetEntityId: sourceEntityId,
+          propertyPath: payload.amountFromSourceStat,
+          baseValue: (sourceEntity as any)[payload.amountFromSourceStat] ?? 0,
+          clampMin: 0,
+        }).effectiveValue;
+
+        nextState = applyImmediateMoveCapacityDelta({
+          state: stateWithPassiveRule,
+          targetEntityIds: resolvePassiveRuleTargetEntityIds({
             state: stateWithPassiveRule,
-            targetEntityIds: resolvePassiveRuleTargetEntityIds({
-              state: stateWithPassiveRule,
-              sourceEntityId,
-              targetSelector: payload.target,
-            }),
-            amount: payload.amount,
-          })
-        : stateWithPassiveRule;
+            sourceEntityId,
+            targetSelector: payload.target,
+          }),
+          amount: sourceStatValue,
+        });
+      }
+    } else if (payload.stat === "moveCapacity" && payload.amount) {
+      nextState = applyImmediateMoveCapacityDelta({
+        state: stateWithPassiveRule,
+        targetEntityIds: resolvePassiveRuleTargetEntityIds({
+          state: stateWithPassiveRule,
+          sourceEntityId,
+          targetSelector: payload.target,
+        }),
+        amount: payload.amount,
+      });
+    }
 
     return {
       ok: true,
@@ -293,6 +326,21 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
 
   if (!state.entitiesById[targetId]) {
     return { ok: false, reason: "modifyStat target was not found." };
+  }
+
+  // Ensure amount is defined for persistent modifiers
+  if (duration === "persistent" && payload.amountFromSourceStat !== undefined) {
+    return {
+      ok: false,
+      reason: "modifyStat with amountFromSourceStat only supports untilSourceRemoved duration.",
+    };
+  }
+
+  if (payload.amount === undefined) {
+    return {
+      ok: false,
+      reason: "modifyStat requires amount for persistent modifiers.",
+    };
   }
 
   if (payload.amount === 0) {
