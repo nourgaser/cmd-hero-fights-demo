@@ -39,6 +39,7 @@ export const CARD_IDS = {
   chaaarge: 'card.commander-x.chaaarge',
   corrodedShortsword: 'card.commander-x.corroded-shortsword',
   defiledGreatsword: 'card.commander-x.defiled-greatsword',
+  glintingAdamantiteBlade: 'card.commander-x.glinting-adamantite-blade',
   shamanicTitaniumPummeler: 'card.commander-x.shamanic-titanium-pummeler',
   warStandard: 'card.commander-x.war-standard',
   guardSigil: 'card.commander-x.guard-sigil',

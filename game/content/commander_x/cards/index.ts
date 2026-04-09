@@ -5,6 +5,7 @@ import { BATTLE_FOCUS_CARD } from "./battle-focus";
 import { CHAAARGE_CARD } from "./chaaarge";
 import { CORRODED_SHORTSWORD_CARD } from "./corroded-shortsword";
 import { DEFILED_GREATSWORD_CARD } from "./defiled-greatsword";
+import { GLINTING_ADAMANTITE_BLADE_CARD } from "./glinting-adamantite-blade";
 import { GUARD_SIGIL_CARD } from "./guard-sigil";
 import { HEALTH_POTION_CARD } from "./health-potion";
 import { HUNKER_DOWN_CARD } from "./hunker-down";
@@ -27,6 +28,7 @@ export {
   CHAAARGE_CARD,
   CORRODED_SHORTSWORD_CARD,
   DEFILED_GREATSWORD_CARD,
+  GLINTING_ADAMANTITE_BLADE_CARD,
   GUARD_SIGIL_CARD,
   HEALTH_POTION_CARD,
   HUNKER_DOWN_CARD,
@@ -60,6 +62,7 @@ export const COMMANDER_X_CARDS = [
   CHAAARGE_CARD,
   CORRODED_SHORTSWORD_CARD,
   DEFILED_GREATSWORD_CARD,
+  GLINTING_ADAMANTITE_BLADE_CARD,
   SHAMANIC_TITANIUM_PUMMELER_CARD,
   WAR_STANDARD_CARD,
   GUARD_SIGIL_CARD,

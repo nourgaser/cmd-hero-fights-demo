@@ -42,7 +42,7 @@ The following subset of the content is the chosen content for the prototype. It 
 <!-- Low priority / do later -->
 - [Defiled Greatsword](/content/Game/Cards/Commander%20X/Defiled%20Greatsword.md) done
 - [Shamanic Titanium Pummeler](/content/Game/Cards/Commander%20X/Shamanic%20Titanium%20Pummeler.md) done
-- [Glinting Adamantite Blade](/content/Game/Cards/Commander%20X/Glinting%20Adamantite%20Blade.md)
+- [Glinting Adamantite Blade](/content/Game/Cards/Commander%20X/Glinting%20Adamantite%20Blade.md) done
 
 ### Totems
 - [War Standard](/content/Game/Cards/Commander%20X/War%20Standard.md) done

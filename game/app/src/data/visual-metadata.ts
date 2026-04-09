@@ -39,6 +39,7 @@ export const CARD_ICON_META: Record<string, VisualIconMeta> = {
   [CARD_IDS.chaaarge]: { id: 'game-icons:charging-bull', label: 'Chaaarge!', description: 'A heavy burst attack.' },
   [CARD_IDS.corrodedShortsword]: { id: 'game-icons:rusty-sword', label: 'Corroded Shortsword', description: 'Summon your weapon.' },
   [CARD_IDS.defiledGreatsword]: { id: 'game-icons:broadsword', label: 'Defiled Greatsword', description: 'Summon your weapon.' },
+  [CARD_IDS.glintingAdamantiteBlade]: { id: 'game-icons:sword-clash', label: 'Glinting Adamantite Blade', description: 'Summon your weapon.' },
   [CARD_IDS.shamanicTitaniumPummeler]: { id: 'game-icons:thor-hammer', label: 'Shamanic Titanium Pummeler', description: 'Summon your heavy weapon.' },
   [CARD_IDS.warStandard]: { id: 'game-icons:vertical-banner', label: 'War Standard', description: 'Summon a buff totem.' },
   [CARD_IDS.guardSigil]: { id: 'game-icons:magic-shield', label: 'Guard Sigil', description: 'Summon a defense totem.' },

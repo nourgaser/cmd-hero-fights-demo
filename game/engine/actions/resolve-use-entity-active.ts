@@ -23,6 +23,7 @@ export type EntityActiveProfile = {
   moveCost: number;
   minimumDamage: number;
   maximumDamage: number;
+  maximumDamageFromSourceCurrentHealth?: boolean;
   damageType: DamageType;
   attackDamageScaling: number;
   abilityPowerScaling: number;
@@ -176,11 +177,14 @@ export function resolveUseEntityActiveAction(options: {
     baseValue: profile.minimumDamage,
     clampMin: 0,
   }).effectiveValue;
+  const baseMaximumDamage = profile.maximumDamageFromSourceCurrentHealth
+    ? roundWhole(source.currentHealth)
+    : profile.maximumDamage;
   const maximum = resolveEffectiveNumber({
     state,
     targetEntityId: source.entityId,
     propertyPath: "useEntityActive.maximum",
-    baseValue: profile.maximumDamage,
+    baseValue: baseMaximumDamage,
     clampMin: 0,
   }).effectiveValue;
   const effectiveAttackDamage = resolveEffectiveNumber({
