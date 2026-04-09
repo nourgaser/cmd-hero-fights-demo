@@ -3095,9 +3095,13 @@ html[data-shift-held='true'] .game-toast-detail {
 .hand-pill {
   border: 2px solid color-mix(in srgb, #5b4a2b 40%, var(--border));
   border-radius: 999px;
-  padding: 2px 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 32px;
+  padding: 4px 10px;
   font-family: var(--display);
-  font-size: 20px;
+  font-size: 18px;
   line-height: 1;
   letter-spacing: 0.35px;
   background: color-mix(in srgb, #f3e7c8 82%, #ffffff 18%);
