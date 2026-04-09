@@ -21,7 +21,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../context";
-import { targetEntityIdFromSelector } from "../targeting";
+import { targetEntityIdFromSelector, targetEntityIdsFromSelector } from "../targeting";
 
 function getAttackFlatBonusDamage(options: {
   state: EffectExecutionContext["state"];
@@ -56,7 +56,7 @@ export function handleHealEffect(
     return { ok: false, reason: "handleHealEffect received non-heal payload." };
   }
 
-  const targetId = targetEntityIdFromSelector({
+  const targetIds = targetEntityIdsFromSelector({
     selector: effect.payload.target,
     action,
     actorHero,
@@ -65,13 +65,8 @@ export function handleHealEffect(
     effectSourceEntityId,
     battleRng,
   });
-  if (!targetId) {
+  if (targetIds.length === 0) {
     return { ok: false, reason: "heal requires a valid effect target." };
-  }
-
-  const target = state.entitiesById[targetId];
-  if (!target) {
-    return { ok: false, reason: "heal target was not found." };
   }
 
   const effectiveRange = getEffectiveHealRange({
@@ -107,32 +102,44 @@ export function handleHealEffect(
   });
 
   const amount = toHealAmount(adjustedRoll);
-  const baseHealth = roundWhole(target.currentHealth);
-  const nextHealth = Math.min(target.maxHealth, baseHealth + amount);
-  const applied = nextHealth - baseHealth;
+  let nextState = state;
+  const events: BattleEvent[] = [];
 
-  return {
-    ok: true,
-    state: {
-      ...state,
+  for (const targetId of targetIds) {
+    const target = nextState.entitiesById[targetId];
+    if (!target) {
+      continue;
+    }
+
+    const baseHealth = roundWhole(target.currentHealth);
+    const nextHealth = Math.min(target.maxHealth, baseHealth + amount);
+    const applied = nextHealth - baseHealth;
+
+    nextState = {
+      ...nextState,
       entitiesById: {
-        ...state.entitiesById,
+        ...nextState.entitiesById,
         [targetId]: {
           ...target,
           currentHealth: nextHealth,
         },
       },
-    },
-    events: [
-      {
-        kind: "healApplied",
-        sequence,
-        sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
-        targetEntityId: targetId,
-        amount: applied,
-      },
-    ],
-    nextSequence: sequence + 1,
+    };
+
+    events.push({
+      kind: "healApplied",
+      sequence: sequence + events.length,
+      sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
+      targetEntityId: targetId,
+      amount: applied,
+    });
+  }
+
+  return {
+    ok: true,
+    state: nextState,
+    events,
+    nextSequence: sequence + events.length,
     lastDamageWasDodged,
     lastSummonedEntityId,
   };
@@ -158,7 +165,7 @@ export function handleGrantHealthEffect(
     return { ok: false, reason: "handleGrantHealthEffect received non-grantHealth payload." };
   }
 
-  const targetId = targetEntityIdFromSelector({
+  const targetIds = targetEntityIdsFromSelector({
     selector: effect.payload.target,
     action,
     actorHero,
@@ -167,13 +174,8 @@ export function handleGrantHealthEffect(
     effectSourceEntityId,
     battleRng,
   });
-  if (!targetId) {
+  if (targetIds.length === 0) {
     return { ok: false, reason: "grantHealth requires a valid effect target." };
-  }
-
-  const target = state.entitiesById[targetId];
-  if (!target) {
-    return { ok: false, reason: "grantHealth target was not found." };
   }
 
   const rawRoll = rollRange(battleRng, effect.payload.minimum, effect.payload.maximum);
@@ -186,6 +188,118 @@ export function handleGrantHealthEffect(
   });
   const amount = toHealAmount(adjustedRoll);
 
+  let nextState = state;
+  const events: BattleEvent[] = [];
+
+  for (const targetId of targetIds) {
+    const target = nextState.entitiesById[targetId];
+    if (!target) {
+      continue;
+    }
+
+    const nextHealth = target.currentHealth + amount;
+    nextState = {
+      ...nextState,
+      entitiesById: {
+        ...nextState.entitiesById,
+        [targetId]: {
+          ...target,
+          maxHealth: target.maxHealth + amount,
+          currentHealth: nextHealth,
+        },
+      },
+    };
+
+    events.push({
+      kind: "healApplied",
+      sequence: sequence + events.length,
+      sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
+      targetEntityId: targetId,
+      amount,
+    });
+  }
+
+  return {
+    ok: true,
+    state: nextState,
+    events,
+    nextSequence: sequence + events.length,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  };
+}
+
+export function handleReflectDamageEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    battleRng,
+    triggerEvent,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+    effectSourceEntityId,
+  } = context;
+
+  if (effect.payload.kind !== "reflectDamage") {
+    return { ok: false, reason: "handleReflectDamageEffect received non-reflectDamage payload." };
+  }
+
+  if (!triggerEvent || triggerEvent.kind !== "damageApplied" || !triggerEvent.sourceEntityId) {
+    return { ok: false, reason: "reflectDamage requires a damageApplied trigger event with a source." };
+  }
+
+  const targetId = targetEntityIdFromSelector({
+    selector: effect.payload.target,
+    action,
+    actorHero,
+    state,
+    triggerEvent,
+    effectSourceEntityId,
+    battleRng,
+  });
+  if (!targetId) {
+    return { ok: false, reason: "reflectDamage requires a valid effect target." };
+  }
+
+  const target = state.entitiesById[targetId];
+  if (!target) {
+    return { ok: false, reason: "reflectDamage target was not found." };
+  }
+
+  if (isEntityImmuneToDamage({ state, targetEntityId: target.entityId })) {
+    return {
+      ok: true,
+      state,
+      events: [],
+      nextSequence: sequence,
+      lastDamageWasDodged,
+      lastSummonedEntityId,
+    };
+  }
+
+  const amount = Math.max(0, roundWhole(triggerEvent.amount));
+  const resistance =
+    triggerEvent.damageType === "physical"
+      ? getEffectiveArmor({
+          state,
+          targetEntityId: target.entityId,
+          baseArmor: target.armor,
+        }).effectiveValue
+      : triggerEvent.damageType === "magic"
+        ? getEffectiveMagicResist({
+            state,
+            targetEntityId: target.entityId,
+            baseMagicResist: target.magicResist,
+          }).effectiveValue
+        : 0;
+  const appliedDamage = toAppliedDamage(amount, resistance);
+  const targetHealth = roundWhole(target.currentHealth);
+
   return {
     ok: true,
     state: {
@@ -194,18 +308,20 @@ export function handleGrantHealthEffect(
         ...state.entitiesById,
         [targetId]: {
           ...target,
-          maxHealth: target.maxHealth + amount,
-          currentHealth: target.currentHealth + amount,
+          currentHealth: Math.max(0, targetHealth - appliedDamage),
         },
       },
     },
     events: [
       {
-        kind: "healApplied",
+        kind: "damageApplied",
         sequence,
         sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
         targetEntityId: targetId,
-        amount,
+        amount: appliedDamage,
+        damageType: triggerEvent.damageType,
+        isAttack: true,
+        wasDodged: false,
       },
     ],
     nextSequence: sequence + 1,

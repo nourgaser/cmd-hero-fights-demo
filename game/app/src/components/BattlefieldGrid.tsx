@@ -79,6 +79,7 @@ type BattlefieldGridProps = {
   shouldFlipRows: boolean
   highlightedTargetEntityIds?: string[]
   selectedTargetEntityId?: string | null
+  selectedEntityConfirmId?: string | null
   onSelectTargetEntityId?: (entityId: string) => void
   onSelectEntityId?: (entityId: string) => void
   shouldShowDetailedTooltips?: boolean
@@ -95,6 +96,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     shouldFlipRows,
     highlightedTargetEntityIds = [],
     selectedTargetEntityId,
+    selectedEntityConfirmId,
     onSelectTargetEntityId,
     onSelectEntityId,
     shouldShowDetailedTooltips = false,
@@ -256,6 +258,8 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const sideClass = occupier.minRow < halfRows ? 'north' : 'south'
             const isHighlightedTarget = highlightedSet.has(occupier.entityId)
             const isSelectedTarget = selectedTargetEntityId === occupier.entityId
+            const isSelectedConfirmEntity = selectedEntityConfirmId === occupier.entityId
+            const isSelectedForAction = isSelectedTarget || isSelectedConfirmEntity
             const isSelectableTarget = !!onSelectTargetEntityId && isHighlightedTarget
             const isSelectableEntity = !!onSelectEntityId
             const ownerClass =
@@ -277,6 +281,13 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               entityStats.ownerHeroEntityId === selfId &&
               entityStats.kind !== 'hero' &&
               entityStats.movePoints > 0
+            const activeListeners = entityStats?.activeListeners ?? []
+            const reflectListener = activeListeners.find((listener) => /reflect/i.test(listener.listenerId) || /reflect/i.test(listener.label))
+            const activeListenerBadgeText = activeListeners.length === 1
+              ? reflectListener
+                ? 'Reflect Ready'
+                : 'Reactive'
+              : `Reactive ${activeListeners.length}`
             const ariaLabel = `${meta.label ?? occupier.kind} occupying ${occupier.rowSpan} by ${occupier.columnSpan} cells from row ${occupier.minRow + 1}, column ${occupier.minColumn + 1}`
             const healthPercent = entityStats
               ? Math.max(0, Math.min(100, (entityStats.currentHealth / Math.max(1, entityStats.maxHealth)) * 100))
@@ -332,7 +343,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             return (
               <div
                 key={`occupier:${occupier.entityId}`}
-                className={`battle-slot occupied ${sideClass} ${ownerClass} ${hasMovesRemaining ? 'moves-remaining' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedTarget ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
+                className={`battle-slot occupied ${sideClass} ${ownerClass} ${hasMovesRemaining ? 'moves-remaining' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedForAction ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
                 role="gridcell"
                 aria-label={isSelectableTarget ? `${ariaLabel}. Selectable target.` : ariaLabel}
                 style={{
@@ -362,7 +373,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 }
                 tabIndex={isSelectableTarget || isSelectableEntity ? 0 : undefined}
               >
-                {isSelectedTarget && isSelectableTarget ? (
+                {isSelectedForAction && (isSelectableTarget || isSelectedConfirmEntity) ? (
                   <span className="target-check-icon" aria-hidden="true">
                     <Icon icon="game-icons:check-mark" />
                   </span>
@@ -379,6 +390,12 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 {hasMovesRemaining && entityStats ? (
                   <span className="entity-moves-badge" aria-hidden="true">
                     Moves {entityStats.movePoints}
+                  </span>
+                ) : null}
+
+                {activeListeners.length > 0 ? (
+                  <span className="entity-listener-badge" aria-hidden="true">
+                    {activeListenerBadgeText}
                   </span>
                 ) : null}
 
@@ -555,6 +572,18 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                             <span className="battlefield-hover-status-pill taunt">Taunt</span>
                             <span className="battlefield-hover-status-source-row">
                               Adjacent allies cannot be targeted by enemy attacks.
+                            </span>
+                          </div>
+                        ) : null}
+                        {entityStats.activeListeners.length > 0 ? (
+                          <div className="battlefield-hover-status-row">
+                            <span className="battlefield-hover-status-pill listener">Armed</span>
+                            <span className="battlefield-hover-status-source-list">
+                              {entityStats.activeListeners.map((listener) => (
+                                <span key={listener.listenerId} className="battlefield-hover-status-source-row">
+                                  <strong>{listener.label}:</strong> {listener.shortText} ({listener.statusLabel})
+                                </span>
+                              ))}
                             </span>
                           </div>
                         ) : null}

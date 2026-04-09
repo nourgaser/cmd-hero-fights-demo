@@ -20,6 +20,7 @@ export const CORRODED_SHORTSWORD_BLUEPRINT: SummonedEntityBlueprint = {
 };
 
 export const CORRODED_SHORTSWORD_ACTIVE: EntityActiveProfile = {
+  kind: "attack",
   moveCost: 1,
   minimumDamage: 2,
   maximumDamage: 7,

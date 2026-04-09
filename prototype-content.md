@@ -50,5 +50,5 @@ The following subset of the content is the chosen content for the prototype. It 
 ### Companions
 - [Jaquemin the Patrol](/content/Game/Cards/Commander%20X/Jaquemin%20the%20Patrol.md) done
 - [A Common, Expendable, but Deadly Man](/content/Game/Cards/Commander%20X/A%20Common,%20Expendable,%20but%20Deadly%20Man.md) done
-- [Merewen the Shieldmaiden](/content/Game/Cards/Commander%20X/Merewen%20the%20Shieldmaiden.md)
+- [Merewen the Shieldmaiden](/content/Game/Cards/Commander%20X/Merewen%20the%20Shieldmaiden.md) done
 - [Riquier the Bear](/content/Game/Cards/Commander%20X/Riquier%20the%20Bear.md)

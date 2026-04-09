@@ -1629,6 +1629,28 @@ html[data-shift-held='true'] .game-toast-detail {
     inset 0 1px 0 rgba(255, 255, 255, 0.65);
 }
 
+.entity-listener-badge {
+  position: absolute;
+  top: 8px;
+  right: 8px;
+  z-index: var(--layer-badge);
+  display: inline-flex;
+  align-items: center;
+  gap: 4px;
+  padding: 3px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #3b4f7d 52%, #ffffff 48%);
+  background: linear-gradient(180deg, #e1ebff, #bcd4ff);
+  color: #1b2d52;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.03em;
+  text-transform: uppercase;
+  box-shadow:
+    0 2px 5px rgba(0, 0, 0, 0.16),
+    inset 0 1px 0 rgba(255, 255, 255, 0.58);
+}
+
 .battle-slot.target-highlighted {
   outline: 2px solid #f0cb58;
   outline-offset: -2px;
@@ -1893,6 +1915,12 @@ html[data-shift-held='true'] .game-toast-detail {
   color: #3f2a12;
   background: color-mix(in srgb, #ffe8bd 88%, #ffffff 12%);
   border: 1px solid color-mix(in srgb, #b37a2a 56%, transparent);
+}
+
+.battlefield-hover-status-pill.listener {
+  color: #1b2d52;
+  background: color-mix(in srgb, #dbe8ff 88%, #ffffff 12%);
+  border: 1px solid color-mix(in srgb, #4e72bd 52%, transparent);
 }
 
 .battlefield-hover-status-source-list {

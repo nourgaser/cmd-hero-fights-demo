@@ -22,6 +22,7 @@ export const JAQUEMIN_PATROL_BLUEPRINT: SummonedEntityBlueprint = {
 };
 
 export const JAQUEMIN_PATROL_ACTIVE: EntityActiveProfile = {
+  kind: "attack",
   moveCost: 1,
   minimumDamage: 2,
   maximumDamage: 4,

@@ -16,6 +16,7 @@ import { HEALTH_POTION_CARD } from "./health-potion";
 import { HUNKER_DOWN_CARD } from "./hunker-down";
 import { IRON_SKIN_CARD } from "./iron-skin";
 import { MEDAL_OF_HONOR_CARD } from "./medal-of-honor";
+import { MEREWEN_THE_SHIELDMAIDEN_CARD } from "./merewen-the-shieldmaiden";
 import { JAQUEMIN_PATROL_CARD } from "./jaquemin-patrol";
 import { RESET_LUCK_CARD } from "./reset-luck";
 import { REROLL_CARD } from "./reroll";
@@ -45,6 +46,7 @@ export {
   HUNKER_DOWN_CARD,
   IRON_SKIN_CARD,
   MEDAL_OF_HONOR_CARD,
+  MEREWEN_THE_SHIELDMAIDEN_CARD,
   JAQUEMIN_PATROL_CARD,
   RESET_LUCK_CARD,
   REROLL_CARD,
@@ -85,6 +87,7 @@ export const COMMANDER_X_CARDS = [
   BULWARK_OF_FORTUNE_CARD,
   JAQUEMIN_PATROL_CARD,
   COMMON_EXPENDABLE_DEADLY_MAN_CARD,
+  MEREWEN_THE_SHIELDMAIDEN_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];
 

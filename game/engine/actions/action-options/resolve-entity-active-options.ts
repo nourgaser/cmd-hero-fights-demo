@@ -13,6 +13,7 @@ export function resolveEntityActiveOptions(options: {
     sourceKind: "weapon" | "companion";
   }) =>
     | {
+        kind: "attack" | "effect";
         moveCost: number;
       }
     | undefined;
@@ -40,10 +41,13 @@ export function resolveEntityActiveOptions(options: {
         return null;
       }
 
-      const validTargetEntityIds = resolveAttackTargetEntityIdsWithTaunt({
-        state,
-        attackerEntityId: entry.entityId,
-      });
+      const validTargetEntityIds =
+        profile.kind === "effect"
+          ? []
+          : resolveAttackTargetEntityIdsWithTaunt({
+              state,
+              attackerEntityId: entry.entityId,
+            });
 
       return {
         sourceEntityId: entry.entityId,

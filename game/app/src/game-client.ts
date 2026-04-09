@@ -5,6 +5,7 @@ import {
   LUCK_STEP_RATIO,
 } from '../../shared/game-constants.ts'
 import type { BattleEvent, NumberExplanation } from '../../shared/models'
+import { renderEffectDisplayText } from '../../shared/models'
 import { luckBiasForHero } from '../../engine/core/luck.ts'
 import {
   DEFAULT_GAME_BOOTSTRAP_CONFIG,
@@ -181,6 +182,12 @@ export type AppBattlePreview = {
           keywordId: string
           keywordName: string
           keywordSummaryText: string
+        }>
+        activeListeners: Array<{
+          listenerId: string
+          label: string
+          shortText: string
+          statusLabel: string
         }>
         isTaunt: boolean
         currentHealth: number
@@ -980,15 +987,23 @@ function buildHeroBasicAttackSummary(options: {
 
 function buildEntityActiveSummary(options: {
   rollingHeroEntityId: string
-  attack: {
-    minimumDamage: number
-    maximumDamage: number
-    attackDamageScaling: number
-    abilityPowerScaling: number
-    damageType: 'physical' | 'magic' | 'true'
-    moveCost: number
-    canBeDodged: boolean
-  }
+  active:
+    | {
+        kind: 'attack'
+        minimumDamage: number
+        maximumDamage: number
+        attackDamageScaling: number
+        abilityPowerScaling: number
+        damageType: 'physical' | 'magic' | 'true'
+        moveCost: number
+        canBeDodged: boolean
+      }
+    | {
+        kind: 'effect'
+        moveCost: number
+        summaryText: Parameters<typeof renderEffectDisplayText>[0]
+        effects: unknown[]
+      }
   minimumTrace: AppNumberTrace
   maximumTrace: AppNumberTrace
   attackDamageTrace: AppNumberTrace
@@ -1009,7 +1024,7 @@ function buildEntityActiveSummary(options: {
 } {
   const {
     rollingHeroEntityId,
-    attack,
+    active,
     minimumTrace,
     maximumTrace,
     attackDamageTrace,
@@ -1017,6 +1032,21 @@ function buildEntityActiveSummary(options: {
     abilityPowerTrace,
     luck,
   } = options
+
+  if (active.kind === 'effect') {
+    const summary = renderEffectDisplayText(active.summaryText)
+    return {
+      moveCost: active.moveCost,
+      damageType: 'true',
+      canBeDodged: false,
+      summaryText: summary,
+      summaryDetailText: summary,
+      summaryTone: 'neutral',
+      currentRangeText: summary,
+    }
+  }
+
+  const attack = active
   const scalingParts = [
     attack.attackDamageScaling > 0
       ? `${formatPreviewNumber(attack.attackDamageScaling * 100)}% AD`
@@ -1171,40 +1201,51 @@ function resolveSummonPreviewForCard(options: {
       : undefined
 
   const activeSummary = activeProfile
-    ? buildEntityActiveSummary({
-        rollingHeroEntityId: ownerHeroEntityId,
-        attack: activeProfile,
-        minimumTrace: makeStaticNumberTrace(activeProfile.minimumDamage),
-        maximumTrace: makeStaticNumberTrace(activeProfile.maximumDamage),
-        attackDamageTrace:
-          summonedBlueprint.kind === 'weapon'
-            ? combineNumberTraces(
-                makeStaticNumberTrace(summonedBlueprint.attackDamage),
-                resolveNumberTrace({
+    ? activeProfile.kind === 'attack'
+      ? buildEntityActiveSummary({
+          rollingHeroEntityId: ownerHeroEntityId,
+          active: activeProfile,
+          minimumTrace: makeStaticNumberTrace(activeProfile.minimumDamage),
+          maximumTrace: makeStaticNumberTrace(activeProfile.maximumDamage),
+          attackDamageTrace:
+            summonedBlueprint.kind === 'weapon'
+              ? combineNumberTraces(
+                  makeStaticNumberTrace(summonedBlueprint.attackDamage),
+                  resolveNumberTrace({
+                    gameApi,
+                    state,
+                    targetEntityId: ownerHeroEntityId,
+                    propertyPath: 'attackDamage',
+                    baseValue: state.entitiesById[ownerHeroEntityId]?.kind === 'hero'
+                      ? state.entitiesById[ownerHeroEntityId].attackDamage
+                      : 0,
+                    clampMin: 0,
+                  }),
+                )
+              : makeStaticNumberTrace(summonedBlueprint.attackDamage),
+          attackFlatBonusDamageTrace:
+            summonedBlueprint.kind === 'weapon'
+              ? resolveNumberTrace({
                   gameApi,
                   state,
                   targetEntityId: ownerHeroEntityId,
-                  propertyPath: 'attackDamage',
-                  baseValue: state.entitiesById[ownerHeroEntityId]?.kind === 'hero'
-                    ? state.entitiesById[ownerHeroEntityId].attackDamage
-                    : 0,
-                  clampMin: 0,
-                }),
-              )
-            : makeStaticNumberTrace(summonedBlueprint.attackDamage),
-        attackFlatBonusDamageTrace:
-          summonedBlueprint.kind === 'weapon'
-            ? resolveNumberTrace({
-                gameApi,
-                state,
-                targetEntityId: ownerHeroEntityId,
-                propertyPath: 'attackFlatBonusDamage',
-                baseValue: 0,
-              })
-            : makeStaticNumberTrace(0),
-        abilityPowerTrace: makeStaticNumberTrace(summonedBlueprint.abilityPower),
-        luck,
-      })
+                  propertyPath: 'attackFlatBonusDamage',
+                  baseValue: 0,
+                })
+              : makeStaticNumberTrace(0),
+          abilityPowerTrace: makeStaticNumberTrace(summonedBlueprint.abilityPower),
+          luck,
+        })
+      : buildEntityActiveSummary({
+          rollingHeroEntityId: ownerHeroEntityId,
+          active: activeProfile,
+          minimumTrace: makeStaticNumberTrace(0),
+          maximumTrace: makeStaticNumberTrace(0),
+          attackDamageTrace: makeStaticNumberTrace(0),
+          attackFlatBonusDamageTrace: makeStaticNumberTrace(0),
+          abilityPowerTrace: makeStaticNumberTrace(0),
+          luck,
+        })
     : null
 
   const sourceCardType =
@@ -1509,7 +1550,7 @@ function buildPreviewFromState(options: {
         gameApi,
         state,
         targetEntityId: entity.entityId,
-        propertyPath: 'basicAttackFlatBonusDamage',
+        propertyPath: 'attackFlatBonusDamage',
         baseValue: 0,
       }),
     )
@@ -2078,6 +2119,7 @@ function buildPreviewFromState(options: {
         sourceCardSummaryDetailText: null,
         sourceCardSummaryTone: 'neutral',
         sourceCardKeywords: [],
+        activeListeners: [],
         isTaunt: false,
         currentHealth: entity.currentHealth,
         maxHealth: entity.maxHealth,
@@ -2170,6 +2212,14 @@ function buildPreviewFromState(options: {
           })
         : undefined
     const ownerHeroEntity = state.entitiesById[entity.ownerHeroEntityId]
+    const entityActiveListeners = state.activeListeners
+      .filter((listener) => listener.sourceEntityId === entity.entityId)
+      .map((listener) => ({
+        listenerId: listener.listenerId,
+        label: formatListenerLabel(listener.listenerId),
+        shortText: `Triggers on ${prettifyEventOrConditionKind(listener.eventKind)}`,
+        statusLabel: describeLifetime(listener.lifetime),
+      }))
 
     const activeAttackDamageTrace = entity.kind === 'weapon'
       ? combineNumberTraces(
@@ -2195,6 +2245,7 @@ function buildPreviewFromState(options: {
       sourceCardSummaryDetailText: sourceCardText?.summaryDetailText ?? null,
       sourceCardSummaryTone: sourceCardText?.summaryTone ?? 'neutral',
       sourceCardKeywords,
+      activeListeners: entityActiveListeners,
       isTaunt: entity.keywordIds.includes('keyword.taunt'),
       currentHealth: entity.currentHealth,
       maxHealth: entity.maxHealth,
@@ -2224,39 +2275,50 @@ function buildPreviewFromState(options: {
       movePoints: entity.remainingMoves,
       maxMovePoints: entity.maxMovesPerTurn,
       activeAbility: activeProfile
-        ? buildEntityActiveSummary({
-            rollingHeroEntityId: entity.ownerHeroEntityId,
-            attack: activeProfile,
-            minimumTrace: resolveNumberTrace({
-              gameApi,
-              state,
-              targetEntityId: entity.entityId,
-              propertyPath: 'useEntityActive.minimum',
-              baseValue: activeProfile.minimumDamage,
-              clampMin: 0,
-            }),
-            maximumTrace: resolveNumberTrace({
-              gameApi,
-              state,
-              targetEntityId: entity.entityId,
-              propertyPath: 'useEntityActive.maximum',
-              baseValue: activeProfile.maximumDamage,
-              clampMin: 0,
-            }),
-            attackDamageTrace: activeAttackDamageTrace,
-            attackFlatBonusDamageTrace:
-              entity.kind === 'weapon'
-                ? resolveNumberTrace({
-                    gameApi,
-                    state,
-                    targetEntityId: entity.ownerHeroEntityId,
-                    propertyPath: 'attackFlatBonusDamage',
-                    baseValue: 0,
-                  })
-                : makeStaticNumberTrace(0),
-            abilityPowerTrace,
-            luck: state.luck,
-          })
+        ? activeProfile.kind === 'attack'
+          ? buildEntityActiveSummary({
+              rollingHeroEntityId: entity.ownerHeroEntityId,
+              active: activeProfile,
+              minimumTrace: resolveNumberTrace({
+                gameApi,
+                state,
+                targetEntityId: entity.entityId,
+                propertyPath: 'useEntityActive.minimum',
+                baseValue: activeProfile.minimumDamage,
+                clampMin: 0,
+              }),
+              maximumTrace: resolveNumberTrace({
+                gameApi,
+                state,
+                targetEntityId: entity.entityId,
+                propertyPath: 'useEntityActive.maximum',
+                baseValue: activeProfile.maximumDamage,
+                clampMin: 0,
+              }),
+              attackDamageTrace: activeAttackDamageTrace,
+              attackFlatBonusDamageTrace:
+                entity.kind === 'weapon'
+                  ? resolveNumberTrace({
+                      gameApi,
+                      state,
+                      targetEntityId: entity.ownerHeroEntityId,
+                      propertyPath: 'attackFlatBonusDamage',
+                      baseValue: 0,
+                    })
+                  : makeStaticNumberTrace(0),
+              abilityPowerTrace,
+              luck: state.luck,
+            })
+          : buildEntityActiveSummary({
+              rollingHeroEntityId: entity.ownerHeroEntityId,
+              active: activeProfile,
+              minimumTrace: makeStaticNumberTrace(0),
+              maximumTrace: makeStaticNumberTrace(0),
+              attackDamageTrace: makeStaticNumberTrace(0),
+              attackFlatBonusDamageTrace: makeStaticNumberTrace(0),
+              abilityPowerTrace: makeStaticNumberTrace(0),
+              luck: state.luck,
+            })
         : undefined,
     }
   }
@@ -2478,7 +2540,7 @@ export function resolveSessionUseEntityActive(options: {
   session: AppBattleSession
   actorHeroEntityId: string
   sourceEntityId: string
-  targetEntityId: string
+  targetEntityId?: string
 }):
   | SessionResolutionSuccess
   | SessionResolutionFailure {
@@ -2494,7 +2556,7 @@ export function resolveSessionUseEntityActive(options: {
       actorHeroEntityId,
       sourceEntityId,
       selection: {
-        targetEntityId,
+        targetEntityId: targetEntityId ?? undefined,
       },
     },
   })

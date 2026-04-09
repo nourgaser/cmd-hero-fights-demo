@@ -5,8 +5,10 @@ import type {
   NumberExplanation,
   NumberContribution,
 } from "../../shared/models";
-import { resolveAdjacentAllyDefenseContribution } from "../battlefield/adjacency";
+import { resolveAdjacentAllyDefenseContribution, resolveAdjacentAllyEntityIds } from "../battlefield/adjacency";
 import { getActiveReactiveBulwarkAuraBonus } from "./aura";
+
+const CHIVALRY_KEYWORD_ID = "keyword.chivalry";
 
 /**
  * NumberResolver computes effective numeric values for any property on any entity.
@@ -89,12 +91,21 @@ export function resolveEffectiveNumber(options: {
           state,
           sourceBinding: rule.source,
         });
-        if (delta !== 0) {
-          accumulated += delta;
+        let adjustedDelta = delta;
+        if (adjustedDelta !== 0 && rule.targetSelector === "sourceEntityAdjacentAllies") {
+          const sourceEntityId = rule.source.kind === "sourceEntity" ? rule.source.sourceEntityId : undefined;
+          const sourceEntity = sourceEntityId ? state.entitiesById[sourceEntityId] : undefined;
+          if (sourceEntity && sourceEntity.kind !== "hero" && sourceEntity.keywordIds.includes(CHIVALRY_KEYWORD_ID)) {
+            adjustedDelta *= 2;
+          }
+        }
+
+        if (adjustedDelta !== 0) {
+          accumulated += adjustedDelta;
           contributions.push({
             sourceId: rule.id,
             label: rule.label,
-            delta,
+            delta: adjustedDelta,
           });
         }
       }
@@ -250,6 +261,12 @@ function passiveRuleTargetsEntity(options: {
       }
 
       return targetEntity.ownerHeroEntityId === sourceOwnerHeroEntityId;
+    }
+    case "sourceEntityAdjacentAllies": {
+      return resolveAdjacentAllyEntityIds({
+        state,
+        targetEntityId: rule.source.sourceEntityId,
+      }).includes(targetEntityId);
     }
     case "selectedAny":
     case "selectedEnemy":

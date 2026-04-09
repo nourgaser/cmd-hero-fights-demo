@@ -23,7 +23,7 @@ type PlayerScreenProps = {
   showDetailedTooltipsToggle: boolean
   onToggleDetailedTooltips: () => void
   onBasicAttack: (input: { targetEntityId: string }) => void
-  onUseEntityActive: (input: { sourceEntityId: string; targetEntityId: string }) => void
+  onUseEntityActive: (input: { sourceEntityId: string; targetEntityId?: string }) => void
   onPressLuck: () => void
   onEndTurn: () => void
   onPlayCard: (input: {
@@ -207,6 +207,14 @@ export function PlayerScreen(props: PlayerScreenProps) {
     ? entityActiveOptions.find((entry) => entry.sourceEntityId === selectedEntityActiveSourceId) ?? null
     : null
   const entityActiveTargetEntityIds = selectedEntityActiveOption?.validTargetEntityIds ?? []
+  const selectedEntityActiveRequiresTarget = entityActiveTargetEntityIds.length > 0
+  const entityActiveHighlightedIds = pendingActionMode === 'entityActiveTarget'
+    ? Array.from(new Set([...entityActiveSourceIds, ...entityActiveTargetEntityIds]))
+    : []
+  const selectedEntityConfirmId =
+    pendingActionMode === 'entityActiveTarget' && !selectedEntityActiveRequiresTarget
+      ? selectedEntityActiveSourceId
+      : null
   const canBeginBasicAttack = isActivePlayer && selfMovePoints >= basicAttackMoveCost
   const canBeginPressLuck = isActivePlayer && !pressLuckUsedThisTurn && !pressLuckAtFavorableLimit && selfMovePoints >= pressLuckMoveCost
   const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
@@ -221,7 +229,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     pendingActionMode === 'basicAttack'
       ? basicAttackTargetEntityIds
       : pendingActionMode === 'entityActiveTarget'
-          ? entityActiveTargetEntityIds
+          ? entityActiveHighlightedIds
           : focusedCard?.validTargetEntityIds ?? []
 
   const handleFocusCard = (handCardId: string) => {
@@ -253,6 +261,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
     if (pendingActionMode === 'entityActiveTarget') {
       if (entityActiveSourceIds.includes(targetEntityId)) {
+        if (selectedEntityActiveSourceId === targetEntityId && !selectedEntityActiveRequiresTarget) {
+          handleConfirmEntityActive()
+          return
+        }
         setSelectedEntityActiveSourceId(targetEntityId)
         setSelectedTargetEntityId(null)
         return
@@ -387,16 +399,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
     if (pendingActionMode !== 'entityActiveTarget') {
       return
     }
-    if (!selectedEntityActiveSourceId || !selectedTargetEntityId) {
+    if (!selectedEntityActiveSourceId) {
       return
     }
-    if (!entityActiveTargetEntityIds.includes(selectedTargetEntityId)) {
+    if (selectedEntityActiveRequiresTarget && !selectedTargetEntityId) {
+      return
+    }
+    if (selectedEntityActiveRequiresTarget && selectedTargetEntityId && !entityActiveTargetEntityIds.includes(selectedTargetEntityId)) {
       return
     }
 
     onUseEntityActive({
       sourceEntityId: selectedEntityActiveSourceId,
-      targetEntityId: selectedTargetEntityId,
+      targetEntityId: selectedTargetEntityId ?? undefined,
     })
     setPendingActionMode(null)
     setSelectedEntityActiveSourceId(null)
@@ -787,6 +802,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
             shouldFlipRows={shouldFlipRows}
             highlightedTargetEntityIds={isActivePlayer ? highlightedTargetEntityIds : []}
             selectedTargetEntityId={selectedTargetEntityId}
+            selectedEntityConfirmId={selectedEntityConfirmId}
             onSelectTargetEntityId={isActivePlayer ? handleSelectTarget : undefined}
             onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
             shouldShowDetailedTooltips={shouldShowDetailedTooltips}

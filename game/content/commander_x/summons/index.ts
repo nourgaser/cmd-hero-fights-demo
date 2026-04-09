@@ -17,6 +17,7 @@ import healingFortressDef from "./healing-fortress";
 import warStandardDef from "./war-standard";
 import guardSigilDef from "./guard-sigil";
 import steelboundEffigyDef from "./steelbound-effigy";
+import merewenTheShieldmaidenDef from "./merewen-the-shieldmaiden";
 import jaqueminPatrolDef from "./jaquemin-patrol";
 import shamanicTitaniumPummelerDef from "./shamanic-titanium-pummeler";
 
@@ -34,6 +35,7 @@ const COMMANDER_X_SUMMONED_DEFINITIONS = [
   bulwarkOfFortuneDef,
   jaqueminPatrolDef,
   commonExpendableDeadlyManDef,
+  merewenTheShieldmaidenDef,
 ] as const satisfies readonly CommanderXSummonedDefinition[];
 
 const COMMANDER_X_SUMMONED_BLUEPRINT_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS.map((definition) => [
@@ -47,11 +49,11 @@ const COMMANDER_X_SUMMON_FOOTPRINT_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS.ma
 ] as const);
 
 const COMMANDER_X_ENTITY_ACTIVE_PROFILE_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS
-  .filter(
-    (definition): definition is CommanderXSummonedDefinition & { active: EntityActiveProfile } =>
-      "active" in definition && definition.active !== undefined,
-  )
-  .map((definition) => [definition.blueprint.definitionCardId, definition.active] as const);
+  .filter((definition) => "active" in definition && definition.active !== undefined)
+  .map((definition) => [
+    definition.blueprint.definitionCardId,
+    (definition as CommanderXSummonedDefinition & { active: EntityActiveProfile }).active,
+  ] as const);
 
 export const COMMANDER_X_SUMMONED_BLUEPRINTS = Object.fromEntries(
   COMMANDER_X_SUMMONED_BLUEPRINT_ENTRIES,

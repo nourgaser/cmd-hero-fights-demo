@@ -3,6 +3,7 @@ import { targetEntityIdFromSelector } from "../targeting";
 import type { BattleState, EffectTargetSelector } from "../../../../shared/models";
 import { MOVE_POINTS_CAP } from "../../../../shared/game-constants";
 import { resolveEffectiveNumber } from "../../../core/number-resolver";
+import { resolveAdjacentAllyEntityIds } from "../../../battlefield/adjacency";
 
 function buildModifierId(options: {
   effectId: string;
@@ -83,6 +84,8 @@ function resolvePassiveRuleTargetEntityIds(options: {
       return [sourceOwnerHeroEntityId];
     case "sourceEntity":
       return [sourceEntityId];
+    case "sourceEntityAdjacentAllies":
+      return resolveAdjacentAllyEntityIds({ state, targetEntityId: sourceEntityId });
     case "sourceOwnerAllies":
       return Object.values(state.entitiesById)
         .filter((entity) => {

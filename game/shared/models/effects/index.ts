@@ -33,6 +33,7 @@ import {
   ModifyStatEffectPayloadSchema,
   ResetLuckBalanceEffectPayloadSchema,
   RefundMoveCostEffectPayloadSchema,
+  ReflectDamageEffectPayloadSchema,
   ApplyAuraEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,
 } from "./base-payloads";
@@ -47,6 +48,7 @@ type NonRecursivePayload =
   | z.infer<typeof DealDamageEffectPayloadSchema>
   | z.infer<typeof HealEffectPayloadSchema>
   | z.infer<typeof GrantHealthEffectPayloadSchema>
+  | z.infer<typeof ReflectDamageEffectPayloadSchema>
   | z.infer<typeof ModifyStatEffectPayloadSchema>
   | z.infer<typeof DrawCardsEffectPayloadSchema>
   | z.infer<typeof SummonEntityEffectPayloadSchema>
@@ -106,6 +108,7 @@ export const EffectPayloadKindSchema = z.enum([
   "dealDamage",
   "heal",
   "grantHealth",
+  "reflectDamage",
   "modifyStat",
   "drawCards",
   "summonEntity",
@@ -143,6 +146,7 @@ export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   DealDamageEffectPayloadSchema,
   HealEffectPayloadSchema,
   GrantHealthEffectPayloadSchema,
+  ReflectDamageEffectPayloadSchema,
   ModifyStatEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,

@@ -477,7 +477,7 @@ function App() {
   }
 
   const createEntityActiveHandler = (heroId: string) => {
-    return (input: { sourceEntityId: string; targetEntityId: string }) => {
+    return (input: { sourceEntityId: string; targetEntityId?: string }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
       let events: BattleEvent[] = []

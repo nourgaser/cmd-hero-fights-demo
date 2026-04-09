@@ -20,6 +20,7 @@ export const GLINTING_ADAMANTITE_BLADE_BLUEPRINT: SummonedEntityBlueprint = {
 };
 
 export const GLINTING_ADAMANTITE_BLADE_ACTIVE: EntityActiveProfile = {
+  kind: "attack",
   moveCost: 1,
   minimumDamage: 0,
   maximumDamage: 0,

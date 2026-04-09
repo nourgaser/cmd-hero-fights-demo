@@ -62,6 +62,11 @@ export const GrantHealthEffectPayloadSchema = z
     path: ["maximum"],
   });
 
+export const ReflectDamageEffectPayloadSchema = z.object({
+  kind: z.literal("reflectDamage"),
+  target: EffectTargetSelectorSchema,
+});
+
 export const ModifyStatEffectPayloadSchema = z.object({
   kind: z.literal("modifyStat"),
   target: EffectTargetSelectorSchema,

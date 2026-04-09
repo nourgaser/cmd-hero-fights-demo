@@ -20,6 +20,7 @@ export const DEFILED_GREATSWORD_BLUEPRINT: SummonedEntityBlueprint = {
 };
 
 export const DEFILED_GREATSWORD_ACTIVE: EntityActiveProfile = {
+  kind: "attack",
   moveCost: 1,
   minimumDamage: 4,
   maximumDamage: 9,

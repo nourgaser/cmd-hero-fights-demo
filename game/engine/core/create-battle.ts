@@ -41,6 +41,7 @@ export type CreateBattleInput = {
     sourceKind: "weapon" | "companion";
   }) =>
     | {
+        kind: "attack" | "effect";
         moveCost: number;
       }
     | undefined;

@@ -4,6 +4,8 @@ import {
   type DamageType,
   type UseEntityActiveAction,
 } from "../../shared/models";
+import { renderEffectDisplayText, type EffectDefinition, type EffectDisplayText } from "../../shared/models";
+import type { SummonedEntityBlueprint } from "./effects/context";
 import { resolveEffectiveNumber } from "../core/number-resolver";
 import { getEffectiveArmor, getEffectiveDodgeChance, getEffectiveMagicResist } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
@@ -15,12 +17,14 @@ import { resolveActiveActorHeroForAction } from "./shared-validation";
 import { markHeroDamageTakenThisTurn } from "../core/aura";
 import { isEntityImmuneToDamage } from "../core/immunity";
 import { isAttackTargetProtectedByAdjacentTaunt } from "../battlefield/taunt";
+import { executeCardEffect } from "./effects/execute-card-effect";
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
 } from "../../shared/game-constants";
 
-export type EntityActiveProfile = {
+export type EntityActiveAttackProfile = {
+  kind: "attack";
   moveCost: number;
   minimumDamage: number;
   maximumDamage: number;
@@ -29,6 +33,15 @@ export type EntityActiveProfile = {
   abilityPowerScaling: number;
   canBeDodged: boolean;
 };
+
+export type EntityActiveEffectProfile = {
+  kind: "effect";
+  moveCost: number;
+  summaryText: EffectDisplayText;
+  effects: EffectDefinition[];
+};
+
+export type EntityActiveProfile = EntityActiveAttackProfile | EntityActiveEffectProfile;
 
 export type ResolveUseEntityActiveResult =
   | {
@@ -49,12 +62,29 @@ export function resolveUseEntityActiveAction(options: {
   action: UseEntityActiveAction;
   nextSequence: number;
   battleRng: BattleRng;
+  createSummonedEntityId: (context: {
+    ownerHeroEntityId: string;
+    entityDefinitionId: string;
+    sequence: number;
+  }) => string;
+  resolveSummonedEntityBlueprint: (
+    entityDefinitionId: string,
+    kind: "weapon" | "totem" | "companion",
+  ) => SummonedEntityBlueprint | undefined;
   resolveEntityActiveProfile?: (context: {
     sourceDefinitionCardId: string;
     sourceKind: "weapon" | "companion";
   }) => EntityActiveProfile | undefined;
 }): ResolveUseEntityActiveResult {
-  const { state, action, nextSequence, battleRng, resolveEntityActiveProfile } = options;
+  const {
+    state,
+    action,
+    nextSequence,
+    battleRng,
+    createSummonedEntityId,
+    resolveSummonedEntityBlueprint,
+    resolveEntityActiveProfile,
+  } = options;
 
   const actorResolution = resolveActiveActorHeroForAction({
     state,
@@ -96,6 +126,98 @@ export function resolveUseEntityActiveAction(options: {
     };
   }
 
+  const profile = resolveEntityActiveProfile?.({
+    sourceDefinitionCardId: source.definitionCardId,
+    sourceKind: source.kind,
+  });
+
+  if (!profile) {
+    return {
+      ok: false,
+      state,
+      reason: "Entity active profile was not found for source entity.",
+    };
+  }
+
+  if (source.remainingMoves < profile.moveCost) {
+    return {
+      ok: false,
+      state,
+      reason: "Source entity does not have enough moves to use active ability.",
+    };
+  }
+
+  if (profile.kind === "effect") {
+    const syntheticAction = {
+      kind: "playCard" as const,
+      actorHeroEntityId: actorHero.entityId,
+      handCardId: `__entity_active__:${source.entityId}`,
+      selection: action.selection,
+    };
+
+    let nextState = state;
+    let sequence = nextSequence;
+    let lastDamageWasDodged = undefined as boolean | undefined;
+    let lastSummonedEntityId: string | undefined = source.entityId;
+    const events: BattleEvent[] = [];
+
+    for (const effect of profile.effects) {
+      const execution = executeCardEffect({
+        state: nextState,
+        effect,
+        action: syntheticAction,
+        actorHero,
+        sequence,
+        battleRng,
+        triggerEvent: undefined,
+        lastDamageWasDodged,
+        lastSummonedEntityId,
+        effectSourceEntityId: source.entityId,
+        createSummonedEntityId,
+        resolveSummonedEntityBlueprint,
+      });
+
+      if (!execution.ok) {
+        return {
+          ok: false,
+          state,
+          reason: execution.reason,
+        };
+      }
+
+      nextState = execution.state;
+      sequence = execution.nextSequence;
+      lastDamageWasDodged = execution.lastDamageWasDodged;
+      lastSummonedEntityId = execution.lastSummonedEntityId;
+      events.push(...execution.events);
+    }
+
+    const finalState: BattleState = {
+      ...nextState,
+      entitiesById: {
+        ...nextState.entitiesById,
+        [source.entityId]: {
+          ...source,
+          remainingMoves: source.remainingMoves - profile.moveCost,
+        },
+      },
+    };
+
+    events.push({
+      kind: "actionResolved",
+      sequence,
+      action,
+    });
+
+    return {
+      ok: true,
+      state: finalState,
+      events,
+      nextSequence: sequence + 1,
+      resultMessage: renderEffectDisplayText(profile.summaryText),
+    };
+  }
+
   const targetId = action.selection.targetEntityId;
   if (!targetId) {
     return {
@@ -133,27 +255,6 @@ export function resolveUseEntityActiveAction(options: {
       ok: false,
       state,
       reason: "useEntityActive target is protected by an adjacent Taunt ally.",
-    };
-  }
-
-  const profile = resolveEntityActiveProfile?.({
-    sourceDefinitionCardId: source.definitionCardId,
-    sourceKind: source.kind,
-  });
-
-  if (!profile) {
-    return {
-      ok: false,
-      state,
-      reason: "Entity active profile was not found for source entity.",
-    };
-  }
-
-  if (source.remainingMoves < profile.moveCost) {
-    return {
-      ok: false,
-      state,
-      reason: "Source entity does not have enough moves to use active ability.",
     };
   }
 

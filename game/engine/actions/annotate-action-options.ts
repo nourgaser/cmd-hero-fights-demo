@@ -18,6 +18,7 @@ export function annotateBattleStateWithActionOptions(options: {
     sourceKind: "weapon" | "companion";
   }) =>
     | {
+        kind: "attack" | "effect";
         moveCost: number;
       }
     | undefined;

@@ -78,3 +78,46 @@ export function resolveAdjacentAllyDefenseContribution(options: {
     chivalryBonus,
   };
 }
+
+export function resolveAdjacentAllyEntityIds(options: {
+  state: BattleState;
+  targetEntityId: string;
+}): string[] {
+  const { state, targetEntityId } = options;
+  const target = state.entitiesById[targetEntityId];
+  if (!target) {
+    return [];
+  }
+
+  const targetCells = footprintCells(target.anchorPosition, target.footprint);
+  const adjacentEntityIds = new Set<string>();
+
+  for (const cell of targetCells) {
+    const neighbors: Position[] = [
+      { row: cell.row - 1, column: cell.column },
+      { row: cell.row + 1, column: cell.column },
+      { row: cell.row, column: cell.column - 1 },
+      { row: cell.row, column: cell.column + 1 },
+    ];
+
+    for (const neighbor of neighbors) {
+      const occupant = getOccupantAt(state.battlefieldOccupancy, neighbor);
+      if (!occupant || occupant.entityId === targetEntityId) {
+        continue;
+      }
+
+      const occupantEntity = state.entitiesById[occupant.entityId];
+      if (!occupantEntity) {
+        continue;
+      }
+
+      if (occupantEntity.battlefieldSide !== target.battlefieldSide) {
+        continue;
+      }
+
+      adjacentEntityIds.add(occupant.entityId);
+    }
+  }
+
+  return [...adjacentEntityIds].sort((a, b) => a.localeCompare(b));
+}

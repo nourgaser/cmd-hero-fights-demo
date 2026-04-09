@@ -151,6 +151,8 @@ export function resolveAction(options: {
         action,
         nextSequence,
         battleRng,
+        createSummonedEntityId,
+        resolveSummonedEntityBlueprint,
         resolveEntityActiveProfile,
       });
 

@@ -14,6 +14,7 @@ export const SUMMON_ENTITY_IDS = {
   bulwarkOfFortune: "entity.totem.bulwark-of-fortune",
   jaqueminPatrol: "entity.companion.jaquemin-patrol",
   commonExpendableDeadlyMan: "entity.companion.common-expendable-deadly-man",
+  merewenTheShieldmaiden: "entity.companion.merewen-the-shieldmaiden",
 } as const;
 
 export type CommanderXSummonedEntityId =
