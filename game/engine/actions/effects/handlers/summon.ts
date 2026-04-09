@@ -7,6 +7,7 @@ import {
   type EffectExecutionContext,
   type ExecuteCardEffectResult,
 } from "../context";
+import { resolveEffectiveNumber } from "../../../core/number-resolver";
 
 export function handleSummonEffect(
   context: EffectExecutionContext,
@@ -42,36 +43,65 @@ export function handleSummonEffect(
   const moveRefreshIntervalTurns = Math.max(1, Math.floor(blueprint.moveRefreshIntervalTurns ?? 1));
   const ownerTurnsUntilMoveRefresh = Math.max(0, moveRefreshIntervalTurns - 1);
 
+  const initialSummonedEntity = {
+    kind: blueprint.kind,
+    entityId: summonedEntityId,
+    ownerHeroEntityId: actorHero.entityId,
+    battlefieldSide: actorHero.battlefieldSide,
+    anchorPosition: anchor,
+    footprint,
+    definitionCardId: blueprint.definitionCardId,
+    keywordIds: blueprint.keywordIds ?? [],
+    maxHealth: blueprint.maxHealth,
+    currentHealth: blueprint.maxHealth,
+    armor: blueprint.armor,
+    magicResist: blueprint.magicResist,
+    attackDamage: blueprint.attackDamage,
+    abilityPower: blueprint.abilityPower,
+    criticalChance: blueprint.criticalChance,
+    criticalMultiplier: blueprint.criticalMultiplier,
+    dodgeChance: blueprint.dodgeChance,
+    baseSharpness: blueprint.baseSharpness ?? 0,
+    maxMovesPerTurn,
+    remainingMoves,
+    moveRefreshIntervalTurns,
+    ownerTurnsUntilMoveRefresh,
+  };
+
+  const stateWithSummonedEntity = {
+    ...state,
+    entitiesById: {
+      ...state.entitiesById,
+      [summonedEntityId]: initialSummonedEntity,
+    },
+  };
+
+  const effectiveMoveCapacity = resolveEffectiveNumber({
+    state: stateWithSummonedEntity,
+    targetEntityId: summonedEntityId,
+    propertyPath: "moveCapacity",
+    baseValue: maxMovesPerTurn,
+    clampMin: 0,
+  }).effectiveValue;
+
+  const adjustedMoveCapacity = Math.min(effectiveMoveCapacity, MOVE_POINTS_CAP);
+  const adjustedRemainingMoves = Math.max(
+    0,
+    Math.min(remainingMoves + (adjustedMoveCapacity - maxMovesPerTurn), adjustedMoveCapacity),
+  );
+
+  const summonedEntity = {
+    ...initialSummonedEntity,
+    remainingMoves: adjustedRemainingMoves,
+  };
+
   return {
     ok: true,
     state: {
       ...state,
       entitiesById: {
         ...state.entitiesById,
-        [summonedEntityId]: {
-          kind: blueprint.kind,
-          entityId: summonedEntityId,
-          ownerHeroEntityId: actorHero.entityId,
-          battlefieldSide: actorHero.battlefieldSide,
-          anchorPosition: anchor,
-          footprint,
-          definitionCardId: blueprint.definitionCardId,
-          keywordIds: blueprint.keywordIds ?? [],
-          maxHealth: blueprint.maxHealth,
-          currentHealth: blueprint.maxHealth,
-          armor: blueprint.armor,
-          magicResist: blueprint.magicResist,
-          attackDamage: blueprint.attackDamage,
-          abilityPower: blueprint.abilityPower,
-          criticalChance: blueprint.criticalChance,
-          criticalMultiplier: blueprint.criticalMultiplier,
-          dodgeChance: blueprint.dodgeChance,
-          baseSharpness: blueprint.baseSharpness ?? 0,
-          maxMovesPerTurn,
-          remainingMoves,
-          moveRefreshIntervalTurns,
-          ownerTurnsUntilMoveRefresh,
-        },
+        [summonedEntityId]: summonedEntity,
       },
       battlefieldOccupancy: setOccupantFootprint(
         state.battlefieldOccupancy,

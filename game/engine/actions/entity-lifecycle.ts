@@ -3,6 +3,8 @@ import {
   type BattleEvent,
   type BattleState,
 } from "../../shared/models";
+import { MOVE_POINTS_CAP } from "../../shared/game-constants";
+import { resolveEffectiveNumber } from "../core/number-resolver";
 
 export function removeDefeatedSummonedEntities(options: {
   state: BattleState;
@@ -25,6 +27,16 @@ export function removeDefeatedSummonedEntities(options: {
     const removedPassiveRuleIds = nextState.activePassiveRules
       .filter((rule) => rule.source.kind === "sourceEntity" && rule.source.sourceEntityId === entityId)
       .map((rule) => rule.id);
+    const hadMoveCapacityModifiers = removedModifierIds.some(
+      (id) =>
+        nextState.activeModifiers.find((m) => m.id === id)?.propertyPath === "moveCapacity",
+    );
+    const hadMoveCapacityRules = removedPassiveRuleIds.some(
+      (id) =>
+        nextState.activePassiveRules.find((r) => r.id === id)?.operations.some(
+          (op) => op.propertyPath === "moveCapacity",
+        ),
+    );
 
     nextState = {
       ...nextState,
@@ -54,6 +66,58 @@ export function removeDefeatedSummonedEntities(options: {
         reason: "source_removed",
       });
       sequence += 1;
+    }
+
+    if (hadMoveCapacityModifiers || hadMoveCapacityRules) {
+      clampMovesAfterCapacityRemoval(entityId);
+    }
+  };
+
+  const clampMovesAfterCapacityRemoval = (affectedSourceEntityId: string) => {
+    for (const [entityId, entity] of Object.entries(nextState.entitiesById)) {
+      if (entity.kind === "hero") {
+        const effectiveCapacity = resolveEffectiveNumber({
+          state: nextState,
+          targetEntityId: entityId,
+          propertyPath: "moveCapacity",
+          baseValue: entity.maxMovePoints,
+          clampMin: 0,
+        }).effectiveValue;
+        const cap = Math.min(effectiveCapacity, MOVE_POINTS_CAP);
+        if (entity.movePoints > cap) {
+          nextState = {
+            ...nextState,
+            entitiesById: {
+              ...nextState.entitiesById,
+              [entityId]: {
+                ...entity,
+                movePoints: cap,
+              },
+            },
+          };
+        }
+      } else if (entity.kind === "companion" && entity.ownerHeroEntityId === affectedSourceEntityId) {
+        const effectiveCapacity = resolveEffectiveNumber({
+          state: nextState,
+          targetEntityId: entityId,
+          propertyPath: "moveCapacity",
+          baseValue: entity.maxMovesPerTurn,
+          clampMin: 0,
+        }).effectiveValue;
+        const cap = Math.min(effectiveCapacity, MOVE_POINTS_CAP);
+        if (entity.remainingMoves > cap) {
+          nextState = {
+            ...nextState,
+            entitiesById: {
+              ...nextState.entitiesById,
+              [entityId]: {
+                ...entity,
+                remainingMoves: cap,
+              },
+            },
+          };
+        }
+      }
     }
   };
 
