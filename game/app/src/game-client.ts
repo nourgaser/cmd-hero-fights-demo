@@ -31,6 +31,7 @@ const STAT_METADATA = {
   abilityPower: { label: 'ability power', shortLabel: 'AP', iconId: 'game-icons:magic-swirl' },
   armor: { label: 'armor', shortLabel: 'AR', iconId: 'game-icons:checked-shield' },
   magicResist: { label: 'magic resist', shortLabel: 'MR', iconId: 'game-icons:shield-reflect' },
+  sharpness: { label: 'sharpness', shortLabel: 'Sharp', iconId: 'game-icons:knife' },
 } as const
 
 type StatKey = keyof typeof STAT_METADATA
@@ -1558,6 +1559,7 @@ function buildPreviewFromState(options: {
             sourceEntity && sourceEntity.kind !== 'hero'
               ? cardsById[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
               : null
+          const sourceLabel = sourceEntity?.kind === 'hero' ? 'Your hero' : sourceCardName ?? sourceEntity?.entityId ?? 'Unknown source'
           const operationText = summarizeNumericOperation(
             modifier.operation,
             modifier.value,
@@ -1586,8 +1588,8 @@ function buildPreviewFromState(options: {
             statusTone: modifier.lifetime === 'untilEndOfTurn' ? ('pending' as const) : ('active' as const),
             shortText: operationText,
             detailLines: [
-              `Target: ${modifier.targetEntityId === heroEntityId ? 'Your hero' : 'Derived contribution'}`,
-              `Source: ${sourceCardName ?? sourceEntity?.entityId ?? 'Unknown'}`,
+              `Target: Your hero`,
+              `Source: ${sourceLabel}`,
               `Lifetime: ${describeLifetime(modifier.lifetime)}`,
             ],
             operations: [operationText],

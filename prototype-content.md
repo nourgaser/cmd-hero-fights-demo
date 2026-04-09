@@ -32,7 +32,7 @@ The following subset of the content is the chosen content for the prototype. It 
 - [Warcry](/content/Game/Cards/Commander%20X/Warcry.md) done
 - [Shatter Plating](/content/Game/Cards/Commander%20X/Shatter%20Plating.md) done
 - [Reactive Bulwark](/content/Game/Cards/Commander%20X/Reactive%20Bulwark.md) done
-- [Veteran Edge](/content/Game/Cards/Commander%20X/Veteran%20Edge.md)
+- [Veteran Edge](/content/Game/Cards/Commander%20X/Veteran%20Edge.md) done
 - [Medal of Honor](/content/Game/Cards/Commander%20X/Medal%20of%20Honor.md)
 
 ### Weapons

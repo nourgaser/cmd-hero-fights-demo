@@ -48,7 +48,7 @@ export const KEYWORD_DEFINITIONS = [
     id: KEYWORD_IDS.sharpness,
     name: "Sharpness",
     summaryText: {
-      template: "Breaks {amount} resistance on attack.",
+      template: "On attack, destroys {amount} matching base/persistent resistance (not adjacency/passive bonuses).",
     },
   },
 ] as const satisfies readonly KeywordDefinition[];

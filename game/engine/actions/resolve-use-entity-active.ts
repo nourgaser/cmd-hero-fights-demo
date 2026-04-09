@@ -8,6 +8,7 @@ import { resolveEffectiveNumber } from "../core/number-resolver";
 import { getEffectiveArmor, getEffectiveDodgeChance, getEffectiveMagicResist } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
+import { destroyResistanceFromBaseAndPersistent } from "../core/sharpness";
 import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
@@ -189,6 +190,24 @@ export function resolveUseEntityActiveAction(options: {
           clampMin: 0,
         }).effectiveValue
       : 0;
+  const sourceSharpness = resolveEffectiveNumber({
+    state,
+    targetEntityId: source.entityId,
+    propertyPath: "sharpness",
+    baseValue: 0,
+    clampMin: 0,
+  }).effectiveValue;
+  const ownerSharpness =
+    source.entityId === actorHero.entityId
+      ? 0
+      : resolveEffectiveNumber({
+          state,
+          targetEntityId: actorHero.entityId,
+          propertyPath: "sharpness",
+          baseValue: 0,
+          clampMin: 0,
+        }).effectiveValue;
+  const sharpness = sourceSharpness + ownerSharpness;
 
   const scaledRange = computeScaledDamageRange({
     minimum,
@@ -242,39 +261,67 @@ export function resolveUseEntityActiveAction(options: {
   }
 
   let appliedDamage = 0;
+  let stateAfterSharpness = state;
   if (!wasDodged) {
+    if (sharpness > 0 && (profile.damageType === "physical" || profile.damageType === "magic")) {
+      stateAfterSharpness = destroyResistanceFromBaseAndPersistent({
+        state,
+        targetEntityId: target.entityId,
+        stat: profile.damageType === "physical" ? "armor" : "magicResist",
+        amount: sharpness,
+      }).state;
+    }
+
+    const targetAfterSharpness = stateAfterSharpness.entitiesById[target.entityId];
+    if (!targetAfterSharpness) {
+      return {
+        ok: false,
+        state,
+        reason: "useEntityActive target was not found after Sharpness resolution.",
+      };
+    }
+
     const resistance =
       profile.damageType === "physical"
         ? getEffectiveArmor({
-            state,
-            targetEntityId: target.entityId,
-            baseArmor: target.armor,
+            state: stateAfterSharpness,
+            targetEntityId: targetAfterSharpness.entityId,
+            baseArmor: targetAfterSharpness.armor,
           }).effectiveValue
         : profile.damageType === "magic"
           ? getEffectiveMagicResist({
-              state,
-              targetEntityId: target.entityId,
-              baseMagicResist: target.magicResist,
+              state: stateAfterSharpness,
+              targetEntityId: targetAfterSharpness.entityId,
+              baseMagicResist: targetAfterSharpness.magicResist,
             }).effectiveValue
           : 0;
     appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
   }
 
-  const targetHealth = roundWhole(target.currentHealth);
+  const nextTarget = stateAfterSharpness.entitiesById[target.entityId];
+  if (!nextTarget) {
+    return {
+      ok: false,
+      state,
+      reason: "useEntityActive target was not found while applying damage.",
+    };
+  }
+
+  const targetHealth = roundWhole(nextTarget.currentHealth);
 
   let sequence = nextSequence;
   const events: BattleEvent[] = [];
 
   const nextState: BattleState = {
-    ...state,
+    ...stateAfterSharpness,
     entitiesById: {
-      ...state.entitiesById,
+      ...stateAfterSharpness.entitiesById,
       [source.entityId]: {
         ...source,
         remainingMoves: source.remainingMoves - profile.moveCost,
       },
       [target.entityId]: {
-        ...target,
+        ...nextTarget,
         currentHealth: Math.max(0, targetHealth - appliedDamage),
       },
     },

@@ -14,6 +14,7 @@ import { REROLL_CARD } from "./reroll";
 import { REACTIVE_BULWARK_CARD } from "./reactive-bulwark";
 import { SHATTER_PLATING_CARD } from "./shatter-plating";
 import { SHIELD_TOSS_CARD } from "./shield-toss";
+import { VETERAN_EDGE_CARD } from "./veteran-edge";
 import { WAR_STANDARD_CARD } from "./war-standard";
 import { WARCRY_CARD } from "./warcry";
 
@@ -32,6 +33,7 @@ export {
   REACTIVE_BULWARK_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
+  VETERAN_EDGE_CARD,
   WAR_STANDARD_CARD,
   WARCRY_CARD,
 };
@@ -47,6 +49,7 @@ export const COMMANDER_X_CARDS = [
   REACTIVE_BULWARK_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
+  VETERAN_EDGE_CARD,
   CHAAARGE_CARD,
   CORRODED_SHORTSWORD_CARD,
   WAR_STANDARD_CARD,

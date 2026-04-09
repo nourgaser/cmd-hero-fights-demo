@@ -58,6 +58,23 @@ export function getEffectiveAttackDamage(options: {
 }
 
 /**
+ * Get effective sharpness for an entity.
+ */
+export function getEffectiveSharpness(options: {
+  state: BattleState;
+  targetEntityId: string;
+  baseSharpness: number;
+}): NumberExplanation {
+  return resolveEffectiveNumber({
+    state: options.state,
+    targetEntityId: options.targetEntityId,
+    propertyPath: "sharpness",
+    baseValue: options.baseSharpness,
+    clampMin: 0,
+  });
+}
+
+/**
  * Get effective ability power for an entity.
  */
 export function getEffectiveAbilityPower(options: {

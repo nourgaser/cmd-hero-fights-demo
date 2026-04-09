@@ -10,9 +10,11 @@ import {
   getEffectiveDodgeChance,
   getEffectiveHealRange,
   getEffectiveMagicResist,
+  getEffectiveSharpness,
 } from "../../effects/get-effective-number";
 import { computeScaledDamageRange } from "../../../core/damage-range";
 import { resolveEffectiveNumber } from "../../../core/number-resolver";
+import { destroyResistanceFromBaseAndPersistent } from "../../../core/sharpness";
 import { markHeroDamageTakenThisTurn } from "../../../core/aura";
 import {
   type EffectExecutionContext,
@@ -241,6 +243,20 @@ export function handleDealDamageEffect(
     state,
     targetEntityId: actorHero.entityId,
   });
+  const sourceSharpness = getEffectiveSharpness({
+    state,
+    targetEntityId: sourceEntity.entityId,
+    baseSharpness: 0,
+  }).effectiveValue;
+  const ownerSharpness =
+    sourceEntity.entityId === actorHero.entityId
+      ? 0
+      : getEffectiveSharpness({
+          state,
+          targetEntityId: actorHero.entityId,
+          baseSharpness: 0,
+        }).effectiveValue;
+  const sharpness = sourceSharpness + ownerSharpness;
 
   const { minimum, maximum } = computeScaledDamageRange({
     minimum: effectiveRange.minimum.effectiveValue,
@@ -282,32 +298,52 @@ export function handleDealDamageEffect(
   }
 
   let appliedDamage = 0;
+  let stateAfterSharpness = state;
   if (!wasDodged) {
+    if (sharpness > 0 && (effect.payload.damageType === "physical" || effect.payload.damageType === "magic")) {
+      stateAfterSharpness = destroyResistanceFromBaseAndPersistent({
+        state,
+        targetEntityId: target.entityId,
+        stat: effect.payload.damageType === "physical" ? "armor" : "magicResist",
+        amount: sharpness,
+      }).state;
+    }
+
+    const targetAfterSharpness = stateAfterSharpness.entitiesById[target.entityId];
+    if (!targetAfterSharpness) {
+      return { ok: false, reason: "dealDamage target was not found after Sharpness resolution." };
+    }
+
     const resistance =
       effect.payload.damageType === "physical"
         ? getEffectiveArmor({
-            state,
-            targetEntityId: target.entityId,
-            baseArmor: target.armor,
+            state: stateAfterSharpness,
+            targetEntityId: targetAfterSharpness.entityId,
+            baseArmor: targetAfterSharpness.armor,
           }).effectiveValue
         : effect.payload.damageType === "magic"
           ? getEffectiveMagicResist({
-              state,
-              targetEntityId: target.entityId,
-              baseMagicResist: target.magicResist,
+              state: stateAfterSharpness,
+              targetEntityId: targetAfterSharpness.entityId,
+              baseMagicResist: targetAfterSharpness.magicResist,
             }).effectiveValue
           : 0;
     appliedDamage = toAppliedDamage(adjustedRoll, resistance) + roundWhole(flatBonusDamage);
   }
 
-  const targetHealth = roundWhole(target.currentHealth);
+  const nextTarget = stateAfterSharpness.entitiesById[targetId];
+  if (!nextTarget) {
+    return { ok: false, reason: "dealDamage target was not found while applying damage." };
+  }
+
+  const targetHealth = roundWhole(nextTarget.currentHealth);
 
   const nextState = {
-    ...state,
+    ...stateAfterSharpness,
     entitiesById: {
-      ...state.entitiesById,
+      ...stateAfterSharpness.entitiesById,
       [targetId]: {
-        ...target,
+        ...nextTarget,
         currentHealth: Math.max(0, targetHealth - appliedDamage),
       },
     },

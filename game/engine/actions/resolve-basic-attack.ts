@@ -10,11 +10,13 @@ import {
   getEffectiveBasicAttackRange,
   getEffectiveDodgeChance,
   getEffectiveMagicResist,
+  getEffectiveSharpness,
   getEffectiveAbilityPower,
 } from "./effects/get-effective-number";
 import { resolveEffectiveNumber } from "../core/number-resolver";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
+import { destroyResistanceFromBaseAndPersistent } from "../core/sharpness";
 import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
@@ -182,39 +184,73 @@ export function resolveBasicAttackAction(options: {
   const wasDodged = dodgeRoll < effectiveDodgeChance;
 
   let appliedDamage = 0;
+  let stateAfterSharpness = state;
   if (!wasDodged) {
+    const sharpness = getEffectiveSharpness({
+      state,
+      targetEntityId: attacker.entityId,
+      baseSharpness: 0,
+    }).effectiveValue;
+
+    if (sharpness > 0 && (attack.damageType === "physical" || attack.damageType === "magic")) {
+      stateAfterSharpness = destroyResistanceFromBaseAndPersistent({
+        state,
+        targetEntityId: target.entityId,
+        stat: attack.damageType === "physical" ? "armor" : "magicResist",
+        amount: sharpness,
+      }).state;
+    }
+
+    const targetAfterSharpness = stateAfterSharpness.entitiesById[target.entityId];
+    if (!targetAfterSharpness) {
+      return {
+        ok: false,
+        state,
+        reason: "Basic attack target was not found after Sharpness resolution.",
+      };
+    }
+
     const resistance =
       attack.damageType === "physical"
         ? getEffectiveArmor({
-            state,
-            targetEntityId: target.entityId,
-            baseArmor: target.armor,
+            state: stateAfterSharpness,
+            targetEntityId: targetAfterSharpness.entityId,
+            baseArmor: targetAfterSharpness.armor,
           }).effectiveValue
         : attack.damageType === "magic"
           ? getEffectiveMagicResist({
-              state,
-              targetEntityId: target.entityId,
-              baseMagicResist: target.magicResist,
+              state: stateAfterSharpness,
+              targetEntityId: targetAfterSharpness.entityId,
+              baseMagicResist: targetAfterSharpness.magicResist,
             }).effectiveValue
           : 0;
-            appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
+    appliedDamage = toAppliedDamage(finalRoll, resistance) + roundWhole(flatBonusDamage);
   }
 
-  const targetHealth = roundWhole(target.currentHealth);
+  const nextTarget = stateAfterSharpness.entitiesById[target.entityId];
+  if (!nextTarget) {
+    return {
+      ok: false,
+      state,
+      reason: "Basic attack target was not found while applying damage.",
+    };
+  }
+
+  const targetHealth = roundWhole(nextTarget.currentHealth);
 
   let sequence = nextSequence;
   const events: BattleEvent[] = [];
 
   const nextState: BattleState = {
-    ...state,
+    ...stateAfterSharpness,
     entitiesById: {
-      ...state.entitiesById,
+      ...stateAfterSharpness.entitiesById,
       [attacker.entityId]: {
         ...attacker,
         movePoints: attacker.movePoints - attacker.basicAttackMoveCost,
       },
       [target.entityId]: {
-        ...target,
+        ...nextTarget,
         currentHealth: Math.max(0, targetHealth - appliedDamage),
       },
     },

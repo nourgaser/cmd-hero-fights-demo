@@ -16,7 +16,8 @@ type StatKey =
   | "attackDamage"
   | "abilityPower"
   | "dodgeChance"
-  | "attackFlatBonusDamage";
+  | "attackFlatBonusDamage"
+  | "sharpness";
 
 type ModifyStatPayload = {
   kind: "modifyStat";
