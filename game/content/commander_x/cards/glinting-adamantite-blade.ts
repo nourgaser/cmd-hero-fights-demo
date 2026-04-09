@@ -26,5 +26,21 @@ export const GLINTING_ADAMANTITE_BLADE_CARD = {
         template: "Summon your weapon.",
       },
     },
+    {
+      id: "effect.glinting-adamantite-blade.max-damage-from-current-health",
+      payload: {
+        kind: "modifyStat",
+        target: "sourceEntity",
+        stat: "useEntityActive.maximum",
+        amountFromSourceStat: "currentHealth",
+        amountFromSourceSelector: "sourceEntity",
+        duration: "untilSourceRemoved",
+        changeKind: "apply",
+        sourceBinding: "lastSummonedEntity",
+      },
+      displayText: {
+        template: "This weapon's maximum damage equals its current HP.",
+      },
+    },
   ],
 } satisfies StrongCardDefinition;

@@ -32,6 +32,7 @@ type StatKey =
   | "attackHealOnAttack"
   | "sharpness"
   | "basicAttackSharpness"
+  | "useEntityActive.maximum"
   | "immune";
 
 type ModifyStatPayload = {

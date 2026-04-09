@@ -23,7 +23,6 @@ export const GLINTING_ADAMANTITE_BLADE_ACTIVE: EntityActiveProfile = {
   moveCost: 1,
   minimumDamage: 0,
   maximumDamage: 0,
-  maximumDamageFromSourceCurrentHealth: true,
   damageType: "physical",
   attackDamageScaling: 0.5,
   abilityPowerScaling: 0,

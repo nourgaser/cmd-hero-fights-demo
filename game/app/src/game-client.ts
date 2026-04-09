@@ -983,14 +983,12 @@ function buildEntityActiveSummary(options: {
   attack: {
     minimumDamage: number
     maximumDamage: number
-    maximumDamageFromSourceCurrentHealth?: boolean
     attackDamageScaling: number
     abilityPowerScaling: number
     damageType: 'physical' | 'magic' | 'true'
     moveCost: number
     canBeDodged: boolean
   }
-  sourceCurrentHealthForMaximum?: number
   minimumTrace: AppNumberTrace
   maximumTrace: AppNumberTrace
   attackDamageTrace: AppNumberTrace
@@ -1012,7 +1010,6 @@ function buildEntityActiveSummary(options: {
   const {
     rollingHeroEntityId,
     attack,
-    sourceCurrentHealthForMaximum,
     minimumTrace,
     maximumTrace,
     attackDamageTrace,
@@ -1029,13 +1026,7 @@ function buildEntityActiveSummary(options: {
       : null,
   ].filter((part): part is string => !!part)
 
-  const displayedMaximumBase = attack.maximumDamageFromSourceCurrentHealth
-    ? Math.max(0, sourceCurrentHealthForMaximum ?? attack.maximumDamage)
-    : attack.maximumDamage
-
-  const baseRangeText = attack.maximumDamageFromSourceCurrentHealth
-    ? `${formatPreviewNumber(attack.minimumDamage)} to current HP (${formatPreviewNumber(displayedMaximumBase)})`
-    : `${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(displayedMaximumBase)}`
+  const baseRangeText = `${formatPreviewNumber(attack.minimumDamage)} to ${formatPreviewNumber(attack.maximumDamage)}`
 
   const summaryText = scalingParts.length > 0
     ? `Base ${baseRangeText} ${attack.damageType} + ${scalingParts.join(' + ')}.`
@@ -1059,9 +1050,6 @@ function buildEntityActiveSummary(options: {
   })
 
   const detailRows = [
-    attack.maximumDamageFromSourceCurrentHealth
-      ? `Damage max base source: current HP = ${formatPreviewNumber(displayedMaximumBase)}`
-      : null,
     numberTraceToDetailLine('AD used', attackDamageTrace),
     numberTraceToDetailLine('AP used', abilityPowerTrace),
     numberTraceToDetailLine('Flat attack bonus', attackFlatBonusDamageTrace),
@@ -1188,10 +1176,6 @@ function resolveSummonPreviewForCard(options: {
         attack: activeProfile,
         minimumTrace: makeStaticNumberTrace(activeProfile.minimumDamage),
         maximumTrace: makeStaticNumberTrace(activeProfile.maximumDamage),
-        sourceCurrentHealthForMaximum:
-          activeProfile.maximumDamageFromSourceCurrentHealth
-            ? summonedBlueprint.maxHealth
-            : undefined,
         attackDamageTrace:
           summonedBlueprint.kind === 'weapon'
             ? combineNumberTraces(
@@ -2256,15 +2240,9 @@ function buildPreviewFromState(options: {
               state,
               targetEntityId: entity.entityId,
               propertyPath: 'useEntityActive.maximum',
-              baseValue: activeProfile.maximumDamageFromSourceCurrentHealth
-                ? entity.currentHealth
-                : activeProfile.maximumDamage,
+              baseValue: activeProfile.maximumDamage,
               clampMin: 0,
             }),
-            sourceCurrentHealthForMaximum:
-              activeProfile.maximumDamageFromSourceCurrentHealth
-                ? entity.currentHealth
-                : undefined,
             attackDamageTrace: activeAttackDamageTrace,
             attackFlatBonusDamageTrace:
               entity.kind === 'weapon'

@@ -15,6 +15,7 @@ export const ModifiableStatSchema = z.enum([
   "attackHealOnAttack",
   "sharpness",
   "basicAttackSharpness",
+  "useEntityActive.maximum",
   "immune",
 ]);
 
