@@ -3,7 +3,9 @@ import type { StrongCardDefinition } from "./types";
 import { BANNER_OF_X_CARD } from "./banner-of-x";
 import { BASTION_STANCE_CARD } from "./bastion-stance";
 import { BATTLE_FOCUS_CARD } from "./battle-focus";
+import { BULWARK_OF_FORTUNE_CARD } from "./bulwark-of-fortune";
 import { CHAAARGE_CARD } from "./chaaarge";
+import { COMMON_EXPENDABLE_DEADLY_MAN_CARD } from "./common-expendable-deadly-man";
 import { CORRODED_SHORTSWORD_CARD } from "./corroded-shortsword";
 import { DEFILED_GREATSWORD_CARD } from "./defiled-greatsword";
 import { EVERGROWTH_IDOL_CARD } from "./evergrowth-idol";
@@ -30,7 +32,9 @@ export {
   BANNER_OF_X_CARD,
   BASTION_STANCE_CARD,
   BATTLE_FOCUS_CARD,
+  BULWARK_OF_FORTUNE_CARD,
   CHAAARGE_CARD,
+  COMMON_EXPENDABLE_DEADLY_MAN_CARD,
   CORRODED_SHORTSWORD_CARD,
   DEFILED_GREATSWORD_CARD,
   EVERGROWTH_IDOL_CARD,
@@ -78,7 +82,9 @@ export const COMMANDER_X_CARDS = [
   EVERGROWTH_IDOL_CARD,
   BANNER_OF_X_CARD,
   STEELBOUND_EFFIGY_CARD,
+  BULWARK_OF_FORTUNE_CARD,
   JAQUEMIN_PATROL_CARD,
+  COMMON_EXPENDABLE_DEADLY_MAN_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];
 

@@ -44,6 +44,13 @@ function conditionMatches(options: {
         sourceEntity.ownerHeroEntityId === listener.ownerHeroEntityId
       );
     }
+    case "damageTargetIsListenerSource": {
+      return (
+        event.kind === "damageApplied" &&
+        listener.sourceEntityId !== undefined &&
+        event.targetEntityId === listener.sourceEntityId
+      );
+    }
     case "removedEntityIsListenerSource": {
       return (
         event.kind === "entityRemoved" &&

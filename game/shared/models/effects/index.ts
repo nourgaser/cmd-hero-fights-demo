@@ -28,6 +28,7 @@ import {
   DestroySelfArmorAndDealPerArmorToTargetEffectPayloadSchema,
   DealDamageEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
+  GrantHealthEffectPayloadSchema,
   HealEffectPayloadSchema,
   ModifyStatEffectPayloadSchema,
   ResetLuckBalanceEffectPayloadSchema,
@@ -45,6 +46,7 @@ type NonRecursivePayload =
   | z.infer<typeof ResetLuckBalanceEffectPayloadSchema>
   | z.infer<typeof DealDamageEffectPayloadSchema>
   | z.infer<typeof HealEffectPayloadSchema>
+  | z.infer<typeof GrantHealthEffectPayloadSchema>
   | z.infer<typeof ModifyStatEffectPayloadSchema>
   | z.infer<typeof DrawCardsEffectPayloadSchema>
   | z.infer<typeof SummonEntityEffectPayloadSchema>
@@ -103,6 +105,7 @@ export const EffectPayloadKindSchema = z.enum([
   "resetLuckBalance",
   "dealDamage",
   "heal",
+  "grantHealth",
   "modifyStat",
   "drawCards",
   "summonEntity",
@@ -139,6 +142,7 @@ export const EffectPayloadSchema = z.discriminatedUnion("kind", [
   ResetLuckBalanceEffectPayloadSchema,
   DealDamageEffectPayloadSchema,
   HealEffectPayloadSchema,
+  GrantHealthEffectPayloadSchema,
   ModifyStatEffectPayloadSchema,
   DrawCardsEffectPayloadSchema,
   SummonEntityEffectPayloadSchema,

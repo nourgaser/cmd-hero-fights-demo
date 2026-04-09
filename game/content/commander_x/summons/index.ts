@@ -7,6 +7,8 @@ import {
 } from "../constants";
 import type { CommanderXSummonedDefinition } from "./types";
 import bannerOfXDef from "./banner-of-x";
+import bulwarkOfFortuneDef from "./bulwark-of-fortune";
+import commonExpendableDeadlyManDef from "./common-expendable-deadly-man";
 import corrodedShortswordDef from "./corroded-shortsword";
 import defiledGreatswordDef from "./defiled-greatsword";
 import evergrowthIdolDef from "./evergrowth-idol";
@@ -29,7 +31,9 @@ const COMMANDER_X_SUMMONED_DEFINITIONS = [
   healingFortressDef,
   evergrowthIdolDef,
   steelboundEffigyDef,
+  bulwarkOfFortuneDef,
   jaqueminPatrolDef,
+  commonExpendableDeadlyManDef,
 ] as const satisfies readonly CommanderXSummonedDefinition[];
 
 const COMMANDER_X_SUMMONED_BLUEPRINT_ENTRIES = COMMANDER_X_SUMMONED_DEFINITIONS.map((definition) => [

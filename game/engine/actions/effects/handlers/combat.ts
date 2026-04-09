@@ -62,6 +62,8 @@ export function handleHealEffect(
     actorHero,
     state,
     triggerEvent,
+    effectSourceEntityId,
+    battleRng,
   });
   if (!targetId) {
     return { ok: false, reason: "heal requires a valid effect target." };
@@ -136,6 +138,82 @@ export function handleHealEffect(
   };
 }
 
+export function handleGrantHealthEffect(
+  context: EffectExecutionContext,
+): ExecuteCardEffectResult {
+  const {
+    state,
+    effect,
+    action,
+    actorHero,
+    sequence,
+    battleRng,
+    triggerEvent,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+    effectSourceEntityId,
+  } = context;
+
+  if (effect.payload.kind !== "grantHealth") {
+    return { ok: false, reason: "handleGrantHealthEffect received non-grantHealth payload." };
+  }
+
+  const targetId = targetEntityIdFromSelector({
+    selector: effect.payload.target,
+    action,
+    actorHero,
+    state,
+    triggerEvent,
+    effectSourceEntityId,
+    battleRng,
+  });
+  if (!targetId) {
+    return { ok: false, reason: "grantHealth requires a valid effect target." };
+  }
+
+  const target = state.entitiesById[targetId];
+  if (!target) {
+    return { ok: false, reason: "grantHealth target was not found." };
+  }
+
+  const rawRoll = rollRange(battleRng, effect.payload.minimum, effect.payload.maximum);
+  const adjustedRoll = applyLuckToRoll({
+    rawRoll,
+    minimum: effect.payload.minimum,
+    maximum: effect.payload.maximum,
+    luck: state.luck,
+    rollingHeroEntityId: actorHero.entityId,
+  });
+  const amount = toHealAmount(adjustedRoll);
+
+  return {
+    ok: true,
+    state: {
+      ...state,
+      entitiesById: {
+        ...state.entitiesById,
+        [targetId]: {
+          ...target,
+          maxHealth: target.maxHealth + amount,
+          currentHealth: target.currentHealth + amount,
+        },
+      },
+    },
+    events: [
+      {
+        kind: "healApplied",
+        sequence,
+        sourceEntityId: effectSourceEntityId ?? actorHero.entityId,
+        targetEntityId: targetId,
+        amount,
+      },
+    ],
+    nextSequence: sequence + 1,
+    lastDamageWasDodged,
+    lastSummonedEntityId,
+  };
+}
+
 export function handleDealDamageEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
@@ -161,6 +239,8 @@ export function handleDealDamageEffect(
     actorHero,
     state,
     triggerEvent,
+    effectSourceEntityId,
+    battleRng,
   });
   if (!targetId) {
     return { ok: false, reason: "dealDamage requires a valid effect target." };

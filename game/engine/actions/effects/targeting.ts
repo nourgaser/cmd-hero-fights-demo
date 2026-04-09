@@ -6,6 +6,7 @@ import {
   type PlayCardAction,
   type BattleState,
 } from "../../../shared/models";
+import { type BattleRng } from "../../core/rng";
 
 export function targetEntityIdFromSelector(options: {
   selector: EffectTargetSelector;
@@ -14,8 +15,9 @@ export function targetEntityIdFromSelector(options: {
   state: BattleState;
   triggerEvent?: BattleEvent;
   effectSourceEntityId?: EntityId;
+  battleRng?: BattleRng;
 }): EntityId | undefined {
-  const { selector, action, actorHero, state, triggerEvent, effectSourceEntityId } = options;
+  const { selector, action, actorHero, state, triggerEvent, effectSourceEntityId, battleRng } = options;
 
   switch (selector) {
     case "none":
@@ -23,6 +25,25 @@ export function targetEntityIdFromSelector(options: {
     case "selfHero":
     case "sourceOwnerHero":
       return actorHero.entityId;
+    case "randomSourceOwnerAlly": {
+      const allies = Object.values(state.entitiesById)
+        .filter((entity) =>
+          entity.kind === "hero"
+            ? entity.entityId === actorHero.entityId
+            : entity.ownerHeroEntityId === actorHero.entityId,
+        )
+        .map((entity) => entity.entityId)
+        .sort((a, b) => a.localeCompare(b));
+      if (allies.length === 0) {
+        return undefined;
+      }
+
+      const randomIndex = battleRng
+        ? battleRng.nextIntInclusive(0, allies.length - 1)
+        : 0;
+
+      return allies[randomIndex];
+    }
     case "sourceEntity":
       return effectSourceEntityId;
     case "selectedEnemy": {

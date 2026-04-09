@@ -24,6 +24,7 @@ export const ListenerConditionSchema = z.discriminatedUnion("kind", [
   z.object({ kind: z.literal("damageIsAttack") }),
   z.object({ kind: z.literal("damageNotDodged") }),
   z.object({ kind: z.literal("damageSourceIsListenerOwnerHero") }),
+  z.object({ kind: z.literal("damageTargetIsListenerSource") }),
   z.object({ kind: z.literal("removedEntityIsListenerSource") }),
   z.object({ kind: z.literal("turnStartedIsListenerOwnerHero") }),
   z.object({

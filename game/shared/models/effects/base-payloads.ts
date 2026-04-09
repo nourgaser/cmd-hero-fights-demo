@@ -50,6 +50,18 @@ export const HealEffectPayloadSchema = z
     path: ["maximum"],
   });
 
+export const GrantHealthEffectPayloadSchema = z
+  .object({
+    kind: z.literal("grantHealth"),
+    target: EffectTargetSelectorSchema,
+    minimum: z.number().nonnegative(),
+    maximum: z.number().nonnegative(),
+  })
+  .refine((payload) => payload.maximum >= payload.minimum, {
+    message: "maximum must be greater than or equal to minimum.",
+    path: ["maximum"],
+  });
+
 export const ModifyStatEffectPayloadSchema = z.object({
   kind: z.literal("modifyStat"),
   target: EffectTargetSelectorSchema,
