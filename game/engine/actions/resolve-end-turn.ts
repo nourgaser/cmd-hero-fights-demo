@@ -114,11 +114,27 @@ export function resolveEndTurnAction(options: {
         return [entityId, entity];
       }
 
+      const moveRefreshIntervalTurns = Math.max(1, entity.moveRefreshIntervalTurns ?? 1);
+      const ownerTurnsUntilMoveRefresh = Math.max(0, entity.ownerTurnsUntilMoveRefresh ?? 0);
+      if (ownerTurnsUntilMoveRefresh > 0) {
+        return [
+          entityId,
+          {
+            ...entity,
+            remainingMoves: 0,
+            moveRefreshIntervalTurns,
+            ownerTurnsUntilMoveRefresh: ownerTurnsUntilMoveRefresh - 1,
+          },
+        ];
+      }
+
       return [
         entityId,
         {
           ...entity,
           remainingMoves: Math.min(entity.maxMovesPerTurn, MOVE_POINTS_CAP),
+          moveRefreshIntervalTurns,
+          ownerTurnsUntilMoveRefresh: Math.max(0, moveRefreshIntervalTurns - 1),
         },
       ];
     }),

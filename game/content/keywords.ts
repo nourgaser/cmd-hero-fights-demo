@@ -7,6 +7,7 @@ export const KEYWORD_IDS = {
   battlecry: "keyword.battlecry",
   aura: "keyword.aura",
   chivalry: "keyword.chivalry",
+  heavy: "keyword.heavy",
   light: "keyword.light",
   immune: "keyword.immune",
   sharpness: "keyword.sharpness",
@@ -39,6 +40,16 @@ export const KEYWORD_DEFINITIONS = [
     },
   },
   {
+    id: KEYWORD_IDS.heavy,
+    name: "Heavy",
+    summaryText: {
+      template: "Can use active only every {amount} owner turns.",
+      params: {
+        amount: 2,
+      },
+    },
+  },
+  {
     id: KEYWORD_IDS.light,
     name: "Light",
     summaryText: {
@@ -57,6 +68,9 @@ export const KEYWORD_DEFINITIONS = [
     name: "Sharpness",
     summaryText: {
       template: "On attack, destroys {amount} matching base/persistent resistance (not adjacency/passive bonuses).",
+      params: {
+        amount: 1,
+      },
     },
   },
 ] as const satisfies readonly KeywordDefinition[];

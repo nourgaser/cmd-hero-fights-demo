@@ -11,10 +11,12 @@ import defiledGreatswordDef from "./defiled-greatsword";
 import warStandardDef from "./war-standard";
 import guardSigilDef from "./guard-sigil";
 import jaqueminPatrolDef from "./jaquemin-patrol";
+import shamanicTitaniumPummelerDef from "./shamanic-titanium-pummeler";
 
 const COMMANDER_X_SUMMONED_DEFINITIONS = [
   corrodedShortswordDef,
   defiledGreatswordDef,
+  shamanicTitaniumPummelerDef,
   warStandardDef,
   guardSigilDef,
   jaqueminPatrolDef,

@@ -16,6 +16,7 @@ import { REROLL_CARD } from "./reroll";
 import { REACTIVE_BULWARK_CARD } from "./reactive-bulwark";
 import { SHATTER_PLATING_CARD } from "./shatter-plating";
 import { SHIELD_TOSS_CARD } from "./shield-toss";
+import { SHAMANIC_TITANIUM_PUMMELER_CARD } from "./shamanic-titanium-pummeler";
 import { VETERAN_EDGE_CARD } from "./veteran-edge";
 import { WAR_STANDARD_CARD } from "./war-standard";
 import { WARCRY_CARD } from "./warcry";
@@ -37,6 +38,7 @@ export {
   REACTIVE_BULWARK_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,
+  SHAMANIC_TITANIUM_PUMMELER_CARD,
   VETERAN_EDGE_CARD,
   WAR_STANDARD_CARD,
   WARCRY_CARD,
@@ -58,6 +60,7 @@ export const COMMANDER_X_CARDS = [
   CHAAARGE_CARD,
   CORRODED_SHORTSWORD_CARD,
   DEFILED_GREATSWORD_CARD,
+  SHAMANIC_TITANIUM_PUMMELER_CARD,
   WAR_STANDARD_CARD,
   GUARD_SIGIL_CARD,
   JAQUEMIN_PATROL_CARD,

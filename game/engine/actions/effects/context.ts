@@ -21,8 +21,10 @@ export type SummonedEntityBlueprint = {
   criticalChance: number;
   criticalMultiplier: number;
   dodgeChance: number;
+  baseSharpness?: number;
   maxMovesPerTurn?: number;
   remainingMoves: number;
+  moveRefreshIntervalTurns?: number;
   footprint?: EntityFootprint;
 };
 

@@ -222,7 +222,7 @@ export function resolveUseEntityActiveAction(options: {
     state,
     targetEntityId: source.entityId,
     propertyPath: "sharpness",
-    baseValue: 0,
+    baseValue: source.baseSharpness ?? 0,
     clampMin: 0,
   }).effectiveValue;
   const ownerSharpness =

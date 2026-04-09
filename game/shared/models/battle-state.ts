@@ -78,8 +78,11 @@ export const SummonedEntityStateSchema = z.object({
   criticalChance: z.number().min(0).max(1),
   criticalMultiplier: z.number().min(1),
   dodgeChance: z.number().min(0).max(1),
+  baseSharpness: z.number().int().nonnegative().default(0),
   maxMovesPerTurn: z.number().int().nonnegative(),
   remainingMoves: z.number().int().nonnegative(),
+  moveRefreshIntervalTurns: z.number().int().positive().default(1),
+  ownerTurnsUntilMoveRefresh: z.number().int().nonnegative().default(0),
 });
 export type SummonedEntityState = z.infer<typeof SummonedEntityStateSchema>;
 

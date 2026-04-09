@@ -39,6 +39,8 @@ export function handleSummonEffect(
   const footprint = blueprint.footprint ?? SingleCellFootprint;
   const maxMovesPerTurn = Math.min(blueprint.maxMovesPerTurn ?? blueprint.remainingMoves, MOVE_POINTS_CAP);
   const remainingMoves = Math.min(blueprint.remainingMoves, maxMovesPerTurn);
+  const moveRefreshIntervalTurns = Math.max(1, Math.floor(blueprint.moveRefreshIntervalTurns ?? 1));
+  const ownerTurnsUntilMoveRefresh = Math.max(0, moveRefreshIntervalTurns - 1);
 
   return {
     ok: true,
@@ -64,8 +66,11 @@ export function handleSummonEffect(
           criticalChance: blueprint.criticalChance,
           criticalMultiplier: blueprint.criticalMultiplier,
           dodgeChance: blueprint.dodgeChance,
+          baseSharpness: blueprint.baseSharpness ?? 0,
           maxMovesPerTurn,
           remainingMoves,
+          moveRefreshIntervalTurns,
+          ownerTurnsUntilMoveRefresh,
         },
       },
       battlefieldOccupancy: setOccupantFootprint(
