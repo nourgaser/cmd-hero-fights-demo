@@ -2082,7 +2082,7 @@ function buildPreviewFromState(options: {
       maxMovePoints: entity.maxMovesPerTurn,
       activeAbility: activeProfile
         ? buildEntityActiveSummary({
-            rollingHeroEntityId: entity.entityId,
+            rollingHeroEntityId: entity.ownerHeroEntityId,
             attack: activeProfile,
             minimumTrace: resolveNumberTrace({
               gameApi,
