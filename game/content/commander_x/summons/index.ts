@@ -6,6 +6,7 @@ import {
   isCommanderXSummonedEntityId,
 } from "../constants";
 import type { CommanderXSummonedDefinition } from "./types";
+import bannerOfXDef from "./banner-of-x";
 import corrodedShortswordDef from "./corroded-shortsword";
 import defiledGreatswordDef from "./defiled-greatsword";
 import evergrowthIdolDef from "./evergrowth-idol";
@@ -17,6 +18,7 @@ import jaqueminPatrolDef from "./jaquemin-patrol";
 import shamanicTitaniumPummelerDef from "./shamanic-titanium-pummeler";
 
 const COMMANDER_X_SUMMONED_DEFINITIONS = [
+  bannerOfXDef,
   corrodedShortswordDef,
   defiledGreatswordDef,
   glintingAdamantiteBladeDef,

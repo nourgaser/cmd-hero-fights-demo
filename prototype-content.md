@@ -51,7 +51,7 @@ The following subset of the content is the chosen content for the prototype. It 
 <!-- Low priority / do later -->
 - [Healing Fortress](/content/Game/Cards/Commander%20X/Healing%20Fortress.md) done
 - [Evergrowth Idol](/content/Game/Cards/Commander%20X/Evergrowth%20Idol.md) done
-- [Banner of X](/content/Game/Cards/Commander%20X/Banner%20of%20X.md)
+- [Banner of X](/content/Game/Cards/Commander%20X/Banner%20of%20X.md) done
 - [Steelbound Effigy](/content/Game/Cards/Commander%20X/Steelbound%20Effigy.md)
 - [Bulwark of Fortune](/content/Game/Cards/Commander%20X/Bulwark%20of%20Fortune.md)
 

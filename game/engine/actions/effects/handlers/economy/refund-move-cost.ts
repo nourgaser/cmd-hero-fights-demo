@@ -4,6 +4,7 @@ import {
 } from "../../context";
 import { getEffectiveRefundAmount } from "../../get-effective-number";
 import { MOVE_POINTS_CAP } from "../../../../../shared/game-constants";
+import { resolveEffectiveNumber } from "../../../../core/number-resolver";
 
 export function handleRefundMoveCostEffect(
   context: EffectExecutionContext,
@@ -61,7 +62,13 @@ export function handleRefundMoveCostEffect(
                 targetEntityId: actorHero.entityId,
                 baseAmount: payload.amount,
               }).effectiveValue,
-            latestActor.maxMovePoints,
+            resolveEffectiveNumber({
+              state,
+              targetEntityId: actorHero.entityId,
+              propertyPath: "moveCapacity",
+              baseValue: latestActor.maxMovePoints,
+              clampMin: 0,
+            }).effectiveValue,
             MOVE_POINTS_CAP,
           ),
         },

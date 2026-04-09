@@ -10,6 +10,7 @@ export const ModifiableStatSchema = z.enum([
   "abilityPower",
   "dodgeChance",
   "attackFlatBonusDamage",
+  "moveCapacity",
   "attackHealOnAttack",
   "sharpness",
   "immune",

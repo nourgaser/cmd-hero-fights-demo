@@ -1,5 +1,6 @@
 import type { StrongCardDefinition } from "./types";
 
+import { BANNER_OF_X_CARD } from "./banner-of-x";
 import { BASTION_STANCE_CARD } from "./bastion-stance";
 import { BATTLE_FOCUS_CARD } from "./battle-focus";
 import { CHAAARGE_CARD } from "./chaaarge";
@@ -25,6 +26,7 @@ import { WAR_STANDARD_CARD } from "./war-standard";
 import { WARCRY_CARD } from "./warcry";
 
 export {
+  BANNER_OF_X_CARD,
   BASTION_STANCE_CARD,
   BATTLE_FOCUS_CARD,
   CHAAARGE_CARD,
@@ -72,6 +74,7 @@ export const COMMANDER_X_CARDS = [
   GUARD_SIGIL_CARD,
   HEALING_FORTRESS_CARD,
   EVERGROWTH_IDOL_CARD,
+  BANNER_OF_X_CARD,
   JAQUEMIN_PATROL_CARD,
   WARCRY_CARD,
 ] as const satisfies readonly StrongCardDefinition[];

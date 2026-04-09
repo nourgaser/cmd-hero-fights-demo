@@ -4,6 +4,7 @@ export {
   COMMANDER_X_CARDS,
   type CommanderXCardDefinition,
   type CommanderXCardId,
+  BANNER_OF_X_CARD,
   BASTION_STANCE_CARD,
   BATTLE_FOCUS_CARD,
   CHAAARGE_CARD,

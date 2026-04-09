@@ -16,6 +16,7 @@ type HandBarProps = {
   isActivePlayer: boolean
   movePoints: number
   maxMovePoints: number
+  moveCapacityTrace: AppBattlePreview['heroHandCounts'][number]['moveCapacityTrace']
   pressLuckMoveCost: number
   shouldShowDetailedTooltips: boolean
   showDetailedTooltipsToggle: boolean
@@ -66,6 +67,7 @@ export function HandBar(props: HandBarProps) {
     isActivePlayer,
     movePoints,
     maxMovePoints,
+    moveCapacityTrace,
     pressLuckMoveCost,
     shouldShowDetailedTooltips,
     showDetailedTooltipsToggle,
@@ -178,6 +180,27 @@ export function HandBar(props: HandBarProps) {
     (!focusedNeedsTarget || !!selectedTargetEntityId) &&
     (!focusedNeedsPlacement || !!selectedPlacementPosition)
 
+  const moveCapacityRows = moveCapacityTrace.contributions
+    .reduce<Array<{ sourceId: string; label: string; delta: number }>>((rows, contribution) => {
+      const existing = rows.find((entry) => entry.sourceId === contribution.sourceId)
+      if (existing) {
+        existing.delta += contribution.delta
+        return rows
+      }
+
+      rows.push({
+        sourceId: contribution.sourceId,
+        label: contribution.label,
+        delta: contribution.delta,
+      })
+      return rows
+    }, [])
+    .filter((row) => row.delta !== 0)
+
+  const moveMaxDisplay = moveCapacityTrace.delta === 0
+    ? `${maxMovePoints}`
+    : `${maxMovePoints} ${moveCapacityTrace.delta >= 0 ? '+' : '-'} ${Math.abs(moveCapacityTrace.delta)}`
+
   const handleHandBackgroundClick = (event: MouseEvent<HTMLElement>) => {
     const target = event.target
     if (!(target instanceof Element)) {
@@ -200,7 +223,20 @@ export function HandBar(props: HandBarProps) {
           <span className="move-meter-value">{movePoints}</span>
           <span className="hover-card move-hover-card" role="tooltip">
             <strong>Moves</strong>
-            <span>{movePoints} / {maxMovePoints}</span>
+            <span>{movePoints} / {moveMaxDisplay}</span>
+            {shouldShowDetailedTooltips && moveCapacityRows.length > 0 ? (
+              <span className="battle-tooltip-detail">
+                {moveCapacityRows.map((row) => (
+                  <span key={`move-${row.sourceId}`} className="battle-tooltip-detail-line tooltip-detail-row">
+                    <span className="tooltip-detail-label">{row.label}</span>
+                    <span className="tooltip-detail-value">{row.delta >= 0 ? '+' : '-'}{Math.abs(row.delta)}</span>
+                  </span>
+                ))}
+              </span>
+            ) : null}
+            {!shouldShowDetailedTooltips && moveCapacityRows.length > 0 ? (
+              <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
+            ) : null}
           </span>
         </span>
         <div className="hand-header-actions">

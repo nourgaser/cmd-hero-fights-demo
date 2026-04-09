@@ -314,6 +314,9 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const dodgeContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.dodgeChance.contributions)
               : { rows: [], hiddenCount: 0 }
+            const moveContributionSummary = combatTraces
+              ? summarizeStatContributions(combatTraces.moveCapacity.contributions)
+              : { rows: [], hiddenCount: 0 }
             const hasAnyContributionRows =
               adContributionSummary.rows.length > 0 ||
               attackFlatContributionSummary.rows.length > 0 ||
@@ -321,6 +324,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               immuneContributionSummary.rows.length > 0 ||
               armorContributionSummary.rows.length > 0 ||
               mrContributionSummary.rows.length > 0 ||
+              moveContributionSummary.rows.length > 0 ||
               dodgeContributionSummary.rows.length > 0 ||
               critLuckDelta !== 0 ||
               dodgeLuckDelta !== 0
@@ -506,7 +510,25 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                         <span className="hover-group-title">Vitals</span>
                         <div className="battlefield-hover-grid">
                           <span className="battlefield-hover-stat"><strong>HP</strong><em>{entityStats.currentHealth} / {entityStats.maxHealth}</em></span>
-                          <span className="battlefield-hover-stat"><strong>Moves</strong><em>{entityStats.movePoints} / {entityStats.maxMovePoints}</em></span>
+                          <span className={`battlefield-hover-stat ${numberDeltaClass(entityStats.statLayers.moveCapacity.bonus)}`.trim()}>
+                            <strong>Moves</strong>
+                            <em>{entityStats.movePoints} / {formatLayeredStatValue(entityStats.statLayers.moveCapacity.permanent, entityStats.statLayers.moveCapacity.bonus)}</em>
+                            {shouldShowDetailedTooltips && moveContributionSummary.rows.length > 0 ? (
+                              <span className="battlefield-hover-stat-sources">
+                                {moveContributionSummary.rows.map((row) => (
+                                  <span key={`moves-${row.sourceId}`} className="battlefield-hover-stat-source-row">
+                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
+                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
+                                      {formatSignedDelta(row.delta)}
+                                    </span>
+                                  </span>
+                                ))}
+                                {moveContributionSummary.hiddenCount > 0 ? (
+                                  <span className="battlefield-hover-stat-source-more">+{moveContributionSummary.hiddenCount} more</span>
+                                ) : null}
+                              </span>
+                            ) : null}
+                          </span>
                         </div>
                         {entityStats.isImmune ? (
                           <div className="battlefield-hover-status-row">

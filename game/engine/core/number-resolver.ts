@@ -222,9 +222,35 @@ function passiveRuleTargetsEntity(options: {
     case "selfHero":
     case "sourceOwnerHero":
       return targetEntityId === sourceOwnerHeroEntityId;
+    case "sourceOwnerAllies": {
+      if (targetEntityId === sourceOwnerHeroEntityId) {
+        return true;
+      }
+
+      const targetEntity = state.entitiesById[targetEntityId];
+      if (!targetEntity || targetEntity.kind === "hero") {
+        return false;
+      }
+
+      return targetEntity.ownerHeroEntityId === sourceOwnerHeroEntityId;
+    }
+    case "sourceOwnerHeroAndCompanions": {
+      if (targetEntityId === sourceOwnerHeroEntityId) {
+        return true;
+      }
+
+      const targetEntity = state.entitiesById[targetEntityId];
+      if (!targetEntity || targetEntity.kind !== "companion") {
+        return false;
+      }
+
+      return targetEntity.ownerHeroEntityId === sourceOwnerHeroEntityId;
+    }
     case "selectedAny":
     case "selectedEnemy":
+    case "selectedAlly":
     case "triggeringTarget":
+    case "sourceEntity":
     case "none":
     default:
       return false;

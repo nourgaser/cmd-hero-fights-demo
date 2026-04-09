@@ -63,6 +63,12 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const selfDeckSize = self?.deckSize ?? 0
   const selfMovePoints = self?.movePoints ?? 0
   const selfMaxMovePoints = self?.maxMovePoints ?? 0
+  const selfMoveCapacityTrace = self?.moveCapacityTrace ?? {
+    base: selfMaxMovePoints,
+    effective: selfMaxMovePoints,
+    delta: 0,
+    contributions: [],
+  }
   const selfHandCards =
     preview.heroHands.find((heroHand) => heroHand.heroEntityId === selfId)?.cards ?? []
   const selfActionTargets =
@@ -875,6 +881,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           isActivePlayer={isActivePlayer}
           movePoints={selfMovePoints}
           maxMovePoints={selfMaxMovePoints}
+          moveCapacityTrace={selfMoveCapacityTrace}
           pressLuckMoveCost={pressLuckMoveCost}
           focusedHandCardId={focusedHandCardId}
           pendingActionMode={pendingActionMode}

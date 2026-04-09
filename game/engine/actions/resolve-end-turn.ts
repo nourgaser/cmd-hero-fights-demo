@@ -10,6 +10,7 @@ import {
 } from "../../shared/game-constants";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
 import { cleanupExpiredAuras } from "../core/aura";
+import { resolveEffectiveNumber } from "../core/number-resolver";
 
 export type ResolveEndTurnResult =
   | {
@@ -132,7 +133,16 @@ export function resolveEndTurnAction(options: {
         entityId,
         {
           ...entity,
-          remainingMoves: Math.min(entity.maxMovesPerTurn, MOVE_POINTS_CAP),
+          remainingMoves: Math.min(
+            resolveEffectiveNumber({
+              state,
+              targetEntityId: entityId,
+              propertyPath: "moveCapacity",
+              baseValue: entity.maxMovesPerTurn,
+              clampMin: 0,
+            }).effectiveValue,
+            MOVE_POINTS_CAP,
+          ),
           moveRefreshIntervalTurns,
           ownerTurnsUntilMoveRefresh: Math.max(0, moveRefreshIntervalTurns - 1),
         },
@@ -165,7 +175,29 @@ export function resolveEndTurnAction(options: {
     },
   };
 
-  const auraCleanup = cleanupExpiredAuras(nextState, nextState.turn.turnNumber);
+  const effectiveNextHeroMoveCapacity = resolveEffectiveNumber({
+    state: nextState,
+    targetEntityId: nextHero.entityId,
+    propertyPath: "moveCapacity",
+    baseValue: refreshedNextHero.maxMovePoints,
+    clampMin: 0,
+  }).effectiveValue;
+
+  const nextStateWithEffectiveHeroMoves: BattleState = {
+    ...nextState,
+    entitiesById: {
+      ...nextState.entitiesById,
+      [nextHero.entityId]: {
+        ...refreshedNextHero,
+        movePoints: Math.min(effectiveNextHeroMoveCapacity, MOVE_POINTS_CAP),
+      },
+    },
+  };
+
+  const auraCleanup = cleanupExpiredAuras(
+    nextStateWithEffectiveHeroMoves,
+    nextStateWithEffectiveHeroMoves.turn.turnNumber,
+  );
   const nextStateWithAuraCleanup = auraCleanup.state;
 
   for (const aura of auraCleanup.expiredAuras) {

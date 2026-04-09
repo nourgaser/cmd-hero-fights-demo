@@ -4,6 +4,8 @@ export const EffectTargetSelectorSchema = z.enum([
   "none",
   "selfHero",
   "sourceOwnerHero",
+  "sourceOwnerAllies",
+  "sourceOwnerHeroAndCompanions",
   "sourceEntity",
   "selectedEnemy",
   "selectedAny",

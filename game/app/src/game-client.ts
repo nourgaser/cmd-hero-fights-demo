@@ -57,6 +57,7 @@ export type AppBattlePreview = {
     battlefieldSide: 'north' | 'south'
     movePoints: number
     maxMovePoints: number
+    moveCapacityTrace: AppNumberTrace
   }>
   heroDetailsByEntityId: Record<
     string,
@@ -193,6 +194,7 @@ export type AppBattlePreview = {
           attackDamage: { permanent: number; bonus: number }
           abilityPower: { permanent: number; bonus: number }
           attackFlatBonusDamage: { permanent: number; bonus: number }
+          moveCapacity: { permanent: number; bonus: number }
         }
         combatNumbers: {
           armor: AppNumberTrace
@@ -202,6 +204,7 @@ export type AppBattlePreview = {
           abilityPower: AppNumberTrace
           immune: AppNumberTrace
           dodgeChance: AppNumberTrace
+          moveCapacity: AppNumberTrace
         }
         criticalChance: number
         effectiveCriticalChance: number
@@ -1321,6 +1324,15 @@ function buildPreviewFromState(options: {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
     }
 
+    const moveCapacityTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: heroEntityId,
+      propertyPath: 'moveCapacity',
+      baseValue: entity.maxMovePoints,
+      clampMin: 0,
+    })
+
     return {
       heroEntityId,
       handSize: entity.handCards.length,
@@ -1328,6 +1340,7 @@ function buildPreviewFromState(options: {
       battlefieldSide: entity.battlefieldSide,
       movePoints: entity.movePoints,
       maxMovePoints: entity.maxMovePoints,
+      moveCapacityTrace,
     }
   })
 
@@ -1953,6 +1966,14 @@ function buildPreviewFromState(options: {
       baseValue: 0,
       clampMin: 0,
     })
+    const moveCapacityTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'moveCapacity',
+      baseValue: entity.kind === 'hero' ? entity.maxMovePoints : entity.maxMovesPerTurn,
+      clampMin: 0,
+    })
     const attackDamagePermanent = resolvePermanentLayerValue({
       state,
       targetEntityId: entity.entityId,
@@ -1988,6 +2009,13 @@ function buildPreviewFromState(options: {
       baseValue: 0,
       clampMin: 0,
     })
+    const moveCapacityPermanent = resolvePermanentLayerValue({
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'moveCapacity',
+      baseValue: entity.kind === 'hero' ? entity.maxMovePoints : entity.maxMovesPerTurn,
+      clampMin: 0,
+    })
     const statLayers = {
       attackDamage: {
         permanent: attackDamagePermanent,
@@ -2008,6 +2036,10 @@ function buildPreviewFromState(options: {
       attackFlatBonusDamage: {
         permanent: attackFlatBonusDamagePermanent,
         bonus: attackFlatBonusDamageTrace.effective - attackFlatBonusDamagePermanent,
+      },
+      moveCapacity: {
+        permanent: moveCapacityPermanent,
+        bonus: moveCapacityTrace.effective - moveCapacityPermanent,
       },
     }
     const effectiveCriticalChance = Math.max(0, Math.min(1, entity.criticalChance + criticalChanceLuckDelta))
@@ -2042,6 +2074,7 @@ function buildPreviewFromState(options: {
           abilityPower: abilityPowerTrace,
           immune: immuneTrace,
           dodgeChance: dodgeChanceTrace,
+          moveCapacity: moveCapacityTrace,
         },
         criticalChance: entity.criticalChance,
         effectiveCriticalChance,
@@ -2158,6 +2191,7 @@ function buildPreviewFromState(options: {
         abilityPower: abilityPowerTrace,
         immune: immuneTrace,
         dodgeChance: dodgeChanceTrace,
+        moveCapacity: moveCapacityTrace,
       },
       criticalChance: entity.criticalChance,
       effectiveCriticalChance,
