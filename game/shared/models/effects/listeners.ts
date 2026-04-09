@@ -29,7 +29,7 @@ export const ListenerConditionSchema = z.discriminatedUnion("kind", [
 ]);
 export type ListenerCondition = z.infer<typeof ListenerConditionSchema>;
 
-export const ListenerSourceBindingSchema = z.enum(["actorHero", "lastSummonedEntity"]);
+export const ListenerSourceBindingSchema = z.enum(["actorHero", "lastSummonedEntity", "selectedTarget"]);
 export type ListenerSourceBinding = z.infer<typeof ListenerSourceBindingSchema>;
 
 export const ListenerLifetimeSchema = z.enum(["persistent", "once"]);

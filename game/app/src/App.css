@@ -1865,6 +1865,43 @@ html[data-shift-held='true'] .game-toast-detail {
   gap: 6px;
 }
 
+.battlefield-hover-status-row {
+  display: grid;
+  gap: 6px;
+  margin-top: 4px;
+}
+
+.battlefield-hover-status-pill {
+  display: inline-flex;
+  align-items: center;
+  width: fit-content;
+  border-radius: 999px;
+  padding: 3px 9px;
+  font-size: 11px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.battlefield-hover-status-pill.immune {
+  color: #133d32;
+  background: color-mix(in srgb, #d9f6ea 86%, #ffffff 14%);
+  border: 1px solid color-mix(in srgb, #3c8f6d 54%, transparent);
+}
+
+.battlefield-hover-status-source-list {
+  display: grid;
+  gap: 2px;
+}
+
+.battlefield-hover-status-source-row {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  font-size: 11px;
+}
+
 .battlefield-hover-stat {
   display: grid;
   gap: 1px;

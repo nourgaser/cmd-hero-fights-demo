@@ -15,6 +15,7 @@ import {
 import { computeScaledDamageRange } from "../../../core/damage-range";
 import { resolveEffectiveNumber } from "../../../core/number-resolver";
 import { destroyAllResistanceFromBaseAndPersistent, destroyResistanceFromBaseAndPersistent } from "../../../core/sharpness";
+import { isEntityImmuneToDamage } from "../../../core/immunity";
 import { markHeroDamageTakenThisTurn } from "../../../core/aura";
 import {
   type EffectExecutionContext,
@@ -174,6 +175,17 @@ export function handleDealDamageEffect(
     : actorHero;
   if (!sourceEntity) {
     return { ok: false, reason: "dealDamage source entity was not found." };
+  }
+
+  if (isEntityImmuneToDamage({ state, targetEntityId: target.entityId })) {
+    return {
+      ok: true,
+      state,
+      events: [],
+      nextSequence: sequence,
+      lastDamageWasDodged: false,
+      lastSummonedEntityId,
+    };
   }
 
   const effectiveAttackDamage = getEffectiveAttackDamage({
@@ -346,6 +358,7 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
     action,
     actorHero,
     state,
+    effectSourceEntityId,
   });
   if (!targetId) {
     return { ok: false, reason: "Warcry requires a valid selected target." };

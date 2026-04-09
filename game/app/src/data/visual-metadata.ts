@@ -34,6 +34,7 @@ export const CARD_ICON_META: Record<string, VisualIconMeta> = {
   [CARD_IDS.healthPotion]: { id: 'game-icons:health-potion', label: 'Health Potion', description: 'Restore health.' },
   [CARD_IDS.bastionStance]: { id: 'game-icons:checked-shield', label: 'Bastion Stance', description: 'Boost defense for this turn.' },
   [CARD_IDS.battleFocus]: { id: 'game-icons:targeting', label: 'Battle Focus', description: 'Set up your next strike.' },
+  [CARD_IDS.medalOfHonor]: { id: 'game-icons:medal', label: 'Medal of Honor', description: 'Empower an allied companion and grant immunity.' },
   [CARD_IDS.shieldToss]: { id: 'game-icons:round-shield', label: 'Shield Toss', description: 'Deal damage using your defense.' },
   [CARD_IDS.chaaarge]: { id: 'game-icons:charging-bull', label: 'Chaaarge!', description: 'A heavy burst attack.' },
   [CARD_IDS.corrodedShortsword]: { id: 'game-icons:rusty-sword', label: 'Corroded Shortsword', description: 'Summon your weapon.' },

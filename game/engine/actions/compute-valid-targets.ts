@@ -54,6 +54,13 @@ export function computeValidTargetsForCard(options: {
         validTargets.push(entity.entityId);
       }
     }
+  } else if (cardDef.targeting === "selectedAllyCompanion") {
+    // Only allied companions
+    for (const entity of allEntities) {
+      if (entity.battlefieldSide === actorHero.battlefieldSide && entity.kind === "companion") {
+        validTargets.push(entity.entityId);
+      }
+    }
   }
 
   return validTargets;

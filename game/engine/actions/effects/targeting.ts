@@ -13,8 +13,9 @@ export function targetEntityIdFromSelector(options: {
   actorHero: HeroEntityState;
   state: BattleState;
   triggerEvent?: BattleEvent;
+  effectSourceEntityId?: EntityId;
 }): EntityId | undefined {
-  const { selector, action, actorHero, state, triggerEvent } = options;
+  const { selector, action, actorHero, state, triggerEvent, effectSourceEntityId } = options;
 
   switch (selector) {
     case "none":
@@ -22,6 +23,8 @@ export function targetEntityIdFromSelector(options: {
     case "selfHero":
     case "sourceOwnerHero":
       return actorHero.entityId;
+    case "sourceEntity":
+      return effectSourceEntityId;
     case "selectedEnemy": {
       const selected = action.selection.targetEntityId;
       if (!selected) {

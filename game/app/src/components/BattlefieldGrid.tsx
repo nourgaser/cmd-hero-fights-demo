@@ -302,6 +302,9 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const attackFlatContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.attackFlatBonusDamage.contributions)
               : { rows: [], hiddenCount: 0 }
+            const immuneContributionSummary = combatTraces
+              ? summarizeStatContributions(combatTraces.immune.contributions)
+              : { rows: [], hiddenCount: 0 }
             const armorContributionSummary = combatTraces
               ? summarizeStatContributions(combatTraces.armor.contributions)
               : { rows: [], hiddenCount: 0 }
@@ -315,6 +318,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               adContributionSummary.rows.length > 0 ||
               attackFlatContributionSummary.rows.length > 0 ||
               apContributionSummary.rows.length > 0 ||
+              immuneContributionSummary.rows.length > 0 ||
               armorContributionSummary.rows.length > 0 ||
               mrContributionSummary.rows.length > 0 ||
               dodgeContributionSummary.rows.length > 0 ||
@@ -493,6 +497,26 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                           <span className="battlefield-hover-stat"><strong>HP</strong><em>{entityStats.currentHealth} / {entityStats.maxHealth}</em></span>
                           <span className="battlefield-hover-stat"><strong>Moves</strong><em>{entityStats.movePoints} / {entityStats.maxMovePoints}</em></span>
                         </div>
+                        {entityStats.isImmune ? (
+                          <div className="battlefield-hover-status-row">
+                            <span className="battlefield-hover-status-pill immune">Immune</span>
+                            {shouldShowDetailedTooltips && immuneContributionSummary.rows.length > 0 ? (
+                              <span className="battlefield-hover-status-source-list">
+                                {immuneContributionSummary.rows.map((row) => (
+                                  <span key={`immune-${row.sourceId}`} className="battlefield-hover-status-source-row">
+                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
+                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
+                                      {formatSignedDelta(row.delta)}
+                                    </span>
+                                  </span>
+                                ))}
+                                {immuneContributionSummary.hiddenCount > 0 ? (
+                                  <span className="battlefield-hover-stat-source-more">+{immuneContributionSummary.hiddenCount} more</span>
+                                ) : null}
+                              </span>
+                            ) : null}
+                          </div>
+                        ) : null}
                         <span className="hover-group-title">Combat</span>
                         <div className="battlefield-hover-grid">
                           <span className={`battlefield-hover-stat ${attackDamageClass}`.trim()}>

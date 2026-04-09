@@ -13,6 +13,7 @@ import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
 import { markHeroDamageTakenThisTurn } from "../core/aura";
+import { isEntityImmuneToDamage } from "../core/immunity";
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
@@ -138,6 +139,33 @@ export function resolveUseEntityActiveAction(options: {
       ok: false,
       state,
       reason: "Source entity does not have enough moves to use active ability.",
+    };
+  }
+
+  if (isEntityImmuneToDamage({ state, targetEntityId: target.entityId })) {
+    const nextState: BattleState = {
+      ...state,
+      entitiesById: {
+        ...state.entitiesById,
+        [source.entityId]: {
+          ...source,
+          remainingMoves: source.remainingMoves - profile.moveCost,
+        },
+      },
+    };
+
+    return {
+      ok: true,
+      state: nextState,
+      events: [
+        {
+          kind: "actionResolved",
+          sequence: nextSequence,
+          action,
+        },
+      ],
+      nextSequence: nextSequence + 1,
+      resultMessage: "Entity active had no effect. Target is immune.",
     };
   }
 

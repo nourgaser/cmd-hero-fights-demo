@@ -8,6 +8,7 @@ export const KEYWORD_IDS = {
   aura: "keyword.aura",
   chivalry: "keyword.chivalry",
   light: "keyword.light",
+  immune: "keyword.immune",
   sharpness: "keyword.sharpness",
 } as const;
 
@@ -42,6 +43,13 @@ export const KEYWORD_DEFINITIONS = [
     name: "Light",
     summaryText: {
       template: "Weapon that can attack twice.",
+    },
+  },
+  {
+    id: KEYWORD_IDS.immune,
+    name: "Immune",
+    summaryText: {
+      template: "Cannot take damage or be affected by damaging actions while immunity lasts.",
     },
   },
   {

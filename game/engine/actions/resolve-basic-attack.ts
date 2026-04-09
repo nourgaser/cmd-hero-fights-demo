@@ -17,6 +17,7 @@ import { resolveEffectiveNumber } from "../core/number-resolver";
 import { roundWhole, toAppliedDamage } from "../core/combat";
 import { computeScaledDamageRange } from "../core/damage-range";
 import { destroyResistanceFromBaseAndPersistent } from "../core/sharpness";
+import { isEntityImmuneToDamage } from "../core/immunity";
 import { applyLuckToChance, applyLuckToRoll } from "../core/luck";
 import { type BattleRng, rollRange } from "../core/rng";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
@@ -95,6 +96,33 @@ export function resolveBasicAttackAction(options: {
       ok: false,
       state,
       reason: "Basic attack target must be on the opposing side.",
+    };
+  }
+
+  if (isEntityImmuneToDamage({ state, targetEntityId: target.entityId })) {
+    const nextState: BattleState = {
+      ...state,
+      entitiesById: {
+        ...state.entitiesById,
+        [attacker.entityId]: {
+          ...attacker,
+          movePoints: attacker.movePoints - attacker.basicAttackMoveCost,
+        },
+      },
+    };
+
+    return {
+      ok: true,
+      state: nextState,
+      events: [
+        {
+          kind: "actionResolved",
+          sequence: nextSequence,
+          action,
+        },
+      ],
+      nextSequence: nextSequence + 1,
+      resultMessage: "Basic attack had no effect. Target is immune.",
     };
   }
 

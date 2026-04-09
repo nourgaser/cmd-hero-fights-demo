@@ -115,7 +115,7 @@ export type AppBattlePreview = {
       summaryTone: 'neutral' | 'positive' | 'negative'
       castConditionText: string | null
       isPlayable: boolean
-      targeting: 'none' | 'selectedAny' | 'selectedAnyExceptEnemyHero' | 'selectedEnemy' | 'selectedAlly'
+      targeting: 'none' | 'selectedAny' | 'selectedAnyExceptEnemyHero' | 'selectedEnemy' | 'selectedAlly' | 'selectedAllyCompanion'
       validTargetEntityIds: string[]
       validPlacementPositions: Array<{ row: number; column: number }>
       summonPreview: {
@@ -179,6 +179,7 @@ export type AppBattlePreview = {
         magicResist: number
         attackDamage: number
         abilityPower: number
+        isImmune: boolean
         statLayers: {
           armor: { permanent: number; bonus: number }
           magicResist: { permanent: number; bonus: number }
@@ -192,6 +193,7 @@ export type AppBattlePreview = {
           attackDamage: AppNumberTrace
           attackFlatBonusDamage: AppNumberTrace
           abilityPower: AppNumberTrace
+          immune: AppNumberTrace
           dodgeChance: AppNumberTrace
         }
         criticalChance: number
@@ -1874,6 +1876,14 @@ function buildPreviewFromState(options: {
       propertyPath: 'attackFlatBonusDamage',
       baseValue: 0,
     })
+    const immuneTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'immune',
+      baseValue: 0,
+      clampMin: 0,
+    })
     const attackDamagePermanent = resolvePermanentLayerValue({
       state,
       targetEntityId: entity.entityId,
@@ -1951,6 +1961,7 @@ function buildPreviewFromState(options: {
         magicResist: magicResistTrace.effective,
         attackDamage: attackDamageTrace.effective,
         abilityPower: abilityPowerTrace.effective,
+        isImmune: immuneTrace.effective > 0,
         statLayers,
         combatNumbers: {
           armor: armorTrace,
@@ -1958,6 +1969,7 @@ function buildPreviewFromState(options: {
           attackDamage: attackDamageTrace,
           attackFlatBonusDamage: attackFlatBonusDamageTrace,
           abilityPower: abilityPowerTrace,
+          immune: immuneTrace,
           dodgeChance: dodgeChanceTrace,
         },
         criticalChance: entity.criticalChance,
@@ -2029,6 +2041,7 @@ function buildPreviewFromState(options: {
       magicResist: magicResistTrace.effective,
       attackDamage: attackDamageTrace.effective,
       abilityPower: abilityPowerTrace.effective,
+      isImmune: immuneTrace.effective > 0,
       statLayers,
       combatNumbers: {
         armor: armorTrace,
@@ -2036,6 +2049,7 @@ function buildPreviewFromState(options: {
         attackDamage: attackDamageTrace,
         attackFlatBonusDamage: attackFlatBonusDamageTrace,
         abilityPower: abilityPowerTrace,
+        immune: immuneTrace,
         dodgeChance: dodgeChanceTrace,
       },
       criticalChance: entity.criticalChance,

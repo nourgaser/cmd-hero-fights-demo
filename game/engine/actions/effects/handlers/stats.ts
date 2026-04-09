@@ -17,7 +17,8 @@ type StatKey =
   | "abilityPower"
   | "dodgeChance"
   | "attackFlatBonusDamage"
-  | "sharpness";
+  | "sharpness"
+  | "immune";
 
 type ModifyStatPayload = {
   kind: "modifyStat";
@@ -26,7 +27,7 @@ type ModifyStatPayload = {
   amount: number;
   duration?: "persistent" | "untilSourceRemoved";
   changeKind?: "apply" | "removeMatching";
-  sourceBinding?: "effectSource" | "lastSummonedEntity";
+  sourceBinding?: "effectSource" | "lastSummonedEntity" | "selectedTarget";
 };
 
 function titleCaseFromSlug(slug: string): string {
@@ -64,22 +65,6 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
   const duration = payload.duration ?? "persistent";
   const changeKind = payload.changeKind ?? "apply";
 
-  const resolvedSourceEntityId =
-    payload.sourceBinding === "lastSummonedEntity"
-      ? lastSummonedEntityId
-      : effectSourceEntityId ?? actorHero.entityId;
-
-  if (!resolvedSourceEntityId) {
-    return {
-      ok: false,
-      reason:
-        payload.sourceBinding === "lastSummonedEntity"
-          ? `${payload.kind} requires an existing lastSummonedEntity source.`
-          : `${payload.kind} requires an effect source entity.`,
-    };
-  }
-
-  const sourceEntityId: string = resolvedSourceEntityId;
   const sourceLabel = sourceLabelFromEffectId(effect.id);
 
   const targetId = targetEntityIdFromSelector({
@@ -87,6 +72,7 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
     action: context.action,
     actorHero,
     state,
+    effectSourceEntityId: context.effectSourceEntityId,
   });
   if (!targetId) {
     return {
@@ -112,6 +98,27 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
 
   const propertyPath = payload.stat;
   const label = sourceLabel;
+
+  const resolvedSourceEntityId =
+    payload.sourceBinding === "lastSummonedEntity"
+      ? lastSummonedEntityId
+      : payload.sourceBinding === "selectedTarget"
+        ? targetId
+        : effectSourceEntityId ?? actorHero.entityId;
+
+  if (!resolvedSourceEntityId) {
+    return {
+      ok: false,
+      reason:
+        payload.sourceBinding === "lastSummonedEntity"
+          ? `${payload.kind} requires an existing lastSummonedEntity source.`
+          : payload.sourceBinding === "selectedTarget"
+            ? `${payload.kind} requires a valid selected target source.`
+            : `${payload.kind} requires an effect source entity.`,
+    };
+  }
+
+  const sourceEntityId: string = resolvedSourceEntityId;
 
   if (changeKind === "removeMatching") {
     if (duration !== "persistent") {

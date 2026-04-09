@@ -8,6 +8,7 @@ import { GUARD_SIGIL_CARD } from "./guard-sigil";
 import { HEALTH_POTION_CARD } from "./health-potion";
 import { HUNKER_DOWN_CARD } from "./hunker-down";
 import { IRON_SKIN_CARD } from "./iron-skin";
+import { MEDAL_OF_HONOR_CARD } from "./medal-of-honor";
 import { JAQUEMIN_PATROL_CARD } from "./jaquemin-patrol";
 import { RESET_LUCK_CARD } from "./reset-luck";
 import { REROLL_CARD } from "./reroll";
@@ -27,6 +28,7 @@ export {
   HEALTH_POTION_CARD,
   HUNKER_DOWN_CARD,
   IRON_SKIN_CARD,
+  MEDAL_OF_HONOR_CARD,
   JAQUEMIN_PATROL_CARD,
   RESET_LUCK_CARD,
   REROLL_CARD,
@@ -46,6 +48,7 @@ export const COMMANDER_X_CARDS = [
   HEALTH_POTION_CARD,
   BASTION_STANCE_CARD,
   BATTLE_FOCUS_CARD,
+  MEDAL_OF_HONOR_CARD,
   REACTIVE_BULWARK_CARD,
   SHATTER_PLATING_CARD,
   SHIELD_TOSS_CARD,

@@ -3,6 +3,25 @@ import {
   type ExecuteCardEffectResult,
 } from "../../context";
 
+function resolveListenerSourceEntityId(context: EffectExecutionContext): string | undefined {
+  const { effect, actorHero, lastSummonedEntityId, action } = context;
+
+  if (effect.payload.kind !== "addListener") {
+    return undefined;
+  }
+
+  switch (effect.payload.sourceBinding) {
+    case "actorHero":
+      return actorHero.entityId;
+    case "lastSummonedEntity":
+      return lastSummonedEntityId;
+    case "selectedTarget":
+      return action.selection.targetEntityId;
+    default:
+      return undefined;
+  }
+}
+
 export function handleAddListenerEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
@@ -19,17 +38,15 @@ export function handleAddListenerEffect(
     return { ok: false, reason: "handleAddListenerEffect received non-addListener payload." };
   }
 
-  const sourceEntityId =
-    effect.payload.sourceBinding === "actorHero"
-      ? actorHero.entityId
-      : effect.payload.sourceBinding === "lastSummonedEntity"
-        ? lastSummonedEntityId
-        : undefined;
+  const sourceEntityId = resolveListenerSourceEntityId(context);
 
-  if (effect.payload.sourceBinding === "lastSummonedEntity" && !sourceEntityId) {
+  if ((effect.payload.sourceBinding === "lastSummonedEntity" || effect.payload.sourceBinding === "selectedTarget") && !sourceEntityId) {
     return {
       ok: false,
-      reason: "addListener with lastSummonedEntity source binding requires a prior summon.",
+      reason:
+        effect.payload.sourceBinding === "lastSummonedEntity"
+          ? "addListener with lastSummonedEntity source binding requires a prior summon."
+          : "addListener with selectedTarget source binding requires a selected target.",
     };
   }
 

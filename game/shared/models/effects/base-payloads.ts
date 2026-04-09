@@ -11,6 +11,7 @@ export const ModifiableStatSchema = z.enum([
   "dodgeChance",
   "attackFlatBonusDamage",
   "sharpness",
+  "immune",
 ]);
 
 export const DealDamageEffectPayloadSchema = z
@@ -49,7 +50,7 @@ export const ModifyStatEffectPayloadSchema = z.object({
   amount: z.number(),
   duration: z.enum(["persistent", "untilSourceRemoved"]).default("persistent"),
   changeKind: z.enum(["apply", "removeMatching"]).default("apply"),
-  sourceBinding: z.enum(["effectSource", "lastSummonedEntity"]).optional(),
+  sourceBinding: z.enum(["effectSource", "lastSummonedEntity", "selectedTarget"]).optional(),
 });
 
 export const DrawCardsEffectPayloadSchema = z.object({

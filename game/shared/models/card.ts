@@ -19,6 +19,7 @@ export const CardTargetingSchema = z.enum([
   "selectedAnyExceptEnemyHero",
   "selectedEnemy",
   "selectedAlly",
+  "selectedAllyCompanion",
 ]);
 export type CardTargeting = z.infer<typeof CardTargetingSchema>;
 

@@ -75,6 +75,23 @@ export function getEffectiveSharpness(options: {
 }
 
 /**
+ * Get effective immune status for an entity.
+ */
+export function getEffectiveImmune(options: {
+  state: BattleState;
+  targetEntityId: string;
+  baseImmune: number;
+}): NumberExplanation {
+  return resolveEffectiveNumber({
+    state: options.state,
+    targetEntityId: options.targetEntityId,
+    propertyPath: "immune",
+    baseValue: options.baseImmune,
+    clampMin: 0,
+  });
+}
+
+/**
  * Get effective ability power for an entity.
  */
 export function getEffectiveAbilityPower(options: {
