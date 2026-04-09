@@ -1,10 +1,12 @@
-import { useEffect, useMemo, useRef, useState } from 'react'
+import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
+import { Icon } from '@iconify/react/offline'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import { Rnd } from 'react-rnd'
 import { toast } from 'react-hot-toast'
 import 'react-json-view-lite/dist/index.css'
 import type { GameBootstrapConfig } from '../data/game-bootstrap.ts'
+import { CARD_ICON_META } from '../data/visual-metadata.ts'
 
 type DebugStatePanelProps = {
   state: Record<string, unknown> | unknown[]
@@ -19,6 +21,11 @@ type DebugStatePanelProps = {
     summaryText: string | null
     effectTexts: string[]
     castConditionText: string | null
+    keywords: Array<{
+      id: string
+      name: string
+      summaryText: string
+    }>
   }>
   seed: string
   onSeedChange: (seed: string) => void
@@ -32,7 +39,30 @@ const COLLAPSED_BUBBLE_SIZE = 56
 const MAX_DECK_SIZE = 15
 const MAX_ULTIMATE_COPIES = 1
 const DECK_SAVE_TOAST_ID = 'deck-editor-save'
-const DECK_CARD_TOOLTIP_DELAY_MS = 1000
+
+type DeckTypeFilter = 'all' | 'ability' | 'weapon' | 'totem' | 'companion'
+
+type DeckRarityFilter = 'all' | 'common' | 'rare' | 'ultimate' | 'general'
+
+const DECK_COST_FILTERS = ['all', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10+'] as const
+type DeckCostFilter = (typeof DECK_COST_FILTERS)[number]
+type DeckCostBucket = Exclude<DeckCostFilter, 'all'>
+
+const TYPE_FILTER_OPTIONS: Array<{ value: DeckTypeFilter; label: string; icon: string }> = [
+  { value: 'all', label: 'All Types', icon: 'game-icons:card-pick' },
+  { value: 'ability', label: 'Ability', icon: 'game-icons:skills' },
+  { value: 'weapon', label: 'Weapon', icon: 'game-icons:broadsword' },
+  { value: 'totem', label: 'Totem', icon: 'game-icons:stone-tower' },
+  { value: 'companion', label: 'Companion', icon: 'game-icons:team-upgrade' },
+]
+
+const RARITY_FILTER_OPTIONS: Array<{ value: DeckRarityFilter; label: string; icon: string }> = [
+  { value: 'all', label: 'All Rarities', icon: 'game-icons:asterisk' },
+  { value: 'common', label: 'Common', icon: 'game-icons:plain-circle' },
+  { value: 'rare', label: 'Rare', icon: 'game-icons:sparkles' },
+  { value: 'ultimate', label: 'Ultimate', icon: 'game-icons:queen-crown' },
+  { value: 'general', label: 'General', icon: 'game-icons:checked-shield' },
+]
 
 type DeckPresetEntry = {
   cardName: string
@@ -94,6 +124,20 @@ const clamp = (value: number, min: number, max: number) => {
     return min
   }
   return Math.min(Math.max(value, min), max)
+}
+
+const getVisualIconStyle = (meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) => {
+  const transforms: string[] = []
+  if (meta.hFlip) {
+    transforms.push('scaleX(-1)')
+  }
+  if (meta.vFlip) {
+    transforms.push('scaleY(-1)')
+  }
+  if (typeof meta.rotate === 'number' && meta.rotate !== 0) {
+    transforms.push(`rotate(${meta.rotate}deg)`)
+  }
+  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
 }
 
 const sanitizePersistedState = (state: DebugPanelPersistedState): DebugPanelPersistedState => {
@@ -165,16 +209,11 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   const [bootstrapConfigError, setBootstrapConfigError] = useState<string | null>(null)
   const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
-  const [deckCardTooltip, setDeckCardTooltip] = useState<{
-    title: string
-    lines: string[]
-    left: number
-    top: number
-    placement: 'above' | 'below'
-    align: 'left' | 'center' | 'right'
-  } | null>(null)
-  const deckCardTooltipTimerRef = useRef<number | null>(null)
+  const [deckSearch, setDeckSearch] = useState('')
+  const [deckTypeFilter, setDeckTypeFilter] = useState<DeckTypeFilter>('all')
+  const [deckRarityFilter, setDeckRarityFilter] = useState<DeckRarityFilter>('all')
+  const [deckCostFilter, setDeckCostFilter] = useState<DeckCostFilter>('all')
+  const [selectedDeckCardId, setSelectedDeckCardId] = useState<string | null>(null)
 
   const { x, y, width, height, isCollapsed, expandAll } = persistedState
 
@@ -214,32 +253,6 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
   }, [isDeckEditorOpen])
 
   useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return
-    }
-
-    const mediaQuery = window.matchMedia('(pointer: coarse)')
-    const syncPointerMode = () => {
-      setIsCoarsePointer(mediaQuery.matches)
-    }
-
-    syncPointerMode()
-    mediaQuery.addEventListener('change', syncPointerMode)
-
-    return () => {
-      mediaQuery.removeEventListener('change', syncPointerMode)
-    }
-  }, [])
-
-  useEffect(() => {
-    return () => {
-      if (deckCardTooltipTimerRef.current !== null) {
-        window.clearTimeout(deckCardTooltipTimerRef.current)
-      }
-    }
-  }, [])
-
-  useEffect(() => {
     if (typeof window === 'undefined') {
       return
     }
@@ -267,58 +280,6 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       window.removeEventListener('resize', handleResize)
     }
   }, [])
-
-  useEffect(() => {
-    if (!isDeckEditorOpen) {
-      setDeckCardTooltip(null)
-      if (deckCardTooltipTimerRef.current !== null) {
-        window.clearTimeout(deckCardTooltipTimerRef.current)
-        deckCardTooltipTimerRef.current = null
-      }
-      return
-    }
-
-    if (!deckCardTooltip) {
-      return
-    }
-
-    const dismissTooltip = () => {
-      setDeckCardTooltip(null)
-    }
-
-    window.addEventListener('scroll', dismissTooltip, true)
-    window.addEventListener('resize', dismissTooltip)
-
-    return () => {
-      window.removeEventListener('scroll', dismissTooltip, true)
-      window.removeEventListener('resize', dismissTooltip)
-    }
-  }, [isDeckEditorOpen, deckCardTooltip])
-
-  useEffect(() => {
-    if (!isDeckEditorOpen || !deckCardTooltip || !isCoarsePointer) {
-      return
-    }
-
-    const dismissTooltip = (event: PointerEvent) => {
-      const target = event.target
-      if (!(target instanceof Node)) {
-        return
-      }
-
-      if ((target as Element | null)?.closest?.('.deck-editor-tooltip-toggle')) {
-        return
-      }
-
-      setDeckCardTooltip(null)
-    }
-
-    window.addEventListener('pointerdown', dismissTooltip)
-
-    return () => {
-      window.removeEventListener('pointerdown', dismissTooltip)
-    }
-  }, [isDeckEditorOpen, deckCardTooltip, isCoarsePointer])
 
   const updateState = (updater: (current: DebugPanelPersistedState) => DebugPanelPersistedState) => {
     setPersistedState((current) => {
@@ -454,6 +415,10 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     }
   }
 
+  const getCardIconMeta = (cardId: string) => {
+    return CARD_ICON_META[cardId] ?? { id: 'game-icons:card-pick' }
+  }
+
   const deckEditorRows = eligibleDeckEditorCards.map((card) => {
     const inDeck = deckCountsByCardId.get(card.id) ?? 0
     const maxCopies = getMaxCopiesForCard(card.rarity)
@@ -466,8 +431,115 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
     }
   })
 
-  const availableRows = deckEditorRows.filter((entry) => entry.inPool > 0)
   const deckRows = deckEditorRows.filter((entry) => entry.inDeck > 0)
+  const deckRowsSorted = useMemo(() => {
+    return [...deckRows].sort((left, right) => {
+      if (left.card.moveCost !== right.card.moveCost) {
+        return left.card.moveCost - right.card.moveCost
+      }
+      return left.card.name.localeCompare(right.card.name)
+    })
+  }, [deckRows])
+
+  const manaCurve = useMemo(() => {
+    const curveEntries = DECK_COST_FILTERS
+      .filter((entry): entry is DeckCostBucket => entry !== 'all')
+      .map((costBucket) => ({
+        costBucket,
+        count: 0,
+      }))
+
+    const curveByBucket = new Map(curveEntries.map((entry) => [entry.costBucket, entry]))
+
+    for (const entry of deckRowsSorted) {
+      const bucket: DeckCostBucket = entry.card.moveCost >= 10 ? '10+' : `${entry.card.moveCost}` as DeckCostBucket
+      const target = curveByBucket.get(bucket)
+      if (target) {
+        target.count += entry.inDeck
+      }
+    }
+
+    const maxCount = curveEntries.reduce((max, entry) => Math.max(max, entry.count), 1)
+
+    return {
+      maxCount,
+      entries: curveEntries,
+    }
+  }, [deckRowsSorted])
+
+  const deckRowsByCostBucket = useMemo(() => {
+    return DECK_COST_FILTERS
+      .filter((entry): entry is DeckCostBucket => entry !== 'all')
+      .map((costBucket) => ({
+        costBucket,
+        entries: deckRowsSorted.filter((row) => {
+          if (costBucket === '10+') {
+            return row.card.moveCost >= 10
+          }
+          return row.card.moveCost === Number.parseInt(costBucket, 10)
+        }),
+      }))
+      .filter((group) => group.entries.length > 0)
+  }, [deckRowsSorted])
+
+  const filteredDeckEditorRows = useMemo(() => {
+    const normalizedSearch = deckSearch.trim().toLowerCase()
+
+    const matchesCostFilter = (moveCost: number) => {
+      if (deckCostFilter === 'all') {
+        return true
+      }
+      if (deckCostFilter === '10+') {
+        return moveCost >= 10
+      }
+      return moveCost === Number.parseInt(deckCostFilter, 10)
+    }
+
+    return deckEditorRows.filter((entry) => {
+      if (deckTypeFilter !== 'all' && entry.card.type !== deckTypeFilter) {
+        return false
+      }
+      if (deckRarityFilter !== 'all' && entry.card.rarity !== deckRarityFilter) {
+        return false
+      }
+      if (!matchesCostFilter(entry.card.moveCost)) {
+        return false
+      }
+      if (!normalizedSearch) {
+        return true
+      }
+
+      const searchableText = [
+        entry.card.name,
+        entry.card.summaryText ?? '',
+        entry.card.effectTexts.join(' '),
+        entry.card.keywords.map((keyword) => keyword.name).join(' '),
+      ]
+        .join(' ')
+        .toLowerCase()
+
+      return searchableText.includes(normalizedSearch)
+    })
+  }, [deckEditorRows, deckSearch, deckTypeFilter, deckRarityFilter, deckCostFilter])
+
+  useEffect(() => {
+    const stillVisible = selectedDeckCardId
+      ? filteredDeckEditorRows.some((entry) => entry.card.id === selectedDeckCardId)
+      : false
+
+    if (stillVisible) {
+      return
+    }
+
+    setSelectedDeckCardId(filteredDeckEditorRows[0]?.card.id ?? null)
+  }, [selectedDeckCardId, filteredDeckEditorRows])
+
+  const selectedDeckCardEntry = useMemo(() => {
+    if (selectedDeckCardId) {
+      return deckEditorRows.find((entry) => entry.card.id === selectedDeckCardId) ?? null
+    }
+    return filteredDeckEditorRows[0] ?? null
+  }, [selectedDeckCardId, deckEditorRows, filteredDeckEditorRows])
 
   const addDeckCopy = (cardId: string) => {
     const cardEntry = deckEditorRows.find((entry) => entry.card.id === cardId)
@@ -501,91 +573,6 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
       return {
         ...current,
         openingDeckCardIds: nextDeck,
-      }
-    })
-  }
-
-  const clearDeckCardTooltip = () => {
-    if (deckCardTooltipTimerRef.current !== null) {
-      window.clearTimeout(deckCardTooltipTimerRef.current)
-      deckCardTooltipTimerRef.current = null
-    }
-    setDeckCardTooltip(null)
-  }
-
-  const computeDeckCardTooltipPosition = (anchorElement: HTMLElement, lines: string[]) => {
-    const rect = anchorElement.getBoundingClientRect()
-    const viewportWidth = typeof window !== 'undefined' ? window.innerWidth : 0
-    const viewportHeight = typeof window !== 'undefined' ? window.innerHeight : 0
-    const maxTooltipWidth = Math.max(190, Math.min(360, viewportWidth - 18))
-    const estimatedHeight = Math.min(280, 24 + lines.length * 16)
-    const tooltipMargin = 12
-
-    let placement: 'above' | 'below' = 'above'
-    if (rect.top < estimatedHeight + tooltipMargin && viewportHeight - rect.bottom > rect.top) {
-      placement = 'below'
-    }
-
-    let align: 'left' | 'center' | 'right' = 'center'
-    if (rect.left < maxTooltipWidth * 0.5 + tooltipMargin) {
-      align = 'left'
-    } else if (viewportWidth - rect.right < maxTooltipWidth * 0.5 + tooltipMargin) {
-      align = 'right'
-    }
-
-    let left = rect.left + rect.width * 0.5
-    if (align === 'left') {
-      left = rect.left + 8
-    } else if (align === 'right') {
-      left = rect.right - 8
-    }
-
-    const top = placement === 'above' ? rect.top : rect.bottom
-
-    return {
-      left,
-      top,
-      placement,
-      align,
-    }
-  }
-
-  const queueDeckCardTooltip = (options: {
-    anchorElement: HTMLElement
-    title: string
-    lines: string[]
-  }) => {
-    const { anchorElement, title, lines } = options
-    clearDeckCardTooltip()
-
-    deckCardTooltipTimerRef.current = window.setTimeout(() => {
-      const position = computeDeckCardTooltipPosition(anchorElement, lines)
-      setDeckCardTooltip({
-        title,
-        lines,
-        ...position,
-      })
-      deckCardTooltipTimerRef.current = null
-    }, DECK_CARD_TOOLTIP_DELAY_MS)
-  }
-
-  const toggleDeckCardTooltip = (options: {
-    anchorElement: HTMLElement
-    title: string
-    lines: string[]
-  }) => {
-    const { anchorElement, title, lines } = options
-
-    setDeckCardTooltip((current) => {
-      if (current?.title === title) {
-        return null
-      }
-
-      const position = computeDeckCardTooltipPosition(anchorElement, lines)
-      return {
-        title,
-        lines,
-        ...position,
       }
     })
   }
@@ -972,193 +959,225 @@ export function DebugStatePanel(props: DebugStatePanelProps) {
           </div>
 
           <div className="deck-editor-panels">
-            <section className="deck-editor-panel" aria-label="Available cards">
+            <section className="deck-editor-panel deck-editor-collection-panel" aria-label="Card collection">
               <header>
-                <strong>Available Cards</strong>
+                <strong>Collection</strong>
+                <span>{filteredDeckEditorRows.length} cards</span>
               </header>
-              <div className="deck-editor-list">
-                {availableRows.length > 0 ? (
-                  availableRows.map((entry) => (
-                    <div key={`pool:${entry.card.id}`} className="deck-editor-card-entry">
-                      <button
-                        type="button"
-                        className={`deck-editor-card-row rarity-${entry.card.rarity}`}
-                        onClick={() => addDeckCopy(entry.card.id)}
-                        onMouseEnter={(event) => {
-                          queueDeckCardTooltip({
-                            anchorElement: event.currentTarget,
-                            title: entry.card.name,
-                            lines: [
-                              entry.card.summaryText ?? 'No summary text available.',
-                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                              `Copies left: ${entry.inPool}/${entry.maxCopies}`,
-                            ].filter((line): line is string => !!line),
-                          })
-                        }}
-                        onMouseLeave={clearDeckCardTooltip}
-                        onFocus={(event) => {
-                          queueDeckCardTooltip({
-                            anchorElement: event.currentTarget,
-                            title: entry.card.name,
-                            lines: [
-                              entry.card.summaryText ?? 'No summary text available.',
-                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                              `Copies left: ${entry.inPool}/${entry.maxCopies}`,
-                            ].filter((line): line is string => !!line),
-                          })
-                        }}
-                        onBlur={clearDeckCardTooltip}
-                      >
-                        <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
-                        <span className="deck-editor-card-main">
-                          <span className="deck-editor-card-name">{entry.card.name}</span>
-                          <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
-                        </span>
-                        <span className="deck-editor-card-count">{entry.inPool}x</span>
-                      </button>
-                      <button
-                        type="button"
-                        className="touch-tooltip-toggle deck-editor-tooltip-toggle"
-                        aria-label={`Show ${entry.card.name} details`}
-                        aria-pressed={deckCardTooltip?.title === entry.card.name}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          toggleDeckCardTooltip({
-                            anchorElement: event.currentTarget,
-                            title: entry.card.name,
-                            lines: [
-                              entry.card.summaryText ?? 'No summary text available.',
-                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                              `Copies left: ${entry.inPool}/${entry.maxCopies}`,
-                            ].filter((line): line is string => !!line),
-                          })
-                        }}
-                        onPointerDown={(event) => event.stopPropagation()}
-                      >
-                        <span className="sr-only">Details</span>
-                        <span aria-hidden="true">i</span>
-                      </button>
-                    </div>
-                  ))
+              <div className="deck-editor-controls">
+                <label className="deck-editor-search-field">
+                  <span className="sr-only">Search cards</span>
+                  <input
+                    type="search"
+                    value={deckSearch}
+                    onChange={(event) => setDeckSearch(event.target.value)}
+                    placeholder="Search cards, effects, keywords..."
+                  />
+                </label>
+                <div className="deck-editor-filter-groups">
+                  <div className="deck-editor-filter-row" role="group" aria-label="Filter by card type">
+                    {TYPE_FILTER_OPTIONS.map((option) => {
+                      const selected = deckTypeFilter === option.value
+                      return (
+                        <button
+                          key={`type-filter:${option.value}`}
+                          type="button"
+                          className={`deck-editor-filter-toggle ${selected ? 'active' : ''}`.trim()}
+                          onClick={() => setDeckTypeFilter(option.value)}
+                          aria-pressed={selected}
+                          title={option.label}
+                        >
+                          <Icon icon={option.icon} aria-hidden="true" />
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="deck-editor-filter-row" role="group" aria-label="Filter by rarity">
+                    {RARITY_FILTER_OPTIONS.map((option) => {
+                      const selected = deckRarityFilter === option.value
+                      return (
+                        <button
+                          key={`rarity-filter:${option.value}`}
+                          type="button"
+                          className={`deck-editor-filter-toggle rarity-${option.value} ${selected ? 'active' : ''}`.trim()}
+                          onClick={() => setDeckRarityFilter(option.value)}
+                          aria-pressed={selected}
+                          title={option.label}
+                        >
+                          <Icon icon={option.icon} aria-hidden="true" />
+                        </button>
+                      )
+                    })}
+                  </div>
+                  <div className="deck-editor-cost-filter-row" role="group" aria-label="Filter by mana cost">
+                    {DECK_COST_FILTERS.map((costValue) => {
+                      const selected = deckCostFilter === costValue
+                      const label = costValue === 'all' ? 'Any' : costValue
+                      return (
+                        <button
+                          key={`cost-filter:${costValue}`}
+                          type="button"
+                          className={`deck-editor-cost-toggle ${selected ? 'active' : ''}`.trim()}
+                          onClick={() => setDeckCostFilter(costValue)}
+                          aria-pressed={selected}
+                          title={costValue === 'all' ? 'All Costs' : `Cost ${costValue}`}
+                        >
+                          {label}
+                        </button>
+                      )
+                    })}
+                  </div>
+                </div>
+              </div>
+              <div className="deck-editor-gallery" role="list" aria-label="Available cards">
+                {filteredDeckEditorRows.length > 0 ? (
+                  filteredDeckEditorRows.map((entry) => {
+                    const iconMeta = getCardIconMeta(entry.card.id)
+                    const isSelected = selectedDeckCardEntry?.card.id === entry.card.id
+                    const canAdd = entry.inPool > 0 && deckEditorHero.openingDeckCardIds.length < MAX_DECK_SIZE
+                    const canRemove = entry.inDeck > 0
+                    const gallerySummary = entry.card.summaryText ?? entry.card.effectTexts[0] ?? 'No summary available.'
+
+                    return (
+                      <article key={`gallery:${entry.card.id}`} className={`deck-editor-gallery-card rarity-${entry.card.rarity} ${isSelected ? 'selected' : ''}`.trim()} role="listitem">
+                        <button type="button" className="deck-editor-gallery-main" onClick={() => setSelectedDeckCardId(entry.card.id)}>
+                          <span className="deck-editor-gallery-cost">{entry.card.moveCost}</span>
+                          <Icon icon={iconMeta.id} style={getVisualIconStyle(iconMeta)} className="deck-editor-gallery-icon" aria-hidden="true" />
+                          <span className="deck-editor-gallery-name">{entry.card.name}</span>
+                          <span className="deck-editor-gallery-meta">{getCardTypeLabel(entry.card.type)} · {entry.card.rarity}</span>
+                          <span className="deck-editor-gallery-summary">{gallerySummary}</span>
+                        </button>
+                        <div className="deck-editor-gallery-actions">
+                          <button type="button" onClick={() => addDeckCopy(entry.card.id)} disabled={!canAdd} aria-label={`Add ${entry.card.name} to deck`}>
+                            +
+                          </button>
+                          <button type="button" onClick={() => removeDeckCopy(entry.card.id)} disabled={!canRemove} aria-label={`Remove ${entry.card.name} from deck`}>
+                            -
+                          </button>
+                          <span className="deck-editor-gallery-count">{entry.inDeck}/{entry.maxCopies}</span>
+                        </div>
+                      </article>
+                    )
+                  })
                 ) : (
-                  <p className="deck-editor-empty">No cards left to add.</p>
+                  <p className="deck-editor-empty">No cards match these filters.</p>
                 )}
               </div>
             </section>
 
-            <section className="deck-editor-panel" aria-label="Deck cards">
+            <section className="deck-editor-panel deck-editor-side-panel" aria-label="Deck planner">
               <header>
-                <strong>Deck</strong>
+                <strong>Planner</strong>
+                <span>{deckEditorHero.openingDeckCardIds.length}/{MAX_DECK_SIZE}</span>
               </header>
-              <div className="deck-editor-list">
-                {deckRows.length > 0 ? (
-                  deckRows.map((entry) => (
-                    <div key={`deck:${entry.card.id}`} className="deck-editor-card-entry">
+              <div className="deck-editor-side-content">
+                {selectedDeckCardEntry ? (
+                  <article className={`deck-editor-detail rarity-${selectedDeckCardEntry.card.rarity}`.trim()}>
+                    <div className="deck-editor-detail-head">
+                      <span className="deck-editor-detail-cost">{selectedDeckCardEntry.card.moveCost}</span>
+                      <Icon
+                        icon={getCardIconMeta(selectedDeckCardEntry.card.id).id}
+                        style={getVisualIconStyle(getCardIconMeta(selectedDeckCardEntry.card.id))}
+                        className="deck-editor-detail-icon"
+                        aria-hidden="true"
+                      />
+                      <div>
+                        <strong>{selectedDeckCardEntry.card.name}</strong>
+                        <span>{getCardTypeLabel(selectedDeckCardEntry.card.type)} · {selectedDeckCardEntry.card.rarity}</span>
+                      </div>
+                    </div>
+                    <p>{selectedDeckCardEntry.card.summaryText ?? 'No summary text available.'}</p>
+                    {selectedDeckCardEntry.card.effectTexts.length > 0 ? (
+                      <div className="deck-editor-detail-effects">
+                        {selectedDeckCardEntry.card.effectTexts.map((line, index) => (
+                          <span key={`${selectedDeckCardEntry.card.id}-effect-${index}`}>{line}</span>
+                        ))}
+                      </div>
+                    ) : null}
+                    {selectedDeckCardEntry.card.castConditionText ? (
+                      <p className="deck-editor-detail-condition">Condition: {selectedDeckCardEntry.card.castConditionText}</p>
+                    ) : null}
+                    {selectedDeckCardEntry.card.keywords.length > 0 ? (
+                      <div className="deck-editor-keywords" aria-label="Card keywords">
+                        {selectedDeckCardEntry.card.keywords.map((keyword) => (
+                          <span key={`${selectedDeckCardEntry.card.id}-${keyword.id}`} className="deck-editor-keyword-chip" title={keyword.summaryText}>
+                            {keyword.name}
+                          </span>
+                        ))}
+                      </div>
+                    ) : null}
+                    <div className="deck-editor-detail-actions">
                       <button
                         type="button"
-                        className={`deck-editor-card-row rarity-${entry.card.rarity}`}
-                        onClick={() => removeDeckCopy(entry.card.id)}
-                        onMouseEnter={(event) => {
-                          queueDeckCardTooltip({
-                            anchorElement: event.currentTarget,
-                            title: entry.card.name,
-                            lines: [
-                              entry.card.summaryText ?? 'No summary text available.',
-                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                              `In deck: ${entry.inDeck}/${entry.maxCopies}`,
-                            ].filter((line): line is string => !!line),
-                          })
-                        }}
-                        onMouseLeave={clearDeckCardTooltip}
-                        onFocus={(event) => {
-                          queueDeckCardTooltip({
-                            anchorElement: event.currentTarget,
-                            title: entry.card.name,
-                            lines: [
-                              entry.card.summaryText ?? 'No summary text available.',
-                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                              `In deck: ${entry.inDeck}/${entry.maxCopies}`,
-                            ].filter((line): line is string => !!line),
-                          })
-                        }}
-                        onBlur={clearDeckCardTooltip}
+                        onClick={() => addDeckCopy(selectedDeckCardEntry.card.id)}
+                        disabled={selectedDeckCardEntry.inPool <= 0 || deckEditorHero.openingDeckCardIds.length >= MAX_DECK_SIZE}
                       >
-                        <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
-                        <span className="deck-editor-card-main">
-                          <span className="deck-editor-card-name">{entry.card.name}</span>
-                          <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
-                        </span>
-                        <span className="deck-editor-card-count">{entry.inDeck}x</span>
+                        Add To Deck
                       </button>
-                      <button
-                        type="button"
-                        className="touch-tooltip-toggle deck-editor-tooltip-toggle"
-                        aria-label={`Show ${entry.card.name} details`}
-                        aria-pressed={deckCardTooltip?.title === entry.card.name}
-                        onClick={(event) => {
-                          event.stopPropagation()
-                          toggleDeckCardTooltip({
-                            anchorElement: event.currentTarget,
-                            title: entry.card.name,
-                            lines: [
-                              entry.card.summaryText ?? 'No summary text available.',
-                              ...entry.card.effectTexts.map((line) => `Effect: ${line}`),
-                              entry.card.castConditionText ? `Condition: ${entry.card.castConditionText}` : null,
-                              `Cost ${entry.card.moveCost} · ${getCardTypeLabel(entry.card.type)} · ${entry.card.rarity}`,
-                              `In deck: ${entry.inDeck}/${entry.maxCopies}`,
-                            ].filter((line): line is string => !!line),
-                          })
-                        }}
-                        onPointerDown={(event) => event.stopPropagation()}
-                      >
-                        <span className="sr-only">Details</span>
-                        <span aria-hidden="true">i</span>
+                      <button type="button" onClick={() => removeDeckCopy(selectedDeckCardEntry.card.id)} disabled={selectedDeckCardEntry.inDeck <= 0}>
+                        Remove Copy
                       </button>
                     </div>
-                  ))
+                  </article>
                 ) : (
-                  <p className="deck-editor-empty">No cards in deck yet.</p>
+                  <p className="deck-editor-empty">Select a card from the collection to inspect details.</p>
                 )}
+
+                <div className="deck-editor-deck-list-wrap">
+                  <strong>Deck List</strong>
+                  <div className="deck-editor-mana-curve" role="img" aria-label="Mana curve distribution">
+                    {manaCurve.entries.map((entry) => {
+                      const fillHeight = `${Math.max((entry.count / manaCurve.maxCount) * 100, entry.count > 0 ? 10 : 4)}%`
+                      return (
+                        <div key={`curve:${entry.costBucket}`} className="deck-editor-mana-curve-slot" title={`${entry.costBucket}: ${entry.count}`}>
+                          <div className="deck-editor-mana-curve-bar-wrap">
+                            <span className="deck-editor-mana-curve-bar" style={{ height: fillHeight }} />
+                          </div>
+                          <span className="deck-editor-mana-curve-cost">{entry.costBucket}</span>
+                          <span className="deck-editor-mana-curve-count">{entry.count}</span>
+                        </div>
+                      )
+                    })}
+                  </div>
+                  <div className="deck-editor-list">
+                    {deckRowsByCostBucket.length > 0 ? (
+                      deckRowsByCostBucket.map((group) => (
+                        <section key={`deck-group:${group.costBucket}`} className="deck-editor-cost-group" aria-label={`Cost ${group.costBucket} cards`}>
+                          <header>
+                            <span>{group.costBucket}</span>
+                          </header>
+                          <div className="deck-editor-cost-group-rows">
+                            {group.entries.map((entry) => {
+                              const iconMeta = getCardIconMeta(entry.card.id)
+                              const isSelected = selectedDeckCardEntry?.card.id === entry.card.id
+                              return (
+                                <button
+                                  key={`deck:${entry.card.id}`}
+                                  type="button"
+                                  className={`deck-editor-deck-row rarity-${entry.card.rarity} ${isSelected ? 'selected' : ''}`.trim()}
+                                  onClick={() => setSelectedDeckCardId(entry.card.id)}
+                                >
+                                  <span className="deck-editor-card-cost">{entry.card.moveCost}</span>
+                                  <Icon icon={iconMeta.id} style={getVisualIconStyle(iconMeta)} className="deck-editor-deck-row-icon" aria-hidden="true" />
+                                  <span className="deck-editor-card-main">
+                                    <span className="deck-editor-card-name">{entry.card.name}</span>
+                                    <span className="deck-editor-card-meta">{getCardTypeLabel(entry.card.type)}</span>
+                                  </span>
+                                  <span className="deck-editor-card-count">{entry.inDeck}x</span>
+                                </button>
+                              )
+                            })}
+                          </div>
+                        </section>
+                      ))
+                    ) : (
+                      <p className="deck-editor-empty">No cards in deck yet.</p>
+                    )}
+                  </div>
+                </div>
               </div>
             </section>
           </div>
-          {deckCardTooltip ? (
-            <div
-              className="deck-editor-floating-tooltip"
-              role="tooltip"
-              style={{
-                left: `${deckCardTooltip.left}px`,
-                top: `${deckCardTooltip.top}px`,
-                transform:
-                  deckCardTooltip.align === 'left'
-                    ? deckCardTooltip.placement === 'above'
-                      ? 'translate(0, calc(-100% - 10px))'
-                      : 'translate(0, 10px)'
-                    : deckCardTooltip.align === 'right'
-                      ? deckCardTooltip.placement === 'above'
-                        ? 'translate(-100%, calc(-100% - 10px))'
-                        : 'translate(-100%, 10px)'
-                      : deckCardTooltip.placement === 'above'
-                        ? 'translate(-50%, calc(-100% - 10px))'
-                        : 'translate(-50%, 10px)',
-              }}
-            >
-              <strong>{deckCardTooltip.title}</strong>
-              {deckCardTooltip.lines.map((line, index) => (
-                <span key={`${deckCardTooltip.title}-${index}`}>{line}</span>
-              ))}
-            </div>
-          ) : null}
           </div>,
           document.body,
         )

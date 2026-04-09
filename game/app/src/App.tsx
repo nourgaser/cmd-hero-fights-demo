@@ -420,17 +420,53 @@ function App() {
     string,
     (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
   >
-  const deckEditorCards = Object.values(cardsById).map((card) => ({
-    id: card.id,
-    name: card.name,
-    moveCost: card.moveCost,
-    type: card.type,
-    rarity: card.rarity,
-    heroId: 'heroId' in card ? card.heroId : undefined,
-    summaryText: renderDisplayText(card.summaryText),
-    effectTexts: card.effects.map((effect) => renderDisplayText(effect.displayText)).filter((text): text is string => !!text),
-    castConditionText: 'castCondition' in card ? describeCardCastCondition(card) : null,
-  }))
+  const keywordsById = runtime.session.gameApi.keywordsById as Record<
+    string,
+    (typeof runtime.session.gameApi.keywordsById)[keyof typeof runtime.session.gameApi.keywordsById]
+  >
+  const deckEditorCards = Object.values(cardsById).map((card) => {
+    const keywordReferences = (card as { keywords?: Array<{ keywordId: string; params?: Record<string, string | number | boolean | undefined> }> }).keywords ?? []
+
+    return {
+      id: card.id,
+      name: card.name,
+      moveCost: card.moveCost,
+      type: card.type,
+      rarity: card.rarity,
+      heroId: 'heroId' in card ? card.heroId : undefined,
+      summaryText: renderDisplayText(card.summaryText),
+      effectTexts: card.effects.map((effect) => renderDisplayText(effect.displayText)).filter((text): text is string => !!text),
+      castConditionText: 'castCondition' in card ? describeCardCastCondition(card) : null,
+      keywords: keywordReferences
+        .map((reference) => {
+          const keyword = keywordsById[reference.keywordId]
+          if (!keyword) {
+            return null
+          }
+
+          return {
+            id: keyword.id,
+            name: keyword.name,
+            summaryText: renderDisplayText({
+              template: keyword.summaryText.template,
+              params: {
+                ...(keyword.summaryText.params ?? {}),
+                ...(reference.params ?? {}),
+              },
+            }) ?? keyword.name,
+          }
+        })
+        .filter(
+          (
+            entry,
+          ): entry is {
+            id: string
+            name: string
+            summaryText: string
+          } => entry !== null,
+        ),
+    }
+  })
 
   const [heroAId, heroBId] = preview.heroEntityIds
 
