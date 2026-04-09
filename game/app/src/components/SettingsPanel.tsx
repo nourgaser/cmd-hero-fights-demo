@@ -196,6 +196,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   )
   const [bootstrapConfigError, setBootstrapConfigError] = useState<string | null>(null)
   const [deckSearch, setDeckSearch] = useState('')
+  const [showDeckFilters, setShowDeckFilters] = useState(true)
   const [deckTypeFilter, setDeckTypeFilter] = useState<DeckTypeFilter>('all')
   const [deckRarityFilter, setDeckRarityFilter] = useState<DeckRarityFilter>('all')
   const [deckCostFilter, setDeckCostFilter] = useState<DeckCostFilter>('all')
@@ -1009,16 +1010,28 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 <span>{filteredDeckEditorRows.length} cards</span>
               </header>
               <div className="deck-editor-controls">
-                <label className="deck-editor-search-field">
-                  <span className="sr-only">Search cards</span>
-                  <input
-                    type="search"
-                    value={deckSearch}
-                    onChange={(event) => setDeckSearch(event.target.value)}
-                    placeholder="Search cards, effects, keywords..."
-                  />
-                </label>
-                <div className="deck-editor-filter-groups">
+                <div className="deck-editor-search-wrap">
+                  <label className="deck-editor-search-field">
+                    <span className="sr-only">Search cards</span>
+                    <input
+                      type="search"
+                      value={deckSearch}
+                      onChange={(event) => setDeckSearch(event.target.value)}
+                      placeholder="Search cards, effects, keywords..."
+                    />
+                  </label>
+                  <button
+                    type="button"
+                    className="deck-editor-filters-toggle"
+                    onClick={() => setShowDeckFilters((prev) => !prev)}
+                    aria-pressed={showDeckFilters}
+                    aria-label={showDeckFilters ? 'Hide filters' : 'Show filters'}
+                    title={showDeckFilters ? 'Hide filters' : 'Show filters'}
+                  >
+                    <Icon icon="game-icons:sliders" aria-hidden="true" />
+                  </button>
+                </div>
+                <div className={`deck-editor-filter-groups ${showDeckFilters ? 'visible' : 'hidden'}`.trim()}>
                   <div className="deck-editor-filter-row" role="group" aria-label="Filter by card type">
                     {TYPE_FILTER_OPTIONS.map((option) => {
                       const selected = deckTypeFilter === option.value

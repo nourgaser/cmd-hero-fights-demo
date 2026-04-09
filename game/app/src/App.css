@@ -721,10 +721,56 @@ html[data-shift-held='true'] .game-toast-detail {
   width: 100%;
 }
 
+.deck-editor-search-wrap {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 6px;
+  align-items: center;
+}
+
+.deck-editor-filters-toggle {
+  height: 36px;
+  width: 36px;
+  min-height: 36px;
+  min-width: 36px;
+  border-radius: 8px;
+  border: 1px solid #3f4f75;
+  background: color-mix(in srgb, #16223d 84%, #ffffff 16%);
+  color: #c5d3f0;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transition: background 0.15s, border-color 0.15s, color 0.15s;
+  flex-shrink: 0;
+}
+
+.deck-editor-filters-toggle:hover,
+.deck-editor-filters-toggle:focus-visible {
+  background: color-mix(in srgb, #16223d 70%, #ffffff 30%);
+  border-color: #6a84be;
+  color: #e8eeff;
+}
+
+.deck-editor-filters-toggle svg {
+  width: 16px;
+  height: 16px;
+}
+
 .deck-editor-filter-groups {
   min-width: 0;
   display: grid;
   gap: 5px;
+  max-height: 500px;
+  overflow: hidden;
+  transition: max-height 200ms ease, opacity 200ms ease;
+  opacity: 1;
+}
+
+.deck-editor-filter-groups.hidden {
+  max-height: 0;
+  opacity: 0;
+  display: none;
 }
 
 .deck-editor-filter-row {
