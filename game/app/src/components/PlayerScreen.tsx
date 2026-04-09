@@ -12,6 +12,8 @@ import {
 } from '../utils/render-numeric-text.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
+import { InspectPanel } from './InspectPanel.tsx'
+import type { InspectTarget } from '../inspectable.ts'
 
 type PlayerScreenProps = {
   title: string
@@ -91,6 +93,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
   >(null)
   const [selectedPassiveEffectId, setSelectedPassiveEffectId] = useState<string | null>(null)
   const [showAllPassiveEffects, setShowAllPassiveEffects] = useState(false)
+  const [inspectTarget, setInspectTarget] = useState<InspectTarget | null>(null)
 
   const toggleTouchTooltip = (tooltipId: 'basic-attack' | 'deck' | 'press-luck') => {
     setOpenTouchTooltip((current) => (current === tooltipId ? null : tooltipId))
@@ -240,10 +243,23 @@ export function PlayerScreen(props: PlayerScreenProps) {
     }
 
     setFocusedHandCardId(handCardId)
+    setInspectTarget({ kind: 'handCard', cardId: handCardId })
     setPendingActionMode(null)
     setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
+  }
+
+  const handleInspectEntity = (entityId: string) => {
+    setInspectTarget({ kind: 'entity', entityId })
+  }
+
+  const handleInspectCard = (cardId: string) => {
+    setInspectTarget({ kind: 'handCard', cardId })
+  }
+
+  const handleCloseInspect = () => {
+    setInspectTarget(null)
   }
 
   const handleSelectTarget = (targetEntityId: string) => {
@@ -478,6 +494,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
+    setInspectTarget(null)
   }
 
   const screenStyle = {
@@ -819,7 +836,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
             selectedEntityConfirmId={selectedEntityConfirmId}
             onSelectTargetEntityId={isActivePlayer ? handleSelectTarget : undefined}
             onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
-            shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+            onInspectEntity={handleInspectEntity}
             highlightedPlacementPositions={
               isActivePlayer && pendingActionMode !== 'basicAttack' ? highlightedPlacementPositions : []
             }
@@ -906,6 +923,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
           </aside>
         </section>
 
+        <InspectPanel
+          target={inspectTarget}
+          preview={preview}
+          selfId={selfId}
+          selfHandCards={selfHandCards}
+          shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          onClose={handleCloseInspect}
+        />
+
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
@@ -924,6 +950,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           onFocusCard={handleFocusCard}
           onConfirmFocusedCard={handleConfirmFocusedCard}
           onClearFocus={handleClearFocus}
+          onInspectCard={handleInspectCard}
         />
     </section>
   )

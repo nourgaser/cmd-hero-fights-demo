@@ -2,12 +2,6 @@ import { useEffect, useRef, useState, type MouseEvent } from 'react'
 import { Icon } from '@iconify/react/offline'
 import { CARD_ICON_META } from '../data/visual-metadata.ts'
 import type { AppBattlePreview } from '../game-client.ts'
-import {
-  renderTextWithHighlightedNumbers,
-  simplifyTooltipSummaryText,
-  splitTooltipDetailLabel,
-  splitDetailTextIntoLines,
-} from '../utils/render-numeric-text.tsx'
 
 type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 
@@ -29,6 +23,7 @@ type HandBarProps = {
   onFocusCard: (handCardId: string) => void
   onConfirmFocusedCard: () => void
   onClearFocus: () => void
+  onInspectCard?: (cardId: string) => void
 }
 
 function getCardTypeVisual(cardType: HandBarCard['cardType']) {
@@ -96,31 +91,10 @@ export function HandBar(props: HandBarProps) {
     onFocusCard,
     onConfirmFocusedCard,
     onClearFocus,
+    onInspectCard,
   } = props
   const scrollerRef = useRef<HTMLUListElement | null>(null)
-  const handWrapRef = useRef<HTMLDivElement | null>(null)
   const [showScrollHint, setShowScrollHint] = useState(false)
-  const [isCoarsePointer, setIsCoarsePointer] = useState(false)
-  const [hoveredCard, setHoveredCard] = useState<{
-    card: HandBarCard
-    left: number
-    top: number
-  } | null>(null)
-
-  const setHoveredCardFromAnchor = (card: HandBarCard, anchor: HTMLElement) => {
-    const wrap = handWrapRef.current
-    if (!wrap) {
-      return
-    }
-
-    const anchorRect = anchor.getBoundingClientRect()
-    const wrapRect = wrap.getBoundingClientRect()
-    setHoveredCard({
-      card,
-      left: anchorRect.left - wrapRect.left + anchorRect.width / 2,
-      top: anchorRect.top - wrapRect.top,
-    })
-  }
 
   useEffect(() => {
     const scroller = scrollerRef.current
@@ -144,63 +118,8 @@ export function HandBar(props: HandBarProps) {
     }
   }, [cards])
 
-  useEffect(() => {
-    if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
-      return
-    }
-
-    const mediaQuery = window.matchMedia('(pointer: coarse)')
-    const syncPointerMode = () => {
-      setIsCoarsePointer(mediaQuery.matches)
-    }
-
-    syncPointerMode()
-    mediaQuery.addEventListener('change', syncPointerMode)
-
-    return () => {
-      mediaQuery.removeEventListener('change', syncPointerMode)
-    }
-  }, [])
-
-  useEffect(() => {
-    if (!isCoarsePointer || !hoveredCard) {
-      return
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const wrap = handWrapRef.current
-      if (!wrap) {
-        return
-      }
-
-      const target = event.target
-      if (target instanceof Node && !wrap.contains(target)) {
-        setHoveredCard(null)
-      }
-    }
-
-    window.addEventListener('pointerdown', handlePointerDown)
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown)
-    }
-  }, [hoveredCard, isCoarsePointer])
-
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
-    : null
-  const hoveredCardMeta = hoveredCard
-    ? CARD_ICON_META[hoveredCard.card.cardDefinitionId] ?? {
-        id: 'game-icons:card-pick',
-        label: hoveredCard.card.cardName,
-        description: 'Card',
-      }
-    : null
-  const focusedCardMeta = focusedCard
-    ? CARD_ICON_META[focusedCard.cardDefinitionId] ?? {
-        id: 'game-icons:card-pick',
-        label: focusedCard.cardName,
-        description: 'Card',
-      }
     : null
   const focusedNeedsTarget = !!focusedCard && focusedCard.validTargetEntityIds.length > 0
   const focusedNeedsPlacement = !!focusedCard && focusedCard.validPlacementPositions.length > 0
@@ -241,7 +160,6 @@ export function HandBar(props: HandBarProps) {
       return
     }
 
-    setHoveredCard(null)
     onClearFocus()
   }
 
@@ -288,7 +206,7 @@ export function HandBar(props: HandBarProps) {
         </div>
       </div>
 
-      <div className="hand-scroll-wrap" ref={handWrapRef}>
+      <div className="hand-scroll-wrap">
         <ul className="hand-cards" aria-label="Cards in hand and actions" ref={scrollerRef}>
           {cards.map((card) => {
           const meta = CARD_ICON_META[card.cardDefinitionId] ?? {
@@ -306,12 +224,6 @@ export function HandBar(props: HandBarProps) {
             <li
               key={card.handCardId}
               className={`hand-card-item ${card.isPlayable && isActivePlayer ? 'playable' : 'blocked'}`.trim()}
-              onMouseEnter={(event) => {
-                setHoveredCardFromAnchor(card, event.currentTarget)
-              }}
-              onMouseLeave={() => {
-                setHoveredCard(null)
-              }}
             >
               <button
                 type="button"
@@ -322,17 +234,12 @@ export function HandBar(props: HandBarProps) {
                     return
                   }
 
-                  if (!card.isPlayable || !isActivePlayer) {
+                  if (!isActivePlayer) {
+                    onInspectCard?.(card.handCardId)
                     return
                   }
 
                   onFocusCard(card.handCardId)
-                }}
-                onFocus={(event) => {
-                  setHoveredCardFromAnchor(card, event.currentTarget)
-                }}
-                onBlur={() => {
-                  setHoveredCard(null)
                 }}
                 disabled={!isActivePlayer}
                 aria-pressed={isFocused}
@@ -354,32 +261,10 @@ export function HandBar(props: HandBarProps) {
               <button
                 type="button"
                 className="hand-card-info"
-                aria-label={`Show ${card.cardName} details`}
+                aria-label={`Inspect ${card.cardName}`}
                 onClick={(event) => {
                   event.stopPropagation()
-                  const anchor = event.currentTarget.closest('.hand-card-item')
-                  if (!(anchor instanceof HTMLElement)) {
-                    return
-                  }
-
-                  setHoveredCard((current) => {
-                    if (current?.card.handCardId === card.handCardId) {
-                      return null
-                    }
-
-                    const wrap = handWrapRef.current
-                    if (!wrap) {
-                      return null
-                    }
-
-                    const anchorRect = anchor.getBoundingClientRect()
-                    const wrapRect = wrap.getBoundingClientRect()
-                    return {
-                      card,
-                      left: anchorRect.left - wrapRect.left + anchorRect.width / 2,
-                      top: anchorRect.top - wrapRect.top,
-                    }
-                  })
+                  onInspectCard?.(card.handCardId)
                 }}
               >
                 <Icon icon="game-icons:info" aria-hidden="true" />
@@ -389,176 +274,6 @@ export function HandBar(props: HandBarProps) {
           })}
         </ul>
 
-        {hoveredCard ? (
-          <span
-            className={`hover-card hand-card-hover hand-card-hover-overlay ${hoveredCard.card.summonPreview ? 'has-summon-preview' : ''}`.trim()}
-            role="tooltip"
-            style={{
-              left: `${hoveredCard.left}px`,
-              top: `${hoveredCard.top}px`,
-            }}
-          >
-            <div className="hand-card-tooltip-header">
-              <strong>{hoveredCard.card.cardName}</strong>
-              <div className="hand-card-tooltip-badges">
-                <span className="hand-card-type-icon" title={hoveredCard.card.cardName} aria-label={hoveredCard.card.cardName}>
-                  <Icon icon={hoveredCardMeta?.id ?? 'game-icons:card-pick'} style={getVisualIconStyle(hoveredCardMeta ?? {})} aria-hidden="true" />
-                </span>
-                <span
-                  className={`hand-card-rarity-swatch rarity-${hoveredCard.card.rarity}`}
-                  title={getRarityLabel(hoveredCard.card.rarity)}
-                  aria-label={getRarityLabel(hoveredCard.card.rarity)}
-                />
-              </div>
-            </div>
-            <p className="hand-card-tooltip-summary tooltip-main-line">
-              {hoveredCard.card.summaryText?.trim()
-                ? simplifyTooltipSummaryText(hoveredCard.card.summaryText)
-                : 'No text available.'}
-            </p>
-            {hoveredCard.card.keywords.length > 0 ? (
-              <div className="summon-preview-section hand-card-keywords" aria-label="Card keywords">
-                <span className="hover-group-title">Keywords</span>
-                {hoveredCard.card.keywords.map((keyword) => (
-                  <div key={keyword.keywordId} className="tooltip-row hand-card-keyword-row">
-                    <strong className="tooltip-inline-label">{keyword.keywordName}</strong>
-                    <span>{keyword.keywordSummaryText}</span>
-                  </div>
-                ))}
-              </div>
-            ) : null}
-            {shouldShowDetailedTooltips && hoveredCard.card.summaryDetailText ? (
-              <p className="hand-card-tooltip-detail">
-                {splitDetailTextIntoLines(hoveredCard.card.summaryDetailText).map((line, index) => (
-                  <span key={`${index}-${line}`} className="hand-card-tooltip-detail-line">
-                    {renderTextWithHighlightedNumbers(line)}
-                  </span>
-                ))}
-              </p>
-            ) : null}
-            {!shouldShowDetailedTooltips && hoveredCard.card.summaryDetailText ? (
-              <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-            ) : null}
-            {hoveredCard.card.castConditionText ? (
-              <div className="hand-card-tooltip-note tooltip-row">
-                <strong className="tooltip-inline-label">Condition:</strong>
-                {hoveredCard.card.castConditionText}
-              </div>
-            ) : null}
-            {hoveredCard.card.summonPreview ? (
-              <aside className="summon-preview-panel" aria-label={`Summon preview for ${hoveredCard.card.summonPreview.displayName}`}>
-                <div className="hand-card-tooltip-header summon-preview-header">
-                  <strong>{hoveredCard.card.summonPreview.displayName}</strong>
-                  <div className="hand-card-tooltip-badges">
-                    <span
-                      className="hand-card-type-icon"
-                      title={hoveredCard.card.summonPreview.displayName}
-                      aria-label={hoveredCard.card.summonPreview.displayName}
-                    >
-                      <Icon
-                        icon={CARD_ICON_META[hoveredCard.card.summonPreview.cardDefinitionId]?.id ?? getCardTypeVisual(hoveredCard.card.summonPreview.cardType).icon}
-                        style={getVisualIconStyle(CARD_ICON_META[hoveredCard.card.summonPreview.cardDefinitionId] ?? {})}
-                        aria-hidden="true"
-                      />
-                    </span>
-                    <span
-                      className={`hand-card-rarity-swatch rarity-${hoveredCard.card.summonPreview.rarity}`}
-                      title={getRarityLabel(hoveredCard.card.summonPreview.rarity)}
-                      aria-label={getRarityLabel(hoveredCard.card.summonPreview.rarity)}
-                    />
-                  </div>
-                </div>
-
-                <div className="summon-preview-stats" aria-label="Summon combat and vitals">
-                  <span className="battlefield-hover-stat">
-                    <strong>HP</strong>
-                    <em>{hoveredCard.card.summonPreview.maxHealth}</em>
-                  </span>
-                  <span className="battlefield-hover-stat">
-                    <strong>AD</strong>
-                    <em>{hoveredCard.card.summonPreview.attackDamage}</em>
-                  </span>
-                  <span className="battlefield-hover-stat">
-                    <strong>AP</strong>
-                    <em>{hoveredCard.card.summonPreview.abilityPower}</em>
-                  </span>
-                  <span className="battlefield-hover-stat">
-                    <strong>AR</strong>
-                    <em>{hoveredCard.card.summonPreview.armor}</em>
-                  </span>
-                  <span className="battlefield-hover-stat">
-                    <strong>MR</strong>
-                    <em>{hoveredCard.card.summonPreview.magicResist}</em>
-                  </span>
-                  <span className="battlefield-hover-stat">
-                    <strong>MOV</strong>
-                    <em>{hoveredCard.card.summonPreview.maxMovesPerTurn}</em>
-                  </span>
-                </div>
-
-                {hoveredCard.card.summonPreview.passiveSummaryText ? (
-                  <div className="summon-preview-section">
-                    <span className="hover-group-title">Passive</span>
-                    <span className="tooltip-main-line">
-                      {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.passiveSummaryText)}
-                    </span>
-                    {shouldShowDetailedTooltips && hoveredCard.card.summonPreview.passiveSummaryDetailText ? (
-                      <span className="battle-tooltip-detail">
-                        {splitDetailTextIntoLines(hoveredCard.card.summonPreview.passiveSummaryDetailText).map((line, index) => (
-                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
-                            {(() => {
-                              const parts = splitTooltipDetailLabel(line)
-                              return parts.label ? (
-                                <>
-                                  <span className="tooltip-detail-label">{parts.label}</span>
-                                  <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
-                                </>
-                              ) : (
-                                <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
-                              )
-                            })()}
-                          </span>
-                        ))}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {hoveredCard.card.summonPreview.activeAbilitySummaryText ? (
-                  <div className="summon-preview-section">
-                    <span className="hover-group-title">Active</span>
-                    <span className="tooltip-main-line">
-                      {simplifyTooltipSummaryText(hoveredCard.card.summonPreview.activeAbilitySummaryText)}
-                    </span>
-                    {shouldShowDetailedTooltips && hoveredCard.card.summonPreview.activeAbilitySummaryDetailText ? (
-                      <span className="battle-tooltip-detail">
-                        {splitDetailTextIntoLines(hoveredCard.card.summonPreview.activeAbilitySummaryDetailText).map((line, index) => (
-                          <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
-                            {(() => {
-                              const parts = splitTooltipDetailLabel(line)
-                              return parts.label ? (
-                                <>
-                                  <span className="tooltip-detail-label">{parts.label}</span>
-                                  <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
-                                </>
-                              ) : (
-                                <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
-                              )
-                            })()}
-                          </span>
-                        ))}
-                      </span>
-                    ) : null}
-                  </div>
-                ) : null}
-
-                {!shouldShowDetailedTooltips && (hoveredCard.card.summonPreview.passiveSummaryDetailText || hoveredCard.card.summonPreview.activeAbilitySummaryDetailText) ? (
-                  <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-                ) : null}
-              </aside>
-            ) : null}
-          </span>
-        ) : null}
 
         {showScrollHint ? <span className="hand-scroll-indicator">{'Scroll ->'}</span> : null}
       </div>
@@ -601,62 +316,20 @@ export function HandBar(props: HandBarProps) {
         </div>
       ) : focusedCard ? (
         <div className="hand-focus-panel" aria-live="polite">
-          <div className="hand-focus-head">
-            <div className="hand-focus-title-block">
-              <span className="hand-card-tooltip-badges">
-                <span className="hand-card-chip hand-card-chip-type" title={focusedCard.cardName}>
-                  <Icon icon={focusedCardMeta?.id ?? getCardTypeVisual(focusedCard.cardType).icon} style={getVisualIconStyle(focusedCardMeta ?? {})} aria-hidden="true" />
-                  <span>{getCardTypeVisual(focusedCard.cardType).label}</span>
-                </span>
-                <span
-                  className={`hand-card-rarity-swatch rarity-${focusedCard.rarity}`}
-                  title={getRarityLabel(focusedCard.rarity)}
-                  aria-label={getRarityLabel(focusedCard.rarity)}
-                />
-              </span>
-              <strong>{focusedCard.cardName}</strong>
-            </div>
-            <span className="hand-focus-cost" title={`Cost ${focusedCard.moveCost}`}>{focusedCard.moveCost}</span>
-          </div>
-          <p className="hand-focus-summary">{focusedCard.summaryText?.trim() ? focusedCard.summaryText : 'No text available.'}</p>
-          {shouldShowDetailedTooltips && focusedCard.summaryDetailText ? (
-            <p className="hand-card-tooltip-detail">
-              {splitDetailTextIntoLines(focusedCard.summaryDetailText).map((line, index) => (
-                <span key={`${index}-${line}`} className="hand-card-tooltip-detail-line">
-                  {renderTextWithHighlightedNumbers(line)}
-                </span>
-              ))}
-            </p>
-          ) : null}
-          {!shouldShowDetailedTooltips && focusedCard.summaryDetailText ? (
-            <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-          ) : null}
-          {!focusedCard.isPlayable ? <p className="hand-focus-instruction">Not playable right now.</p> : null}
           <p className="hand-focus-instruction">
-            {focusedNeedsTarget
-              ? `Needs a target (${focusedCard.validTargetEntityIds.length} valid).`
-              : focusedNeedsPlacement
-                ? `Needs placement (${focusedCard.validPlacementPositions.length} valid cells).`
-                : 'No target required.'}
+            {focusedNeedsTarget && !selectedTargetEntityId
+              ? `Pick a highlighted target (${focusedCard.validTargetEntityIds.length} valid), then click the card again to confirm.`
+              : focusedNeedsPlacement && !selectedPlacementPosition
+                ? `Pick a highlighted cell for placement, then click the card again to confirm.`
+                : 'Click the highlighted card again to confirm.'}
           </p>
-          {focusedNeedsTarget && !selectedTargetEntityId ? (
-            <p className="hand-focus-instruction">Pick one highlighted battlefield target, then confirm.</p>
-          ) : null}
-          {focusedNeedsPlacement && !selectedPlacementPosition ? (
-            <p className="hand-focus-instruction">Pick one highlighted empty cell for placement, then confirm.</p>
-          ) : null}
-          {canConfirm ? (
-            <p className="hand-focus-instruction">Click the highlighted card again to confirm.</p>
-          ) : null}
           <div className="hand-focus-actions">
             <button type="button" className="clear-focus" onClick={onClearFocus}>
               Cancel
             </button>
           </div>
         </div>
-      ) : (
-        <p className="hand-focus-hint">Select a card to inspect and confirm.</p>
-      )}
+      ) : null}
     </section>
   )
 }

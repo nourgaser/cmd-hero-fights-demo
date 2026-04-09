@@ -1,42 +1,16 @@
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { CARD_ICON_META, ENTITY_ICON_META, LUCK_VISUALS } from '../data/visual-metadata.ts'
-import {
-  renderTextWithHighlightedNumbers,
-  simplifyTooltipSummaryText,
-  splitTooltipDetailLabel,
-  splitDetailTextIntoLines,
-} from '../utils/render-numeric-text.tsx'
 
-function formatSignedDelta(value: number): string {
-  const abs = Math.abs(Math.round(value * 100) / 100)
-  return `${value >= 0 ? '+' : '-'}${Number.isInteger(abs) ? abs : abs}`
+function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
+  if (delta > 0) return 'delta-positive'
+  if (delta < 0) return 'delta-negative'
+  return 'delta-neutral'
 }
 
 function formatCompactNumber(value: number): string {
   const rounded = Math.round(value * 100) / 100
-  return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`
-}
-
-function formatLayeredStatValue(permanent: number, bonus: number): string {
-  if (bonus === 0) {
-    return formatCompactNumber(permanent)
-  }
-  return `(${formatCompactNumber(permanent)} ${formatSignedDelta(bonus)})`
-}
-
-function formatChancePercent(value: number): string {
-  return `${Math.round(value * 100)}%`
-}
-
-function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
-  if (delta > 0) {
-    return 'delta-positive'
-  }
-  if (delta < 0) {
-    return 'delta-negative'
-  }
-  return 'delta-neutral'
+  return `${rounded}`
 }
 
 function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) {
@@ -55,39 +29,6 @@ function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: bo
   return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
 }
 
-type StatContributionSummary = {
-  rows: Array<{ sourceId: string; label: string; delta: number }>
-  hiddenCount: number
-}
-
-function summarizeStatContributions(
-  contributions: AppBattlePreview['battlefield']['entitiesById'][string]['combatNumbers']['attackDamage']['contributions'],
-  maxRows = 2,
-): StatContributionSummary {
-  const bySource = new Map<string, { sourceId: string; label: string; delta: number }>()
-  for (const contribution of contributions) {
-    const existing = bySource.get(contribution.sourceId)
-    if (existing) {
-      existing.delta += contribution.delta
-      continue
-    }
-    bySource.set(contribution.sourceId, {
-      sourceId: contribution.sourceId,
-      label: contribution.label,
-      delta: contribution.delta,
-    })
-  }
-
-  const effectiveRows = Array.from(bySource.values())
-    .filter((row) => row.delta !== 0)
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-
-  return {
-    rows: effectiveRows.slice(0, maxRows),
-    hiddenCount: Math.max(0, effectiveRows.length - maxRows),
-  }
-}
-
 type BattlefieldGridProps = {
   preview: AppBattlePreview
   selfId: string
@@ -98,7 +39,7 @@ type BattlefieldGridProps = {
   selectedEntityConfirmId?: string | null
   onSelectTargetEntityId?: (entityId: string) => void
   onSelectEntityId?: (entityId: string) => void
-  shouldShowDetailedTooltips?: boolean
+  onInspectEntity?: (entityId: string) => void
   highlightedPlacementPositions?: Array<{ row: number; column: number }>
   selectedPlacementPosition?: { row: number; column: number } | null
   onSelectPlacementPosition?: (position: { row: number; column: number }) => void
@@ -115,7 +56,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     selectedEntityConfirmId,
     onSelectTargetEntityId,
     onSelectEntityId,
-    shouldShowDetailedTooltips = false,
+    onInspectEntity,
     highlightedPlacementPositions = [],
     selectedPlacementPosition,
     onSelectPlacementPosition,
@@ -289,7 +230,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               ? CARD_ICON_META[entityStats.sourceCardDefinitionId]
               : undefined
             const meta = cardMeta ?? ENTITY_ICON_META[occupier.kind]
-            const heroDetails = preview.heroDetailsByEntityId[occupier.entityId] ?? null
+
             const luckBalance = preview.luck.balance
             const isLuckEntity = entityStats?.kind === 'hero'
             const isLuckAnchor = entityStats?.entityId === preview.luck.anchorHeroEntityId
@@ -317,47 +258,6 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const attackFlatBonusDamage = combatTraces?.attackFlatBonusDamage.effective ?? 0
             const attackFlatBonusDamageClass = combatTraces ? numberDeltaClass(combatTraces.attackFlatBonusDamage.delta) : 'delta-neutral'
             const armorClass = combatTraces ? numberDeltaClass(combatTraces.armor.delta) : 'delta-neutral'
-            const abilityPowerClass = combatTraces ? numberDeltaClass(combatTraces.abilityPower.delta) : 'delta-neutral'
-            const magicResistClass = combatTraces ? numberDeltaClass(combatTraces.magicResist.delta) : 'delta-neutral'
-            const critLuckDelta = entityStats?.criticalChanceLuckDelta ?? 0
-            const dodgeLuckDelta = entityStats?.dodgeChanceLuckDelta ?? 0
-            const critClass = numberDeltaClass(critLuckDelta)
-            const dodgeClass = numberDeltaClass((combatTraces?.dodgeChance.delta ?? 0) + dodgeLuckDelta)
-            const adContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.attackDamage.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const apContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.abilityPower.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const attackFlatContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.attackFlatBonusDamage.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const immuneContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.immune.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const armorContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.armor.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const mrContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.magicResist.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const dodgeContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.dodgeChance.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const moveContributionSummary = combatTraces
-              ? summarizeStatContributions(combatTraces.moveCapacity.contributions)
-              : { rows: [], hiddenCount: 0 }
-            const hasAnyContributionRows =
-              adContributionSummary.rows.length > 0 ||
-              attackFlatContributionSummary.rows.length > 0 ||
-              apContributionSummary.rows.length > 0 ||
-              immuneContributionSummary.rows.length > 0 ||
-              armorContributionSummary.rows.length > 0 ||
-              mrContributionSummary.rows.length > 0 ||
-              moveContributionSummary.rows.length > 0 ||
-              dodgeContributionSummary.rows.length > 0 ||
-              critLuckDelta !== 0 ||
-              dodgeLuckDelta !== 0
 
             return (
               <div
@@ -369,28 +269,26 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                   gridRow: `${occupier.minRow + 1} / span ${occupier.rowSpan}`,
                   gridColumn: `${occupier.minColumn + 1} / span ${occupier.columnSpan}`,
                 }}
-                onClick={
-                  isSelectableTarget
-                    ? () => onSelectTargetEntityId(occupier.entityId)
-                    : isSelectableEntity
-                      ? () => onSelectEntityId(occupier.entityId)
-                      : undefined
-                }
-                onKeyDown={
-                  isSelectableTarget || isSelectableEntity
-                    ? (event) => {
-                        if (event.key === 'Enter' || event.key === ' ') {
-                          event.preventDefault()
-                          if (isSelectableTarget) {
-                            onSelectTargetEntityId(occupier.entityId)
-                            return
-                          }
-                          onSelectEntityId?.(occupier.entityId)
-                        }
-                      }
-                    : undefined
-                }
-                tabIndex={isSelectableTarget || isSelectableEntity ? 0 : undefined}
+                onClick={() => {
+                  onInspectEntity?.(occupier.entityId)
+                  if (isSelectableTarget) {
+                    onSelectTargetEntityId(occupier.entityId)
+                  } else if (isSelectableEntity) {
+                    onSelectEntityId(occupier.entityId)
+                  }
+                }}
+                onKeyDown={(event) => {
+                  if (event.key === 'Enter' || event.key === ' ') {
+                    event.preventDefault()
+                    onInspectEntity?.(occupier.entityId)
+                    if (isSelectableTarget) {
+                      onSelectTargetEntityId(occupier.entityId)
+                    } else if (isSelectableEntity) {
+                      onSelectEntityId?.(occupier.entityId)
+                    }
+                  }
+                }}
+                tabIndex={0}
               >
                 {isSelectedForAction && (isSelectableTarget || isSelectedConfirmEntity) ? (
                   <span className="target-check-icon" aria-hidden="true">
@@ -407,352 +305,22 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 ) : null}
 
                 {hasMovesRemaining && entityStats ? (
-                  <span className="entity-moves-badge" aria-hidden="true">
-                    Moves {entityStats.movePoints}
+                  <span className="entity-moves-badge" aria-label={`${entityStats.movePoints} moves remaining`} aria-hidden="true">
+                    <Icon icon="game-icons:boot-prints" className="entity-badge-icon" aria-hidden="true" />
+                    {entityStats.movePoints}
                   </span>
                 ) : null}
 
                 {activeListeners.length > 0 ? (
-                  <span className="entity-listener-badge" aria-hidden="true">
-                    {activeListenerBadgeText}
+                  <span className="entity-listener-badge" title={activeListenerBadgeText} aria-hidden="true">
+                    <Icon icon="game-icons:cycle" className="entity-badge-icon" aria-hidden="true" />
+                    {activeListeners.length > 1 ? activeListeners.length : null}
                   </span>
                 ) : null}
 
-                <span className="hint-wrap" tabIndex={0}>
+                <span className="hint-wrap entity-icon-hint" tabIndex={-1} aria-hidden="true">
                   <Icon icon={meta.id} className="occupier-icon" style={getVisualIconStyle(meta)} aria-hidden="true" />
-                  <span className="sr-only">{ariaLabel}</span>
-                  <span className="hover-card battlefield-hover-card" role="tooltip">
-                    <div className="battlefield-hover-header">
-                      <strong>{entityStats?.displayName ?? meta.label ?? occupier.kind}</strong>
-                      <span className="battlefield-hover-kicker">
-                        {heroDetails ? 'Hero' : meta.label ?? occupier.kind}
-                      </span>
-                    </div>
-                    {heroDetails ? (
-                      <>
-                        <div className="battlefield-hover-section">
-                          <span className="hover-group-title">Passive</span>
-                          <span>{heroDetails.passiveText}</span>
-                        </div>
-                        <div className="battlefield-hover-section">
-                          <span className="hover-group-title">Basic Attack</span>
-                          <span className="tooltip-main-line">{simplifyTooltipSummaryText(heroDetails.basicAttack.summaryText)}</span>
-                          {shouldShowDetailedTooltips && heroDetails.basicAttack.summaryDetailText ? (
-                            <span className="battle-tooltip-detail">
-                              {splitDetailTextIntoLines(heroDetails.basicAttack.summaryDetailText).map((line, index) => (
-                                <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
-                                  {(() => {
-                                    const parts = splitTooltipDetailLabel(line)
-                                    return parts.label ? (
-                                      <>
-                                        <span className="tooltip-detail-label">{parts.label}</span>
-                                        <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
-                                      </>
-                                    ) : (
-                                      <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
-                                    )
-                                  })()}
-                                </span>
-                              ))}
-                            </span>
-                          ) : null}
-                          {!shouldShowDetailedTooltips && heroDetails.basicAttack.summaryDetailText ? (
-                            <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-                          ) : null}
-                          <span className="battlefield-hover-note tooltip-row">
-                            <strong className="tooltip-inline-label">Cost:</strong>
-                            {heroDetails.basicAttack.moveCost} move{heroDetails.basicAttack.moveCost === 1 ? '' : 's'}
-                            {' \u00b7 '}
-                            <strong className="tooltip-inline-label">Type:</strong>
-                            {heroDetails.basicAttack.damageType}
-                          </span>
-                        </div>
-                      </>
-                    ) : (
-                      <>
-                        {entityStats?.sourceCardSummary || entityStats?.sourceCardSummaryDetailText ? (
-                          <div className="battlefield-hover-section">
-                            <span className="hover-group-title">Passive</span>
-                            {entityStats.sourceCardSummary ? <span className="tooltip-main-line">{simplifyTooltipSummaryText(entityStats.sourceCardSummary)}</span> : null}
-                            {shouldShowDetailedTooltips && entityStats.sourceCardSummaryDetailText ? (
-                              <span className="battle-tooltip-detail">
-                                {splitDetailTextIntoLines(entityStats.sourceCardSummaryDetailText).map((line, index) => (
-                                  <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
-                                    {(() => {
-                                      const parts = splitTooltipDetailLabel(line)
-                                      return parts.label ? (
-                                        <>
-                                          <span className="tooltip-detail-label">{parts.label}</span>
-                                          <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
-                                        </>
-                                      ) : (
-                                        <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
-                                      )
-                                    })()}
-                                  </span>
-                                ))}
-                              </span>
-                            ) : null}
-                            {!shouldShowDetailedTooltips && entityStats.sourceCardSummaryDetailText ? (
-                              <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        {entityStats?.sourceCardKeywords.length ? (
-                          <div className="battlefield-hover-section">
-                            <span className="hover-group-title">Keywords</span>
-                            {entityStats.sourceCardKeywords.map((keyword) => (
-                              <span key={keyword.keywordId} className="tooltip-main-line">
-                                <strong>{keyword.keywordName}.</strong> {keyword.keywordSummaryText}
-                              </span>
-                            ))}
-                          </div>
-                        ) : null}
-                        {entityStats?.activeAbility ? (
-                          <div className="battlefield-hover-section battlefield-hover-active-section">
-                            <span className="hover-group-title">Active</span>
-                            <span className="tooltip-main-line">{simplifyTooltipSummaryText(entityStats.activeAbility.summaryText)}</span>
-                            {shouldShowDetailedTooltips && entityStats.activeAbility.summaryDetailText ? (
-                              <span className="battle-tooltip-detail">
-                                {splitDetailTextIntoLines(entityStats.activeAbility.summaryDetailText).map((line, index) => (
-                                  <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
-                                    {(() => {
-                                      const parts = splitTooltipDetailLabel(line)
-                                      return parts.label ? (
-                                        <>
-                                          <span className="tooltip-detail-label">{parts.label}</span>
-                                          <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
-                                        </>
-                                      ) : (
-                                        <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
-                                      )
-                                    })()}
-                                  </span>
-                                ))}
-                              </span>
-                            ) : null}
-                            {!shouldShowDetailedTooltips && entityStats.activeAbility.summaryDetailText ? (
-                              <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-                            ) : null}
-                            <span className="battlefield-hover-cost-badge" aria-hidden="true">
-                              {entityStats.activeAbility.moveCost}
-                            </span>
-                          </div>
-                        ) : null}
-                      </>
-                    )}
-                    {entityStats ? (
-                      <div className="battlefield-hover-section">
-                        <span className="hover-group-title">Vitals</span>
-                        <div className="battlefield-hover-grid">
-                          <span className="battlefield-hover-stat"><strong>HP</strong><em>{entityStats.currentHealth} / {entityStats.maxHealth}</em></span>
-                          <span className={`battlefield-hover-stat ${numberDeltaClass(entityStats.statLayers.moveCapacity.bonus)}`.trim()}>
-                            <strong>Moves</strong>
-                            <em>{entityStats.movePoints} / {formatLayeredStatValue(entityStats.statLayers.moveCapacity.permanent, entityStats.statLayers.moveCapacity.bonus)}</em>
-                            {shouldShowDetailedTooltips && moveContributionSummary.rows.length > 0 ? (
-                              <span className="battlefield-hover-stat-sources">
-                                {moveContributionSummary.rows.map((row) => (
-                                  <span key={`moves-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta)}
-                                    </span>
-                                  </span>
-                                ))}
-                                {moveContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{moveContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </span>
-                        </div>
-                        {entityStats.isImmune ? (
-                          <div className="battlefield-hover-status-row">
-                            <span className="battlefield-hover-status-pill immune">Immune</span>
-                            {shouldShowDetailedTooltips && immuneContributionSummary.rows.length > 0 ? (
-                              <span className="battlefield-hover-status-source-list">
-                                {immuneContributionSummary.rows.map((row) => (
-                                  <span key={`immune-${row.sourceId}`} className="battlefield-hover-status-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta)}
-                                    </span>
-                                  </span>
-                                ))}
-                                {immuneContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{immuneContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </div>
-                        ) : null}
-                        {entityStats.isTaunt ? (
-                          <div className="battlefield-hover-status-row">
-                            <span className="battlefield-hover-status-pill taunt">Taunt</span>
-                            <span className="battlefield-hover-status-source-row">
-                              Adjacent allies cannot be targeted by enemy attacks.
-                            </span>
-                          </div>
-                        ) : null}
-                        {entityStats.activeListeners.length > 0 ? (
-                          <div className="battlefield-hover-status-row">
-                            <span className="battlefield-hover-status-pill listener">Armed</span>
-                            <span className="battlefield-hover-status-source-list">
-                              {entityStats.activeListeners.map((listener) => (
-                                <span key={listener.listenerId} className="battlefield-hover-status-source-row">
-                                  <strong>{listener.label}:</strong> {listener.shortText} ({listener.statusLabel})
-                                </span>
-                              ))}
-                            </span>
-                          </div>
-                        ) : null}
-                        <span className="hover-group-title">Combat</span>
-                        <div className="battlefield-hover-grid">
-                          <span className={`battlefield-hover-stat ${attackDamageClass}`.trim()}>
-                            <strong>AD</strong>
-                            <em>{formatLayeredStatValue(entityStats.statLayers.attackDamage.permanent, entityStats.statLayers.attackDamage.bonus)}</em>
-                            {shouldShowDetailedTooltips && adContributionSummary.rows.length > 0 ? (
-                              <span className="battlefield-hover-stat-sources">
-                                {adContributionSummary.rows.map((row) => (
-                                  <span key={`ad-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta)}
-                                    </span>
-                                  </span>
-                                ))}
-                                {adContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{adContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className={`battlefield-hover-stat ${abilityPowerClass}`.trim()}>
-                            <strong>AP</strong>
-                            <em>{formatLayeredStatValue(entityStats.statLayers.abilityPower.permanent, entityStats.statLayers.abilityPower.bonus)}</em>
-                            {shouldShowDetailedTooltips && apContributionSummary.rows.length > 0 ? (
-                              <span className="battlefield-hover-stat-sources">
-                                {apContributionSummary.rows.map((row) => (
-                                  <span key={`ap-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta)}
-                                    </span>
-                                  </span>
-                                ))}
-                                {apContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{apContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </span>
-                          {attackFlatBonusDamage !== 0 ? (
-                            <span className={`battlefield-hover-stat ${attackFlatBonusDamageClass}`.trim()}>
-                              <strong>ATK+</strong>
-                              <em>{formatLayeredStatValue(entityStats.statLayers.attackFlatBonusDamage.permanent, entityStats.statLayers.attackFlatBonusDamage.bonus)}</em>
-                              {shouldShowDetailedTooltips && attackFlatContributionSummary.rows.length > 0 ? (
-                                <span className="battlefield-hover-stat-sources">
-                                  {attackFlatContributionSummary.rows.map((row) => (
-                                    <span key={`attack-flat-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                      <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                      <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                        {formatSignedDelta(row.delta)}
-                                      </span>
-                                    </span>
-                                  ))}
-                                  {attackFlatContributionSummary.hiddenCount > 0 ? (
-                                    <span className="battlefield-hover-stat-source-more">+{attackFlatContributionSummary.hiddenCount} more</span>
-                                  ) : null}
-                                </span>
-                              ) : null}
-                            </span>
-                          ) : null}
-                          <span className={`battlefield-hover-stat ${armorClass}`.trim()}>
-                            <strong>Armor</strong>
-                            <em>{formatLayeredStatValue(entityStats.statLayers.armor.permanent, entityStats.statLayers.armor.bonus)}</em>
-                            {shouldShowDetailedTooltips && armorContributionSummary.rows.length > 0 ? (
-                              <span className="battlefield-hover-stat-sources">
-                                {armorContributionSummary.rows.map((row) => (
-                                  <span key={`armor-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta)}
-                                    </span>
-                                  </span>
-                                ))}
-                                {armorContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{armorContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className={`battlefield-hover-stat ${magicResistClass}`.trim()}>
-                            <strong>MR</strong>
-                            <em>{formatLayeredStatValue(entityStats.statLayers.magicResist.permanent, entityStats.statLayers.magicResist.bonus)}</em>
-                            {shouldShowDetailedTooltips && mrContributionSummary.rows.length > 0 ? (
-                              <span className="battlefield-hover-stat-sources">
-                                {mrContributionSummary.rows.map((row) => (
-                                  <span key={`mr-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta)}
-                                    </span>
-                                  </span>
-                                ))}
-                                {mrContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{mrContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className={`battlefield-hover-stat ${critClass}`.trim()}>
-                            <strong>Crit</strong>
-                            <em>{formatChancePercent(entityStats.effectiveCriticalChance)} x{entityStats.criticalMultiplier.toFixed(2)}</em>
-                            {shouldShowDetailedTooltips && critLuckDelta !== 0 ? (
-                              <span className="battlefield-hover-stat-sources">
-                                <span className="battlefield-hover-stat-source-row">
-                                  <span className="battlefield-hover-stat-source-name">Luck</span>
-                                  <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(critLuckDelta)}`.trim()}>
-                                    {formatSignedDelta(critLuckDelta * 100)}%
-                                  </span>
-                                </span>
-                              </span>
-                            ) : null}
-                          </span>
-                          <span className={`battlefield-hover-stat ${dodgeClass}`.trim()}>
-                            <strong>Dodge</strong>
-                            <em>{formatChancePercent(entityStats.effectiveDodgeChance)}</em>
-                            {shouldShowDetailedTooltips && (dodgeContributionSummary.rows.length > 0 || dodgeLuckDelta !== 0) ? (
-                              <span className="battlefield-hover-stat-sources">
-                                {dodgeContributionSummary.rows.map((row) => (
-                                  <span key={`dodge-${row.sourceId}`} className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">{row.label}</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(row.delta)}`.trim()}>
-                                      {formatSignedDelta(row.delta * 100)}%
-                                    </span>
-                                  </span>
-                                ))}
-                                {dodgeLuckDelta !== 0 ? (
-                                  <span className="battlefield-hover-stat-source-row">
-                                    <span className="battlefield-hover-stat-source-name">Luck</span>
-                                    <span className={`battlefield-hover-stat-source-delta ${numberDeltaClass(dodgeLuckDelta)}`.trim()}>
-                                      {formatSignedDelta(dodgeLuckDelta * 100)}%
-                                    </span>
-                                  </span>
-                                ) : null}
-                                {dodgeContributionSummary.hiddenCount > 0 ? (
-                                  <span className="battlefield-hover-stat-source-more">+{dodgeContributionSummary.hiddenCount} more</span>
-                                ) : null}
-                              </span>
-                            ) : null}
-                          </span>
-                        </div>
-                        {!shouldShowDetailedTooltips && hasAnyContributionRows ? (
-                          <span className="tooltip-shift-hint">Hold Shift or enable Details to see stat sources.</span>
-                        ) : null}
-                      </div>
-                    ) : null}
-                  </span>
+                  <span className="hover-card entity-name-hover" role="tooltip">{entityStats?.displayName ?? meta.label ?? occupier.kind}</span>
                 </span>
 
                 {entityStats ? (
@@ -760,7 +328,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                     <span className="entity-stats-row" aria-hidden="true">
                       <span className={`entity-stat-pill ${attackDamageClass}`.trim()}>
                         <Icon icon="game-icons:broadsword" />
-                        {formatLayeredStatValue(entityStats.statLayers.attackDamage.permanent, entityStats.statLayers.attackDamage.bonus)}
+                        {formatCompactNumber(entityStats.statLayers.attackDamage.permanent + entityStats.statLayers.attackDamage.bonus)}
                       </span>
                       {attackFlatBonusDamage !== 0 ? (
                         <span className={`entity-stat-pill ${attackFlatBonusDamageClass}`.trim()}>
@@ -770,7 +338,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       ) : null}
                       <span className={`entity-stat-pill ${armorClass}`.trim()}>
                         <Icon icon="game-icons:checked-shield" />
-                        {formatLayeredStatValue(entityStats.statLayers.armor.permanent, entityStats.statLayers.armor.bonus)}
+                        {formatCompactNumber(entityStats.statLayers.armor.permanent + entityStats.statLayers.armor.bonus)}
                       </span>
                     </span>
                     <span className="entity-healthbar" aria-hidden="true">
