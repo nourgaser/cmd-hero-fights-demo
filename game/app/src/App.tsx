@@ -1356,7 +1356,15 @@ function App() {
               ) : (
                 <>
                   <div className="history-log-scroll">
-                    <ol className="history-list">{historyEntries.map(renderHistoryRow)}</ol>
+                    {(() => {
+                      const filteredHistoryEntries = historyEntries
+                        .filter((entry) => {
+                          const entrySnapshotIndex = snapshots.findIndex((snap) => snap.id === entry.postSnapshotId)
+                          return entrySnapshotIndex >= 0 && (activeSnapshotIndex < 0 ? true : entrySnapshotIndex <= activeSnapshotIndex)
+                        })
+                        .reverse()
+                      return <ol className="history-list">{filteredHistoryEntries.map(renderHistoryRow)}</ol>
+                    })()}
                   </div>
                   <ul className="snapshot-list" aria-label="Snapshots">
                     {snapshots.map((snapshot) => {

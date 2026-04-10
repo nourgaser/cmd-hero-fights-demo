@@ -19,6 +19,11 @@
   --layer-tooltip-popover: 2000;
 }
 
+html {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
 #__react-hot-toast {
   z-index: var(--layer-toast) !important;
 }
