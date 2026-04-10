@@ -2723,18 +2723,6 @@ html[data-shift-held='true'] .game-toast-detail {
   background: color-mix(in srgb, var(--enemy-side-color) 12%, var(--bg));
 }
 
-.battle-slot.occupied {
-  border-width: 2px;
-}
-
-.battle-slot.occupied.owner-self {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--self-side-color) 62%, transparent);
-}
-
-.battle-slot.occupied.owner-enemy {
-  box-shadow: inset 0 0 0 2px color-mix(in srgb, var(--enemy-side-color) 62%, transparent);
-}
-
 .battle-slot.moves-remaining {
   box-shadow:
     inset 0 0 0 3px color-mix(in srgb, #f0cb58 82%, #ffffff 18%),
