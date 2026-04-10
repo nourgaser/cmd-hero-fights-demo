@@ -411,10 +411,16 @@ export function PlayerScreen(props: PlayerScreenProps) {
     if (!selectedEntityActiveSourceId) {
       return
     }
-    if (selectedEntityActiveRequiresTarget && !selectedTargetEntityId) {
+    const activeTargetEntityIds =
+      selectedEntityActiveSourceId === selfId
+        ? basicAttackTargetEntityIds
+        : selectedEntityActiveOption?.validTargetEntityIds ?? []
+    const requiresTarget = activeTargetEntityIds.length > 0
+
+    if (requiresTarget && !selectedTargetEntityId) {
       return
     }
-    if (selectedEntityActiveRequiresTarget && selectedTargetEntityId && !entityActiveTargetEntityIds.includes(selectedTargetEntityId)) {
+    if (requiresTarget && selectedTargetEntityId && !activeTargetEntityIds.includes(selectedTargetEntityId)) {
       return
     }
 
@@ -435,11 +441,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedPlacementPosition(null)
   }, [
     basicAttackTargetEntityIds,
-    entityActiveTargetEntityIds,
     onBasicAttack,
     onUseEntityActive,
     pendingActionMode,
-    selectedEntityActiveRequiresTarget,
+    selectedEntityActiveOption,
     selectedEntityActiveSourceId,
     selectedTargetEntityId,
     selfId,
