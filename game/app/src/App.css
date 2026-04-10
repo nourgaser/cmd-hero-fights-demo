@@ -1652,6 +1652,25 @@ html[data-shift-held='true'] .game-toast-detail {
   cursor: pointer;
 }
 
+.history-icon-button {
+  width: 34px;
+  min-width: 34px;
+  padding: 0;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.history-control-icon {
+  width: 16px;
+  height: 16px;
+  stroke: currentColor;
+  fill: none;
+  stroke-width: 2;
+  stroke-linecap: round;
+  stroke-linejoin: round;
+}
+
 .history-snapshot-controls button:disabled {
   opacity: 0.45;
   cursor: default;
@@ -1770,6 +1789,11 @@ html[data-shift-held='true'] .game-toast-detail {
 
   .history-snapshot-controls button {
     min-height: 32px;
+  }
+
+  .history-icon-button {
+    width: 36px;
+    min-width: 36px;
   }
 
   .snapshot-list {

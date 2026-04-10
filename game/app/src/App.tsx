@@ -930,6 +930,63 @@ function App() {
     )
   }
 
+  const renderHistoryControlIcon = (kind: 'first' | 'previous' | 'next' | 'latest' | 'branch' | 'copy' | 'validate') => {
+    switch (kind) {
+      case 'first':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M6 5v14" />
+            <path d="M18 6L10 12l8 6" />
+          </svg>
+        )
+      case 'previous':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M17 6L9 12l8 6" />
+          </svg>
+        )
+      case 'next':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 6l8 6-8 6" />
+          </svg>
+        )
+      case 'latest':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M18 5v14" />
+            <path d="M6 6l8 6-8 6" />
+          </svg>
+        )
+      case 'branch':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M7 6v8" />
+            <path d="M7 14c0 3 2 4 5 4h5" />
+            <circle cx="7" cy="4.5" r="1.8" />
+            <circle cx="7" cy="12.5" r="1.8" />
+            <circle cx="18.5" cy="18.5" r="1.8" />
+          </svg>
+        )
+      case 'copy':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <rect x="9" y="8" width="10" height="11" rx="2" />
+            <rect x="5" y="5" width="10" height="11" rx="2" />
+          </svg>
+        )
+      case 'validate':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <circle cx="12" cy="12" r="8" />
+            <path d="M8.5 12.3l2.3 2.3 4.8-4.8" />
+          </svg>
+        )
+      default:
+        return null
+    }
+  }
+
   return (
     <>
       <Toaster
@@ -977,7 +1034,24 @@ function App() {
             <div className="history-modal-body">
               <div className="history-snapshot-controls">
                 <button
+                  className="history-icon-button"
                   type="button"
+                  aria-label="Jump to first snapshot"
+                  title="First"
+                  onClick={() => {
+                    if (snapshots.length > 0) {
+                      handleJumpToSnapshot(snapshots[0]!.id)
+                    }
+                  }}
+                  disabled={snapshots.length === 0 || activeSnapshotIndex <= 0}
+                >
+                  {renderHistoryControlIcon('first')}
+                </button>
+                <button
+                  className="history-icon-button"
+                  type="button"
+                  aria-label="Jump to previous snapshot"
+                  title="Previous"
                   onClick={() => {
                     if (activeSnapshotIndex > 0) {
                       handleJumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
@@ -985,10 +1059,13 @@ function App() {
                   }}
                   disabled={activeSnapshotIndex <= 0}
                 >
-                  Previous
+                  {renderHistoryControlIcon('previous')}
                 </button>
                 <button
+                  className="history-icon-button"
                   type="button"
+                  aria-label="Jump to next snapshot"
+                  title="Next"
                   onClick={() => {
                     if (activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
                       handleJumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
@@ -996,10 +1073,13 @@ function App() {
                   }}
                   disabled={activeSnapshotIndex < 0 || activeSnapshotIndex >= snapshots.length - 1}
                 >
-                  Next
+                  {renderHistoryControlIcon('next')}
                 </button>
                 <button
+                  className="history-icon-button"
                   type="button"
+                  aria-label="Jump to latest snapshot"
+                  title="Latest"
                   onClick={() => {
                     if (latestSnapshotId) {
                       handleJumpToSnapshot(latestSnapshotId)
@@ -1007,20 +1087,35 @@ function App() {
                   }}
                   disabled={!latestSnapshotId || activeSnapshotId === latestSnapshotId}
                 >
-                  Latest
+                  {renderHistoryControlIcon('latest')}
                 </button>
                 <button
+                  className="history-icon-button"
                   type="button"
+                  aria-label="Branch from active snapshot"
+                  title="Branch"
                   onClick={handleBranchFromSnapshot}
                   disabled={!activeSnapshotId}
                 >
-                  Branch From Snapshot
+                  {renderHistoryControlIcon('branch')}
                 </button>
-                <button type="button" onClick={() => void handleCopyReplayPayload()}>
-                  Copy Replay Payload
+                <button
+                  className="history-icon-button"
+                  type="button"
+                  aria-label="Copy replay payload"
+                  title="Copy Replay Payload"
+                  onClick={() => void handleCopyReplayPayload()}
+                >
+                  {renderHistoryControlIcon('copy')}
                 </button>
-                <button type="button" onClick={handleValidateReplayDeterminism}>
-                  Validate Replay
+                <button
+                  className="history-icon-button"
+                  type="button"
+                  aria-label="Validate replay determinism"
+                  title="Validate Replay"
+                  onClick={handleValidateReplayDeterminism}
+                >
+                  {renderHistoryControlIcon('validate')}
                 </button>
                 <span className="history-snapshot-active-label">
                   Active snapshot: {activeSnapshot ? `${activeSnapshot.id} (${activeSnapshot.phase})` : 'none'}
