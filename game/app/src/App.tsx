@@ -412,6 +412,12 @@ function App() {
       }
 
       const key = event.key.toLowerCase()
+      if (key === 's') {
+        event.preventDefault()
+        setIsSettingsPanelOpen((current) => !current)
+        return
+      }
+
       if (key === 'h') {
         event.preventDefault()
         if (!isHistoryModalOpen && !isReplayModeOpen) {
@@ -422,6 +428,12 @@ function App() {
         } else {
           setIsReplayModeOpen(false)
         }
+        return
+      }
+
+      if (event.key === 'Escape' && isSettingsPanelOpen && !isHistoryModalOpen && !isReplayModeOpen) {
+        event.preventDefault()
+        setIsSettingsPanelOpen(false)
         return
       }
 
@@ -653,7 +665,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [bootstrapConfig, isHistoryModalOpen, isReplayModeOpen, runtime])
+  }, [bootstrapConfig, isHistoryModalOpen, isReplayModeOpen, isSettingsPanelOpen, runtime])
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {
@@ -1528,6 +1540,16 @@ function App() {
       >
         History ({visibleHistoryEntries.length})
       </button>
+      <button
+        type="button"
+        className={`history-button settings-launch-button ${isSettingsPanelOpen ? 'settings-launch-button-active' : ''}`.trim()}
+        onClick={() => setIsSettingsPanelOpen((current) => !current)}
+        aria-haspopup="dialog"
+        aria-expanded={isSettingsPanelOpen}
+        title="Toggle settings (S)"
+      >
+        Settings
+      </button>
       {isHistoryModalOpen ? (
         <div
           className="history-modal-overlay"
@@ -1656,9 +1678,6 @@ function App() {
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl
-          isSettingsOpen={isSettingsPanelOpen}
-          onToggleSettings={() => setIsSettingsPanelOpen((current) => !current)}
-          showSettingsControl
         />
         <PlayerScreen
           key="screen-b"
@@ -1679,9 +1698,6 @@ function App() {
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl
-          isSettingsOpen={isSettingsPanelOpen}
-          onToggleSettings={() => setIsSettingsPanelOpen((current) => !current)}
-          showSettingsControl
         />
       </main>
     </>

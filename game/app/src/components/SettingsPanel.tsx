@@ -2,7 +2,6 @@ import { useEffect, useMemo, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '@iconify/react/offline'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
-import { Rnd } from 'react-rnd'
 import { toast } from 'react-hot-toast'
 import 'react-json-view-lite/dist/index.css'
 import type { GameBootstrapConfig } from '../data/game-bootstrap.ts'
@@ -39,7 +38,6 @@ type SettingsPanelProps = {
 }
 
 const SETTINGS_PANEL_STORAGE_KEY = 'cmd-hero:settings-panel-state'
-const DEFAULT_LAYOUT = { x: 12, y: 12, width: 360, height: 560 }
 const MAX_DECK_SIZE = 15
 const MAX_ULTIMATE_COPIES = 1
 const DECK_SAVE_TOAST_ID = 'deck-editor-save'
@@ -47,6 +45,16 @@ const DECK_SAVE_TOAST_ID = 'deck-editor-save'
 type DeckTypeFilter = 'all' | 'ability' | 'weapon' | 'totem' | 'companion'
 
 type DeckRarityFilter = 'all' | 'common' | 'rare' | 'ultimate' | 'general'
+
+type SettingsSectionKey = 'seed' | 'bootstrap' | 'runtime'
+type SettingsSectionOpenState = Record<SettingsSectionKey, boolean>
+
+const SETTINGS_SECTION_ORDER: SettingsSectionKey[] = ['seed', 'bootstrap', 'runtime']
+const DEFAULT_SECTION_OPEN_STATE: SettingsSectionOpenState = {
+  seed: true,
+  bootstrap: true,
+  runtime: true,
+}
 
 const DECK_COST_FILTERS = ['all', '0', '1', '2', '3', '4', '5', '6', '7', '8', '9', '10+'] as const
 type DeckCostFilter = (typeof DECK_COST_FILTERS)[number]
@@ -70,12 +78,8 @@ const RARITY_FILTER_OPTIONS: Array<{ value: DeckRarityFilter; label: string; ico
 
 
 type SettingsPanelPersistedState = {
-  x: number
-  y: number
-  width: number
-  height: number
-  isCollapsed: boolean
   expandAll: boolean
+  sectionOpen: SettingsSectionOpenState
 }
 
 type SavedDeck = {
@@ -110,13 +114,6 @@ const persistSavedDecks = (decks: SavedDeck[]) => {
   window.localStorage.setItem(SAVED_DECKS_STORAGE_KEY, JSON.stringify(decks))
 }
 
-const clamp = (value: number, min: number, max: number) => {
-  if (max < min) {
-    return min
-  }
-  return Math.min(Math.max(value, min), max)
-}
-
 const getVisualIconStyle = (meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) => {
   const transforms: string[] = []
   if (meta.hFlip) {
@@ -131,50 +128,37 @@ const getVisualIconStyle = (meta: { rotate?: number; hFlip?: boolean; vFlip?: bo
   return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
 }
 
-const sanitizePersistedState = (state: SettingsPanelPersistedState): SettingsPanelPersistedState => {
-  if (typeof window === 'undefined') {
-    return state
-  }
-
-  const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
-  const minPanelWidth = 300
-  const minPanelHeight = 220
-
-  const width = clamp(state.width, minPanelWidth, Math.max(minPanelWidth, viewportWidth))
-  const height = clamp(state.height, minPanelHeight, Math.max(minPanelHeight, viewportHeight))
-
-  return {
-    ...state,
-    width,
-    height,
-    x: clamp(state.x, 0, viewportWidth - width),
-    y: clamp(state.y, 0, viewportHeight - height),
-  }
-}
-
 const loadPersistedState = (): SettingsPanelPersistedState => {
   if (typeof window === 'undefined') {
-    return { ...DEFAULT_LAYOUT, isCollapsed: false, expandAll: false }
+    return {
+      expandAll: false,
+      sectionOpen: { ...DEFAULT_SECTION_OPEN_STATE },
+    }
   }
 
   const saved = window.localStorage.getItem(SETTINGS_PANEL_STORAGE_KEY)
   if (!saved) {
-    return { ...DEFAULT_LAYOUT, isCollapsed: false, expandAll: false }
+    return {
+      expandAll: false,
+      sectionOpen: { ...DEFAULT_SECTION_OPEN_STATE },
+    }
   }
 
   try {
     const parsed = JSON.parse(saved) as Partial<SettingsPanelPersistedState>
-    return sanitizePersistedState({
-      x: typeof parsed.x === 'number' ? parsed.x : DEFAULT_LAYOUT.x,
-      y: typeof parsed.y === 'number' ? parsed.y : DEFAULT_LAYOUT.y,
-      width: typeof parsed.width === 'number' ? parsed.width : DEFAULT_LAYOUT.width,
-      height: typeof parsed.height === 'number' ? parsed.height : DEFAULT_LAYOUT.height,
-      isCollapsed: typeof parsed.isCollapsed === 'boolean' ? parsed.isCollapsed : false,
+    return {
       expandAll: typeof parsed.expandAll === 'boolean' ? parsed.expandAll : false,
-    })
+      sectionOpen: {
+        seed: parsed.sectionOpen?.seed !== false,
+        bootstrap: parsed.sectionOpen?.bootstrap !== false,
+        runtime: parsed.sectionOpen?.runtime !== false,
+      },
+    }
   } catch {
-    return { ...DEFAULT_LAYOUT, isCollapsed: false, expandAll: false }
+    return {
+      expandAll: false,
+      sectionOpen: { ...DEFAULT_SECTION_OPEN_STATE },
+    }
   }
 }
 
@@ -208,7 +192,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null)
   const [editingDeckName, setEditingDeckName] = useState('')
 
-  const { x, y, width, height, expandAll } = persistedState
+  const { expandAll, sectionOpen } = persistedState
 
   const copiedState = useMemo(() => JSON.stringify(state, null, 2), [state])
 
@@ -264,38 +248,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
     }
   }, [isDeckEditorOpen, isSavedDecksOpen, onCloseDeckEditor])
 
-  useEffect(() => {
-    if (typeof window === 'undefined') {
-      return
-    }
-
-    const handleResize = () => {
-      setPersistedState((current) => {
-        const next = sanitizePersistedState(current)
-        if (
-          next.x === current.x
-          && next.y === current.y
-          && next.width === current.width
-          && next.height === current.height
-        ) {
-          return current
-        }
-
-        persistState(next)
-        return next
-      })
-    }
-
-    handleResize()
-    window.addEventListener('resize', handleResize)
-    return () => {
-      window.removeEventListener('resize', handleResize)
-    }
-  }, [])
-
-  const updateState = (updater: (current: SettingsPanelPersistedState) => SettingsPanelPersistedState) => {
+  function updateState(updater: (current: SettingsPanelPersistedState) => SettingsPanelPersistedState) {
     setPersistedState((current) => {
-      const next = sanitizePersistedState(updater(current))
+      const next = updater(current)
       persistState(next)
       return next
     })
@@ -707,39 +662,63 @@ export function SettingsPanel(props: SettingsPanelProps) {
     onCloseDeckEditor()
   }
 
+  const setAllSectionsOpen = (open: boolean) => {
+    updateState((current) => ({
+      ...current,
+      expandAll: open,
+      sectionOpen: {
+        seed: open,
+        bootstrap: open,
+        runtime: open,
+      },
+    }))
+  }
+
+  const toggleSection = (section: SettingsSectionKey) => {
+    updateState((current) => {
+      const nextSectionOpen = {
+        ...current.sectionOpen,
+        [section]: !current.sectionOpen[section],
+      }
+
+      return {
+        ...current,
+        sectionOpen: nextSectionOpen,
+        expandAll: SETTINGS_SECTION_ORDER.every((key) => nextSectionOpen[key]),
+      }
+    })
+  }
+
+  const isAllSectionsOpen = SETTINGS_SECTION_ORDER.every((key) => sectionOpen[key])
+
   return (
-    <Rnd
-      position={{ x, y }}
-      size={{ width, height }}
-      minWidth={300}
-      minHeight={220}
-      bounds="window"
-      dragHandleClassName="settings-panel-header"
-      cancel=".settings-panel-actions, .settings-panel-actions *"
-      enableResizing
-      className="settings-panel"
-      onDragStop={(_event, data) => {
-        updateState((current) => ({ ...current, x: data.x, y: data.y }))
-      }}
-      onResizeStop={(_event, _direction, ref, _delta, position) => {
-        updateState((current) => ({
-          ...current,
-          x: position.x,
-          y: position.y,
-          width: Number.parseFloat(ref.style.width),
-          height: Number.parseFloat(ref.style.height),
-        }))
-      }}
-    >
-      <aside aria-label="Settings panel">
-          <header className="settings-panel-header">
+    <>
+      <div
+        className="settings-modal-overlay"
+        onClick={() => {
+          if (onClosePanel) {
+            onClosePanel()
+          }
+        }}
+        role="presentation"
+      >
+        <section
+          className="settings-modal"
+          role="dialog"
+          aria-modal="true"
+          aria-label="Settings"
+          onClick={(event) => {
+            event.stopPropagation()
+          }}
+        >
+          <header className="settings-modal-head">
             <strong>Settings</strong>
-            <div className="settings-panel-actions">
+            <div className="settings-modal-head-actions">
               <button
                 type="button"
-                onClick={() => updateState((current) => ({ ...current, expandAll: !current.expandAll }))}
+                onClick={() => setAllSectionsOpen(!isAllSectionsOpen)}
               >
-                {expandAll ? 'Collapse All' : 'Expand All'}
+                {isAllSectionsOpen ? 'Collapse All' : 'Expand All'}
               </button>
               <button type="button" onClick={handleCopy}>
                 Copy JSON
@@ -755,7 +734,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 onClick={() => {
                   if (onClosePanel) {
                     onClosePanel()
-                    return
                   }
                 }}
               >
@@ -765,6 +743,17 @@ export function SettingsPanel(props: SettingsPanelProps) {
           </header>
 
           <div className="settings-tree-wrap">
+            <section id="settings-section-seed" className={`settings-section ${sectionOpen.seed ? 'open' : 'closed'}`.trim()}>
+              <button
+                type="button"
+                className="settings-section-toggle"
+                onClick={() => toggleSection('seed')}
+                aria-expanded={sectionOpen.seed}
+              >
+                <span>Seed &amp; Session</span>
+                <span className="settings-section-toggle-symbol" aria-hidden="true">{sectionOpen.seed ? '−' : '+'}</span>
+              </button>
+              {sectionOpen.seed ? (
             <div className="settings-seed-panel">
               <label className="settings-seed-field">
                 <span>Seed</span>
@@ -784,6 +773,19 @@ export function SettingsPanel(props: SettingsPanelProps) {
                 Apply Seed
               </button>
             </div>
+              ) : null}
+            </section>
+            <section id="settings-section-bootstrap" className={`settings-section ${sectionOpen.bootstrap ? 'open' : 'closed'}`.trim()}>
+              <button
+                type="button"
+                className="settings-section-toggle"
+                onClick={() => toggleSection('bootstrap')}
+                aria-expanded={sectionOpen.bootstrap}
+              >
+                <span>Bootstrap Config</span>
+                <span className="settings-section-toggle-symbol" aria-hidden="true">{sectionOpen.bootstrap ? '−' : '+'}</span>
+              </button>
+              {sectionOpen.bootstrap ? (
             <div className="settings-bootstrap-panel">
               <div className="settings-bootstrap-header">
                 <strong>Bootstrap Config</strong>
@@ -962,6 +964,20 @@ export function SettingsPanel(props: SettingsPanelProps) {
               )}
               {bootstrapConfigError ? <p className="settings-bootstrap-error">{bootstrapConfigError}</p> : null}
             </div>
+              ) : null}
+            </section>
+            <section id="settings-section-runtime" className={`settings-section ${sectionOpen.runtime ? 'open' : 'closed'}`.trim()}>
+              <button
+                type="button"
+                className="settings-section-toggle"
+                onClick={() => toggleSection('runtime')}
+                aria-expanded={sectionOpen.runtime}
+              >
+                <span>Runtime State</span>
+                <span className="settings-section-toggle-symbol" aria-hidden="true">{sectionOpen.runtime ? '−' : '+'}</span>
+              </button>
+              {sectionOpen.runtime ? (
+                <div className="settings-runtime-panel">
             <JsonView
               data={state}
               style={defaultStyles}
@@ -971,8 +987,12 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   : (level) => level < 2
               }
             />
+                </div>
+              ) : null}
+            </section>
           </div>
-        </aside>
+        </section>
+      </div>
 
       {isDeckEditorOpen && typeof document !== 'undefined'
         ? createPortal(
@@ -1344,6 +1364,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
           document.body,
         )
         : null}
-    </Rnd>
+    </>
   )
 }
