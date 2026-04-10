@@ -1351,7 +1351,7 @@ export type AppActionHistoryEntry = {
   id: number
   turnNumber: number
   actorHeroEntityId: string
-  actionKind: BattleAction['kind'] | 'branch'
+  actionKind: BattleAction['kind']
   resultMessage: string
   success: boolean
   failureReason?: string
@@ -2732,29 +2732,14 @@ export function branchSessionFromSnapshot(options: {
   }
 
   const truncatedSnapshots = jumpResult.session.snapshots.filter((entry) => entry.id <= sourceSnapshot.id)
-  const truncatedHistory = jumpResult.session.history.filter(
-    (entry) => entry.postSnapshotId <= sourceSnapshot.id,
-  )
-  const nextHistoryEntryId = (truncatedHistory.at(-1)?.id ?? 0) + 1
-
-  const historyEntry: AppActionHistoryEntry = {
-    id: nextHistoryEntryId,
-    turnNumber: sourceSnapshot.turnNumber,
-    actorHeroEntityId: sourceSnapshot.actorHeroEntityId,
-    actionKind: 'branch',
-    resultMessage: `Branched from snapshot ${sourceSnapshot.id} (${sourceSnapshot.phase}).`,
-    success: true,
-    eventCount: 0,
-    preSnapshotId: sourceSnapshot.id,
-    postSnapshotId: sourceSnapshot.id,
-  }
+  const truncatedHistory = jumpResult.session.history.filter((entry) => entry.postSnapshotId <= sourceSnapshot.id)
 
   const nextSession: AppBattleSession = {
     ...jumpResult.session,
     snapshots: truncatedSnapshots,
     nextSnapshotId: sourceSnapshot.id + 1,
-    history: [...truncatedHistory, historyEntry],
-    nextHistoryEntryId: historyEntry.id + 1,
+    history: truncatedHistory,
+    nextHistoryEntryId: (truncatedHistory.at(-1)?.id ?? 0) + 1,
   }
 
   return {

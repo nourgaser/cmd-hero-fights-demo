@@ -394,11 +394,25 @@ function App() {
         return
       }
 
-      const snapshots = runtime.session.snapshots
-      const latestSnapshotId = snapshots.at(-1)?.id ?? null
-      const activeSnapshotId = runtime.session.activeSnapshotId ?? latestSnapshotId
-      const activeSnapshotIndex = activeSnapshotId
-        ? snapshots.findIndex((snapshot) => snapshot.id === activeSnapshotId)
+      const postSnapshots = runtime.session.snapshots.filter((snapshot) => snapshot.phase === 'post')
+      const firstPreSnapshot = runtime.session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
+      const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
+      const timelineLatestSnapshotId = timelineSnapshots.at(-1)?.id ?? null
+      const currentSnapshotId = runtime.session.activeSnapshotId ?? timelineLatestSnapshotId
+      const currentSnapshot = currentSnapshotId
+        ? runtime.session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
+        : null
+      const branchSnapshotId = runtime.session.activeSnapshotId
+      const timelineActiveSnapshotId = currentSnapshot
+        ? currentSnapshot.phase === 'pre'
+          ? firstPreSnapshot?.id ?? null
+          : currentSnapshot.id
+        : null
+      const timelineActiveSnapshot = timelineActiveSnapshotId
+        ? timelineSnapshots.find((snapshot) => snapshot.id === timelineActiveSnapshotId) ?? null
+        : null
+      const timelineActiveSnapshotIndex = timelineActiveSnapshotId
+        ? timelineSnapshots.findIndex((snapshot) => snapshot.id === timelineActiveSnapshotId)
         : -1
 
       const jumpToSnapshot = (snapshotId: number) => {
@@ -423,31 +437,31 @@ function App() {
         })
       }
 
-      if (event.key === 'Home' && snapshots.length > 0) {
+      if (event.key === 'Home' && timelineSnapshots.length > 0) {
         event.preventDefault()
-        jumpToSnapshot(snapshots[0]!.id)
+        jumpToSnapshot(timelineSnapshots[0]!.id)
         return
       }
 
-      if (event.key === 'End' && latestSnapshotId) {
+      if (event.key === 'End' && timelineLatestSnapshotId) {
         event.preventDefault()
-        jumpToSnapshot(latestSnapshotId)
+        jumpToSnapshot(timelineLatestSnapshotId)
         return
       }
 
-      if (event.key === 'ArrowLeft' && activeSnapshotIndex > 0) {
+      if (event.key === 'ArrowLeft' && timelineActiveSnapshotIndex > 0) {
         event.preventDefault()
-        jumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
+        jumpToSnapshot(timelineSnapshots[timelineActiveSnapshotIndex - 1]!.id)
         return
       }
 
-      if (event.key === 'ArrowRight' && activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
+      if (event.key === 'ArrowRight' && timelineActiveSnapshotIndex >= 0 && timelineActiveSnapshotIndex < timelineSnapshots.length - 1) {
         event.preventDefault()
-        jumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
+        jumpToSnapshot(timelineSnapshots[timelineActiveSnapshotIndex + 1]!.id)
         return
       }
 
-      if (key === 'b' && activeSnapshotId) {
+      if (key === 'b' && branchSnapshotId) {
         event.preventDefault()
         let branchMessage: string | null = null
 
@@ -458,14 +472,14 @@ function App() {
 
           const result = branchSessionFromSnapshot({
             session: prev.session,
-            snapshotId: activeSnapshotId,
+            snapshotId: branchSnapshotId,
           })
 
           if (!result.ok) {
             return prev
           }
 
-          branchMessage = `Branch resumed from snapshot ${activeSnapshotId}.`
+          branchMessage = `Branch resumed from snapshot ${branchSnapshotId}.`
           return {
             session: result.session,
             preview: result.preview,
@@ -488,7 +502,7 @@ function App() {
           bootstrapConfig,
           seed: runtime.session.state.seed,
           actionLog: createActionLogFromSession(runtime.session),
-          snapshotId: runtime.session.activeSnapshotId,
+          snapshotId: timelineActiveSnapshotId ?? null,
         })
 
         void navigator.clipboard
@@ -512,8 +526,7 @@ function App() {
 
       if (key === 'v') {
         event.preventDefault()
-        const activeSnapshot = snapshots.find((snapshot) => snapshot.id === activeSnapshotId)
-        if (!activeSnapshot) {
+        if (!timelineActiveSnapshotId || !timelineActiveSnapshot) {
           setLiveAnnouncement((current) => ({ id: current.id + 1, text: 'Select a snapshot before validating replay determinism.' }))
           toast.error('Select a snapshot before validating replay determinism.', {
             id: ACTION_TOAST_ID,
@@ -528,7 +541,7 @@ function App() {
             seed: runtime.session.state.seed,
           },
           actionLog: createActionLogFromSession(runtime.session),
-          snapshotId: activeSnapshotId ?? undefined,
+          snapshotId: timelineActiveSnapshotId ?? null,
         })
 
         if (!replayResult.ok) {
@@ -542,10 +555,10 @@ function App() {
         }
 
         const rebuiltSnapshot = replayResult.session.snapshots.find(
-          (snapshot) => snapshot.id === activeSnapshotId,
+          (snapshot) => snapshot.id === timelineActiveSnapshotId,
         )
         if (!rebuiltSnapshot) {
-          const message = `Replay validation failed: snapshot ${activeSnapshotId} was not rebuilt.`
+          const message = `Replay validation failed: snapshot ${timelineActiveSnapshotId} was not rebuilt.`
           setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
           toast.error(message, {
             id: ACTION_TOAST_ID,
@@ -554,13 +567,13 @@ function App() {
           return
         }
 
-        const sameState = JSON.stringify(rebuiltSnapshot.state) === JSON.stringify(activeSnapshot.state)
-        const sameEvents = JSON.stringify(rebuiltSnapshot.events) === JSON.stringify(activeSnapshot.events)
-        const sameSequence = rebuiltSnapshot.nextSequence === activeSnapshot.nextSequence
-        const sameRngStep = rebuiltSnapshot.rngCheckpoint.stepCount === activeSnapshot.rngCheckpoint.stepCount
+        const sameState = JSON.stringify(rebuiltSnapshot.state) === JSON.stringify(timelineActiveSnapshot.state)
+        const sameEvents = JSON.stringify(rebuiltSnapshot.events) === JSON.stringify(timelineActiveSnapshot.events)
+        const sameSequence = rebuiltSnapshot.nextSequence === timelineActiveSnapshot.nextSequence
+        const sameRngStep = rebuiltSnapshot.rngCheckpoint.stepCount === timelineActiveSnapshot.rngCheckpoint.stepCount
 
         if (sameState && sameEvents && sameSequence && sameRngStep) {
-          const message = `Replay validation passed at snapshot ${activeSnapshotId}.`
+          const message = `Replay validation passed at snapshot ${timelineActiveSnapshotId}.`
           setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
           toast.success(message, {
             id: ACTION_TOAST_ID,
@@ -578,7 +591,7 @@ function App() {
           mismatch = 'RNG step mismatch'
         }
 
-        const message = `Replay validation failed at snapshot ${activeSnapshotId}: ${mismatch}.`
+        const message = `Replay validation failed at snapshot ${timelineActiveSnapshotId}: ${mismatch}.`
         setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
         toast.error(message, {
           id: ACTION_TOAST_ID,
@@ -765,14 +778,26 @@ function App() {
 
   const preview = runtime.preview
   const historyEntries = runtime.session.history
+  const visibleHistoryEntries = historyEntries
   const snapshots = runtime.session.snapshots
-  const latestSnapshotId = snapshots.at(-1)?.id ?? null
-  const activeSnapshotId = runtime.session.activeSnapshotId ?? latestSnapshotId
+  const actionSnapshots = snapshots.filter((snapshot) => snapshot.phase === 'post')
+  const firstPreSnapshot = snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
+  const actionTimelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...actionSnapshots] : actionSnapshots
+  const latestActionSnapshotId = actionTimelineSnapshots.at(-1)?.id ?? null
+  const activeSnapshotId = runtime.session.activeSnapshotId ?? latestActionSnapshotId
   const activeSnapshot = activeSnapshotId
     ? snapshots.find((snapshot) => snapshot.id === activeSnapshotId) ?? null
     : null
-  const activeSnapshotIndex = activeSnapshot
-    ? snapshots.findIndex((snapshot) => snapshot.id === activeSnapshot.id)
+  const activeActionSnapshotId = activeSnapshot
+    ? activeSnapshot.phase === 'pre'
+      ? firstPreSnapshot?.id ?? null
+      : activeSnapshot.id
+    : null
+  const activeActionSnapshot = activeActionSnapshotId
+    ? actionTimelineSnapshots.find((snapshot) => snapshot.id === activeActionSnapshotId) ?? null
+    : null
+  const activeActionSnapshotIndex = activeActionSnapshot
+    ? actionTimelineSnapshots.findIndex((snapshot) => snapshot.id === activeActionSnapshot.id)
     : -1
   const cardsById = runtime.session.gameApi.cardsById as Record<
     string,
@@ -1076,7 +1101,7 @@ function App() {
       bootstrapConfig,
       seed: runtime.session.state.seed,
       actionLog: createActionLogFromSession(runtime.session),
-      snapshotId: runtime.session.activeSnapshotId,
+        snapshotId: activeActionSnapshotId ?? null,
     })
 
     try {
@@ -1088,7 +1113,7 @@ function App() {
   }
 
   const handleValidateReplayDeterminism = () => {
-    if (!activeSnapshotId || !activeSnapshot) {
+    if (!activeActionSnapshotId || !activeActionSnapshot) {
       showActionErrorToast('Select a snapshot before validating replay determinism.')
       return
     }
@@ -1099,7 +1124,7 @@ function App() {
         seed: runtime.session.state.seed,
       },
       actionLog: createActionLogFromSession(runtime.session),
-      snapshotId: activeSnapshotId ?? undefined,
+      snapshotId: activeActionSnapshotId ?? null,
     })
 
     if (!replayResult.ok) {
@@ -1108,20 +1133,20 @@ function App() {
     }
 
     const rebuiltSnapshot = replayResult.session.snapshots.find(
-      (snapshot) => snapshot.id === activeSnapshotId,
+      (snapshot) => snapshot.id === activeActionSnapshotId,
     )
     if (!rebuiltSnapshot) {
-      showActionErrorToast(`Replay validation failed: snapshot ${activeSnapshotId} was not rebuilt.`)
+      showActionErrorToast(`Replay validation failed: snapshot ${activeActionSnapshotId} was not rebuilt.`)
       return
     }
 
-    const sameState = JSON.stringify(rebuiltSnapshot.state) === JSON.stringify(activeSnapshot.state)
-    const sameEvents = JSON.stringify(rebuiltSnapshot.events) === JSON.stringify(activeSnapshot.events)
-    const sameSequence = rebuiltSnapshot.nextSequence === activeSnapshot.nextSequence
-    const sameRngStep = rebuiltSnapshot.rngCheckpoint.stepCount === activeSnapshot.rngCheckpoint.stepCount
+    const sameState = JSON.stringify(rebuiltSnapshot.state) === JSON.stringify(activeActionSnapshot.state)
+    const sameEvents = JSON.stringify(rebuiltSnapshot.events) === JSON.stringify(activeActionSnapshot.events)
+    const sameSequence = rebuiltSnapshot.nextSequence === activeActionSnapshot.nextSequence
+    const sameRngStep = rebuiltSnapshot.rngCheckpoint.stepCount === activeActionSnapshot.rngCheckpoint.stepCount
 
     if (sameState && sameEvents && sameSequence && sameRngStep) {
-      showActionSuccessToast(`Replay validation passed at snapshot ${activeSnapshotId}.`, [])
+      showActionSuccessToast(`Replay validation passed at snapshot ${activeActionSnapshotId}.`, [])
       return
     }
 
@@ -1134,7 +1159,7 @@ function App() {
       mismatch = 'RNG step mismatch'
     }
 
-    showActionErrorToast(`Replay validation failed at snapshot ${activeSnapshotId}: ${mismatch}.`)
+    showActionErrorToast(`Replay validation failed at snapshot ${activeActionSnapshotId}: ${mismatch}.`)
   }
 
   const renderHistoryRow = (entry: AppActionHistoryEntry) => {
@@ -1149,9 +1174,7 @@ function App() {
         <div className="history-entry-meta">
           <span>Actor: {entry.actorHeroEntityId}</span>
           <span>Events: {entry.eventCount}</span>
-          <span>
-            Snapshots: {entry.preSnapshotId} {'->'} {entry.postSnapshotId}
-          </span>
+          <span>Checkpoint: #{entry.postSnapshotId}</span>
         </div>
       </li>
     )
@@ -1235,7 +1258,7 @@ function App() {
         aria-haspopup="dialog"
         aria-expanded={isHistoryModalOpen}
       >
-        History ({historyEntries.length})
+        History ({visibleHistoryEntries.length})
       </button>
       {isHistoryModalOpen ? (
         <div
@@ -1266,11 +1289,11 @@ function App() {
                   aria-label="Jump to first snapshot"
                   title="First (Home)"
                   onClick={() => {
-                    if (snapshots.length > 0) {
-                      handleJumpToSnapshot(snapshots[0]!.id)
+                    if (actionTimelineSnapshots.length > 0) {
+                      handleJumpToSnapshot(actionTimelineSnapshots[0]!.id)
                     }
                   }}
-                  disabled={snapshots.length === 0 || activeSnapshotIndex <= 0}
+                  disabled={actionTimelineSnapshots.length === 0 || activeActionSnapshotIndex <= 0}
                 >
                   {renderHistoryControlIcon('first')}
                 </button>
@@ -1280,11 +1303,11 @@ function App() {
                   aria-label="Jump to previous snapshot"
                   title="Previous (Left Arrow)"
                   onClick={() => {
-                    if (activeSnapshotIndex > 0) {
-                      handleJumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
+                    if (activeActionSnapshotIndex > 0) {
+                      handleJumpToSnapshot(actionTimelineSnapshots[activeActionSnapshotIndex - 1]!.id)
                     }
                   }}
-                  disabled={activeSnapshotIndex <= 0}
+                  disabled={activeActionSnapshotIndex <= 0}
                 >
                   {renderHistoryControlIcon('previous')}
                 </button>
@@ -1294,11 +1317,11 @@ function App() {
                   aria-label="Jump to next snapshot"
                   title="Next (Right Arrow)"
                   onClick={() => {
-                    if (activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
-                      handleJumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
+                    if (activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1) {
+                      handleJumpToSnapshot(actionTimelineSnapshots[activeActionSnapshotIndex + 1]!.id)
                     }
                   }}
-                  disabled={activeSnapshotIndex < 0 || activeSnapshotIndex >= snapshots.length - 1}
+                  disabled={activeActionSnapshotIndex < 0 || activeActionSnapshotIndex >= actionTimelineSnapshots.length - 1}
                 >
                   {renderHistoryControlIcon('next')}
                 </button>
@@ -1308,11 +1331,11 @@ function App() {
                   aria-label="Jump to latest snapshot"
                   title="Latest (End)"
                   onClick={() => {
-                    if (latestSnapshotId) {
-                      handleJumpToSnapshot(latestSnapshotId)
+                    if (latestActionSnapshotId) {
+                      handleJumpToSnapshot(latestActionSnapshotId)
                     }
                   }}
-                  disabled={!latestSnapshotId || activeSnapshotId === latestSnapshotId}
+                  disabled={!latestActionSnapshotId || activeActionSnapshotId === latestActionSnapshotId}
                 >
                   {renderHistoryControlIcon('latest')}
                 </button>
@@ -1345,30 +1368,32 @@ function App() {
                   {renderHistoryControlIcon('validate')}
                 </button>
                 <span className="history-snapshot-active-label">
-                  Active snapshot: {activeSnapshot ? `${activeSnapshot.id} (${activeSnapshot.phase})` : 'none'}
+                  Active step: {activeActionSnapshot ? activeActionSnapshot.phase === 'pre' ? 'Start' : `#${activeActionSnapshot.id}` : 'none'}
                 </span>
               </div>
               <p className="history-shortcuts">
                 H toggle, Esc close, Home first, End latest, Left/Right navigate, B branch, C copy, V validate
               </p>
-              {historyEntries.length === 0 ? (
+              {visibleHistoryEntries.length === 0 ? (
                 <p className="history-empty">No actions resolved yet.</p>
               ) : (
                 <>
                   <div className="history-log-scroll">
                     {(() => {
-                      const filteredHistoryEntries = historyEntries
+                      const filteredHistoryEntries = visibleHistoryEntries
                         .filter((entry) => {
-                          const entrySnapshotIndex = snapshots.findIndex((snap) => snap.id === entry.postSnapshotId)
-                          return entrySnapshotIndex >= 0 && (activeSnapshotIndex < 0 ? true : entrySnapshotIndex <= activeSnapshotIndex)
+                          if (!activeActionSnapshotId) {
+                            return true
+                          }
+                          return entry.postSnapshotId <= activeActionSnapshotId
                         })
                         .reverse()
                       return <ol className="history-list">{filteredHistoryEntries.map(renderHistoryRow)}</ol>
                     })()}
                   </div>
-                  <ul className="snapshot-list" aria-label="Snapshots">
-                    {snapshots.map((snapshot) => {
-                      const isActive = snapshot.id === activeSnapshotId
+                  <ul className="snapshot-list" aria-label="Action timeline">
+                    {actionTimelineSnapshots.map((snapshot) => {
+                      const isActive = snapshot.id === activeActionSnapshotId
 
                       return (
                         <li key={snapshot.id}>
@@ -1377,7 +1402,9 @@ function App() {
                             className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
                             onClick={() => handleJumpToSnapshot(snapshot.id)}
                           >
-                            #{snapshot.id} {snapshot.phase} T{snapshot.turnNumber} {snapshot.actionKind}
+                            {snapshot.phase === 'pre'
+                              ? `Start T${snapshot.turnNumber}`
+                              : `#${snapshot.id} T${snapshot.turnNumber} ${snapshot.actionKind}`}
                           </button>
                         </li>
                       )
