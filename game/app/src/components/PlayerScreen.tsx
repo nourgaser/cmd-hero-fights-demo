@@ -2,7 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties }
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_BALANCE_LIMIT } from '../../../shared/game-constants.ts'
-import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
+import { SIDE_VISUALS } from '../data/visual-metadata.ts'
 import { KEYBOARD_SHORTCUT_HINT_ROWS, resolveKeyboardShortcutAction } from '../config/keyboard-shortcuts.ts'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
@@ -96,14 +96,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
   const [pendingActionMode, setPendingActionMode] = useState<'entityActiveTarget' | 'pressLuckConfirm' | null>(null)
   const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
-  const [openTouchTooltip, setOpenTouchTooltip] = useState<'deck' | 'press-luck' | null>(null)
   const [selectedPassiveEffectId, setSelectedPassiveEffectId] = useState<string | null>(null)
   const [showAllPassiveEffects, setShowAllPassiveEffects] = useState(false)
   const [inspectTarget, setInspectTarget] = useState<InspectTarget | null>(null)
-
-  const toggleTouchTooltip = (tooltipId: 'deck' | 'press-luck') => {
-    setOpenTouchTooltip((current) => (current === tooltipId ? null : tooltipId))
-  }
 
   useEffect(() => {
     if (typeof window === 'undefined' || typeof window.matchMedia !== 'function') {
@@ -122,41 +117,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
       mediaQuery.removeEventListener('change', syncPointerMode)
     }
   }, [])
-
-  useEffect(() => {
-    if (!isCoarsePointer || !openTouchTooltip) {
-      return
-    }
-
-    const handlePointerDown = (event: PointerEvent) => {
-      const screen = screenRef.current
-      if (!screen) {
-        return
-      }
-
-      const target = event.target
-      if (!(target instanceof Node)) {
-        return
-      }
-
-      if (!screen.contains(target)) {
-        setOpenTouchTooltip(null)
-        return
-      }
-
-      const element = target instanceof Element ? target : null
-      if (element?.closest('.touch-tooltip-toggle') || element?.closest('.hint-wrap.force-tooltip-open')) {
-        return
-      }
-
-      setOpenTouchTooltip(null)
-    }
-
-    window.addEventListener('pointerdown', handlePointerDown)
-    return () => {
-      window.removeEventListener('pointerdown', handlePointerDown)
-    }
-  }, [isCoarsePointer, openTouchTooltip])
 
   const focusedCard = useMemo(() => {
     if (!focusedHandCardId) {
@@ -806,79 +766,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
             }
           />
 
-          <aside
-            className={`deck-overlay hint-wrap ${openTouchTooltip === 'deck' ? 'force-tooltip-open' : ''}`.trim()}
-            tabIndex={0}
-            aria-label={`Deck status. ${selfDeckSize} cards in deck and ${selfHandSize} cards in hand.`}
-          >
-            <span className="deck-stack" aria-hidden="true">
-              <Icon icon="game-icons:card-pick" className="deck-stack-icon" />
-              <span className="deck-stack-count">{selfDeckSize}</span>
-            </span>
-            <span className="sr-only">Deck status popup</span>
-            <span className="hover-card deck-hover-card" role="tooltip">
-              <strong>Your Deck</strong>
-              <span className="tooltip-row">
-                <strong className="tooltip-inline-label">Deck:</strong>
-                {selfDeckSize} cards remaining.
-              </span>
-              <span className="tooltip-row">
-                <strong className="tooltip-inline-label">Hand:</strong>
-                {selfHandSize} cards.
-              </span>
-            </span>
-            <button
-              type="button"
-              className="touch-tooltip-toggle deck-tooltip-toggle"
-              aria-label="Show deck details"
-              aria-pressed={openTouchTooltip === 'deck'}
-              onClick={() => toggleTouchTooltip('deck')}
-            >
-              <Icon icon="game-icons:info" aria-hidden="true" />
-            </button>
-          </aside>
-
-          <aside className={`battle-action-overlay action-overlay-right hint-wrap ${openTouchTooltip === 'press-luck' ? 'force-tooltip-open' : ''}`.trim()} aria-label="Press luck action" tabIndex={0}>
-            <button
-              type="button"
-              className="battle-action-stack luck"
-              onClick={handlePressLuckOverlayClick}
-              disabled={!canBeginPressLuck}
-              aria-label={
-                pendingActionMode === 'pressLuckConfirm'
-                  ? `Press luck selected. Confirm by clicking again.`
-                  : pressLuckUsedThisTurn
-                    ? `Press luck already used this turn.`
-                    : pressLuckAtFavorableLimit
-                      ? `Luck is already fully on your side.`
-                    : `Press luck. Costs ${pressLuckMoveCost} moves.`
-              }
-            >
-              <Icon icon="game-icons:shamrock" className="battle-action-icon" aria-hidden="true" />
-              <span className="battle-action-label">Luck</span>
-              <span className="battle-action-cost">{pressLuckMoveCost}</span>
-              <span className="sr-only">Press luck</span>
-              {pendingActionMode === 'pressLuckConfirm' ? (
-                <span className="battle-action-check" aria-hidden="true">
-                  <Icon icon="game-icons:check-mark" />
-                </span>
-              ) : null}
-            </button>
-            <span className="hover-card battle-action-hover-card" role="tooltip">
-              <strong>Luck</strong>
-              <span>{LUCK_VISUALS.description}</span>
-              <span>Shift luck in your favor by 1 point.</span>
-            </span>
-            <button
-              type="button"
-              className="touch-tooltip-toggle battle-tooltip-toggle"
-              aria-label="Show press luck details"
-              aria-pressed={openTouchTooltip === 'press-luck'}
-              onClick={() => toggleTouchTooltip('press-luck')}
-            >
-              <Icon icon="game-icons:info" aria-hidden="true" />
-            </button>
-          </aside>
         </section>
 
         <InspectPanel
@@ -893,15 +780,29 @@ export function PlayerScreen(props: PlayerScreenProps) {
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
+          deckSize={selfDeckSize}
+          handSize={selfHandSize}
           movePoints={selfMovePoints}
           maxMovePoints={selfMaxMovePoints}
           moveCapacityTrace={selfMoveCapacityTrace}
           pressLuckMoveCost={pressLuckMoveCost}
+          canBeginPressLuck={canBeginPressLuck}
+          isPressLuckSelected={pendingActionMode === 'pressLuckConfirm'}
+          pressLuckAriaLabel={
+            pendingActionMode === 'pressLuckConfirm'
+              ? 'Press luck selected. Confirm by clicking again.'
+              : pressLuckUsedThisTurn
+                ? 'Press luck already used this turn.'
+                : pressLuckAtFavorableLimit
+                  ? 'Luck is already fully on your side.'
+                  : `Press luck. Costs ${pressLuckMoveCost} moves.`
+          }
           focusedHandCardId={focusedHandCardId}
           pendingActionMode={pendingActionMode}
           selectedTargetEntityId={selectedTargetEntityId}
           selectedPlacementPosition={selectedPlacementPosition}
           onEndTurn={onEndTurn}
+          onPressLuckClick={handlePressLuckOverlayClick}
           shouldShowDetailedTooltips={shouldShowDetailedTooltips}
           showDetailedTooltipsToggle={showDetailedTooltipsToggle}
           onToggleDetailedTooltips={onToggleDetailedTooltips}

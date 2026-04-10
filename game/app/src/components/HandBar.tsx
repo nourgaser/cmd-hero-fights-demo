@@ -1,4 +1,4 @@
-import { useEffect, useRef, useState, type MouseEvent } from 'react'
+import { useRef, type MouseEvent } from 'react'
 import { Icon } from '@iconify/react/offline'
 import { CARD_ICON_META } from '../data/visual-metadata.ts'
 import type { AppBattlePreview } from '../game-client.ts'
@@ -8,18 +8,24 @@ type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 type HandBarProps = {
   cards: HandBarCard[]
   isActivePlayer: boolean
+  deckSize: number
+  handSize: number
   movePoints: number
   maxMovePoints: number
   moveCapacityTrace: AppBattlePreview['heroHandCounts'][number]['moveCapacityTrace']
   pressLuckMoveCost: number
+  canBeginPressLuck: boolean
+  isPressLuckSelected: boolean
+  pressLuckAriaLabel: string
   shouldShowDetailedTooltips: boolean
   showDetailedTooltipsToggle: boolean
   onToggleDetailedTooltips: () => void
   focusedHandCardId: string | null
-  pendingActionMode: 'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null
+  pendingActionMode: 'entityActiveTarget' | 'pressLuckConfirm' | null
   selectedTargetEntityId: string | null
   selectedPlacementPosition: { row: number; column: number } | null
   onEndTurn: () => void
+  onPressLuckClick: () => void
   onFocusCard: (handCardId: string) => void
   onConfirmFocusedCard: () => void
   onClearFocus: () => void
@@ -76,10 +82,15 @@ export function HandBar(props: HandBarProps) {
   const {
     cards,
     isActivePlayer,
+    deckSize,
+    handSize,
     movePoints,
     maxMovePoints,
     moveCapacityTrace,
     pressLuckMoveCost,
+    canBeginPressLuck,
+    isPressLuckSelected,
+    pressLuckAriaLabel,
     shouldShowDetailedTooltips,
     showDetailedTooltipsToggle,
     onToggleDetailedTooltips,
@@ -88,35 +99,13 @@ export function HandBar(props: HandBarProps) {
     selectedTargetEntityId,
     selectedPlacementPosition,
     onEndTurn,
+    onPressLuckClick,
     onFocusCard,
     onConfirmFocusedCard,
     onClearFocus,
     onInspectCard,
   } = props
   const scrollerRef = useRef<HTMLUListElement | null>(null)
-  const [showScrollHint, setShowScrollHint] = useState(false)
-
-  useEffect(() => {
-    const scroller = scrollerRef.current
-    if (!scroller) {
-      return
-    }
-
-    const updateScrollHint = () => {
-      const hasOverflow = scroller.scrollWidth > scroller.clientWidth + 2
-      const canScrollMoreRight = scroller.scrollLeft + scroller.clientWidth < scroller.scrollWidth - 2
-      setShowScrollHint(hasOverflow && canScrollMoreRight)
-    }
-
-    updateScrollHint()
-    scroller.addEventListener('scroll', updateScrollHint)
-    window.addEventListener('resize', updateScrollHint)
-
-    return () => {
-      scroller.removeEventListener('scroll', updateScrollHint)
-      window.removeEventListener('resize', updateScrollHint)
-    }
-  }, [cards])
 
   const focusedCard = focusedHandCardId
     ? cards.find((card) => card.handCardId === focusedHandCardId) ?? null
@@ -203,10 +192,31 @@ export function HandBar(props: HandBarProps) {
           ) : (
             <span className="hand-pill">Waiting turn</span>
           )}
+          <span
+            className="hand-pill hand-deck-chip hint-wrap"
+            tabIndex={0}
+            aria-label={`Deck status. ${deckSize} cards in deck and ${handSize} cards in hand.`}
+          >
+            <Icon icon="game-icons:card-pick" className="hand-deck-chip-icon" aria-hidden="true" />
+            <span className="hand-deck-chip-count" aria-hidden="true">{deckSize}</span>
+            <span className="sr-only">Deck status popup</span>
+            <span className="hover-card deck-hover-card" role="tooltip">
+              <strong>Your Deck</strong>
+              <span className="tooltip-row">
+                <strong className="tooltip-inline-label">Deck:</strong>
+                {deckSize} cards remaining.
+              </span>
+              <span className="tooltip-row">
+                <strong className="tooltip-inline-label">Hand:</strong>
+                {handSize} cards.
+              </span>
+            </span>
+          </span>
         </div>
       </div>
 
-      <div className="hand-scroll-wrap">
+      <div className="hand-content-row">
+        <div className="hand-scroll-wrap">
         <ul className="hand-cards" aria-label="Cards in hand and actions" ref={scrollerRef}>
           {cards.map((card) => {
           const meta = CARD_ICON_META[card.cardDefinitionId] ?? {
@@ -272,24 +282,36 @@ export function HandBar(props: HandBarProps) {
           )
           })}
         </ul>
+        </div>
 
-
-        {showScrollHint ? <span className="hand-scroll-indicator">{'Scroll ->'}</span> : null}
+        <aside className="hand-side-rail" aria-label="Luck and deck controls">
+          <span className="hand-side-divider" aria-hidden="true" />
+          <div className="hand-luck-cluster hint-wrap" tabIndex={0} aria-label={pressLuckAriaLabel}>
+            <button
+              type="button"
+              className={`hand-luck-orb ${isPressLuckSelected ? 'selected' : ''}`.trim()}
+              onClick={onPressLuckClick}
+              disabled={!canBeginPressLuck}
+              aria-label={pressLuckAriaLabel}
+            >
+              <Icon icon="game-icons:shamrock" className="hand-luck-orb-icon" aria-hidden="true" />
+              <span className="sr-only">Press luck</span>
+              {isPressLuckSelected ? (
+                <span className="hand-luck-check" aria-hidden="true">
+                  <Icon icon="game-icons:check-mark" />
+                </span>
+              ) : null}
+            </button>
+            <span className="hand-luck-moves" aria-hidden="true">{pressLuckMoveCost} moves</span>
+            <span className="hover-card battle-action-hover-card" role="tooltip">
+              <strong>Luck</strong>
+              <span>Shift luck in your favor by 1 point.</span>
+            </span>
+          </div>
+        </aside>
       </div>
 
-      {pendingActionMode === 'basicAttack' ? (
-        <div className="hand-focus-panel" aria-live="polite">
-          <p className="hand-focus-summary">
-            <strong>Basic Attack</strong>
-          </p>
-          <p className="hand-focus-instruction">Pick one highlighted enemy target. Click the selected target again to confirm.</p>
-          <div className="hand-focus-actions">
-            <button type="button" className="clear-focus" onClick={onClearFocus}>
-              Cancel
-            </button>
-          </div>
-        </div>
-      ) : pendingActionMode === 'entityActiveTarget' ? (
+      {pendingActionMode === 'entityActiveTarget' ? (
         <div className="hand-focus-panel" aria-live="polite">
           <p className="hand-focus-summary">
             <strong>Entity Active</strong>
