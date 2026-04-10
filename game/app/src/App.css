@@ -1612,6 +1612,12 @@ html[data-shift-held='true'] .game-toast-detail {
   text-transform: uppercase;
 }
 
+.history-modal-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
 .history-modal-head button {
   border: 1px solid #5f76ab;
   border-radius: 999px;
@@ -1622,6 +1628,72 @@ html[data-shift-held='true'] .game-toast-detail {
   font-weight: 700;
   background: color-mix(in srgb, #24395f 84%, #ffffff 16%);
   cursor: pointer;
+}
+
+.replay-bar-overlay {
+  position: fixed;
+  left: 0;
+  right: 0;
+  bottom: 0;
+  z-index: 2440;
+  pointer-events: none;
+  padding: 0 16px 12px;
+}
+
+.replay-bar {
+  width: min(1280px, 100%);
+  margin: 0 auto;
+  border-radius: 14px;
+  border: 1px solid #3f5484;
+  background: linear-gradient(180deg, rgba(22, 32, 56, 0.98), rgba(16, 24, 44, 0.98));
+  color: #dce8ff;
+  overflow: hidden;
+  pointer-events: auto;
+  box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.28);
+}
+
+.replay-bar-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+  padding: 10px 12px;
+  border-bottom: 1px solid color-mix(in srgb, #8ea2d6 30%, transparent);
+}
+
+.replay-bar-head strong {
+  font-family: var(--heading);
+  letter-spacing: 0.05em;
+  font-size: 12px;
+  text-transform: uppercase;
+}
+
+.replay-bar-head-actions {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.replay-bar-head-actions button {
+  border: 1px solid #5f76ab;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 3px 10px;
+  color: #dce8ff;
+  font-size: 10px;
+  font-weight: 700;
+  background: color-mix(in srgb, #24395f 84%, #ffffff 16%);
+  cursor: pointer;
+}
+
+.replay-snapshot-controls {
+  padding-top: 8px;
+  padding-bottom: 8px;
+}
+
+.replay-shortcuts {
+  padding-top: 4px;
+  padding-bottom: 6px;
 }
 
 .history-log-scroll {
@@ -1801,6 +1873,11 @@ html[data-shift-held='true'] .game-toast-detail {
     max-height: 92vh;
   }
 
+  .history-modal-head-actions {
+    flex-wrap: wrap;
+    justify-content: flex-end;
+  }
+
   .history-snapshot-controls {
     padding: 8px;
     gap: 6px;
@@ -1825,6 +1902,14 @@ html[data-shift-held='true'] .game-toast-detail {
 
   .history-log-scroll {
     padding: 8px;
+  }
+
+  .replay-bar-overlay {
+    padding: 0 8px 8px;
+  }
+
+  .replay-bar-head {
+    padding: 8px 10px;
   }
 }
 

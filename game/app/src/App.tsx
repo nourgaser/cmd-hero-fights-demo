@@ -255,6 +255,7 @@ function App() {
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [isReplayModeOpen, setIsReplayModeOpen] = useState(false)
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
@@ -376,17 +377,28 @@ function App() {
       const key = event.key.toLowerCase()
       if (key === 'h') {
         event.preventDefault()
-        setIsHistoryModalOpen((current) => !current)
+        if (!isHistoryModalOpen && !isReplayModeOpen) {
+          setIsHistoryModalOpen(true)
+        } else if (isHistoryModalOpen) {
+          setIsHistoryModalOpen(false)
+          setIsReplayModeOpen(true)
+        } else {
+          setIsReplayModeOpen(false)
+        }
         return
       }
 
-      if (!isHistoryModalOpen) {
+      if (!isHistoryModalOpen && !isReplayModeOpen) {
         return
       }
 
       if (event.key === 'Escape') {
         event.preventDefault()
-        setIsHistoryModalOpen(false)
+        if (isHistoryModalOpen) {
+          setIsHistoryModalOpen(false)
+        } else {
+          setIsReplayModeOpen(false)
+        }
         return
       }
 
@@ -604,7 +616,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [bootstrapConfig, isHistoryModalOpen, runtime])
+  }, [bootstrapConfig, isHistoryModalOpen, isReplayModeOpen, runtime])
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {
@@ -853,19 +865,60 @@ function App() {
 
   const [heroAId, heroBId] = preview.heroEntityIds
 
+  const ensureSessionReadyForAction = (session: AppBattleSession) => {
+    const latestSnapshotId = session.snapshots.at(-1)?.id ?? null
+    const activeSnapshotId = session.activeSnapshotId ?? latestSnapshotId
+
+    if (!latestSnapshotId || !activeSnapshotId || activeSnapshotId === latestSnapshotId) {
+      return {
+        ok: true as const,
+        session,
+        branchedFromSnapshotId: null as number | null,
+      }
+    }
+
+    const branchResult = branchSessionFromSnapshot({
+      session,
+      snapshotId: activeSnapshotId,
+    })
+
+    if (!branchResult.ok) {
+      return {
+        ok: false as const,
+        reason: branchResult.reason,
+      }
+    }
+
+    return {
+      ok: true as const,
+      session: branchResult.session,
+      branchedFromSnapshotId: activeSnapshotId,
+    }
+  }
+
   const createBasicAttackHandler = (heroId: string) => {
     return (input: { targetEntityId: string }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
       let events: BattleEvent[] = []
+      let branchNotice: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
           return prev
         }
 
+        const branchPrep = ensureSessionReadyForAction(prev.session)
+        if (!branchPrep.ok) {
+          failureReason = branchPrep.reason
+          return prev
+        }
+        if (branchPrep.branchedFromSnapshotId !== null) {
+          branchNotice = `Branch resumed from snapshot ${branchPrep.branchedFromSnapshotId}.`
+        }
+
         const result = resolveSessionBasicAttack({
-          session: prev.session,
+          session: branchPrep.session,
           actorHeroEntityId: heroId,
           attackerEntityId: heroId,
           targetEntityId: input.targetEntityId,
@@ -887,6 +940,9 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`Basic attack failed: ${failureReason}`)
       } else if (resultMessage) {
+        if (branchNotice) {
+          announce(branchNotice)
+        }
         showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
@@ -900,14 +956,24 @@ function App() {
       let failureReason: string | null = null
       let resultMessage: string | null = null
       let events: BattleEvent[] = []
+      let branchNotice: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
           return prev
         }
 
+        const branchPrep = ensureSessionReadyForAction(prev.session)
+        if (!branchPrep.ok) {
+          failureReason = branchPrep.reason
+          return prev
+        }
+        if (branchPrep.branchedFromSnapshotId !== null) {
+          branchNotice = `Branch resumed from snapshot ${branchPrep.branchedFromSnapshotId}.`
+        }
+
         const result = resolveSessionUseEntityActive({
-          session: prev.session,
+          session: branchPrep.session,
           actorHeroEntityId: heroId,
           sourceEntityId: input.sourceEntityId,
           targetEntityId: input.targetEntityId,
@@ -929,6 +995,9 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`Entity active failed: ${failureReason}`)
       } else if (resultMessage) {
+        if (branchNotice) {
+          announce(branchNotice)
+        }
         showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
@@ -946,14 +1015,24 @@ function App() {
       let failureReason: string | null = null
       let resultMessage: string | null = null
       let events: BattleEvent[] = []
+      let branchNotice: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
           return prev
         }
 
+        const branchPrep = ensureSessionReadyForAction(prev.session)
+        if (!branchPrep.ok) {
+          failureReason = branchPrep.reason
+          return prev
+        }
+        if (branchPrep.branchedFromSnapshotId !== null) {
+          branchNotice = `Branch resumed from snapshot ${branchPrep.branchedFromSnapshotId}.`
+        }
+
         const result = resolveSessionPlayCard({
-          session: prev.session,
+          session: branchPrep.session,
           actorHeroEntityId: heroId,
           handCardId: input.handCardId,
           targetEntityId: input.targetEntityId,
@@ -976,6 +1055,9 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`Play card failed: ${failureReason}`)
       } else if (resultMessage) {
+        if (branchNotice) {
+          announce(branchNotice)
+        }
         showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
@@ -989,14 +1071,24 @@ function App() {
       let failureReason: string | null = null
       let resultMessage: string | null = null
       let events: BattleEvent[] = []
+      let branchNotice: string | null = null
 
       setRuntime((prev) => {
         if (!prev) {
           return prev
         }
 
+        const branchPrep = ensureSessionReadyForAction(prev.session)
+        if (!branchPrep.ok) {
+          failureReason = branchPrep.reason
+          return prev
+        }
+        if (branchPrep.branchedFromSnapshotId !== null) {
+          branchNotice = `Branch resumed from snapshot ${branchPrep.branchedFromSnapshotId}.`
+        }
+
         const result = resolveSessionSimpleAction({
-          session: prev.session,
+          session: branchPrep.session,
           actorHeroEntityId: heroId,
           kind,
         })
@@ -1017,6 +1109,9 @@ function App() {
       if (failureReason) {
         showActionErrorToast(`${kind} failed: ${failureReason}`)
       } else if (resultMessage) {
+        if (branchNotice) {
+          announce(branchNotice)
+        }
         showActionSuccessToast(resultMessage, events)
         for (const event of events) {
           showBattleEventToast(event)
@@ -1237,6 +1332,124 @@ function App() {
     }
   }
 
+  const renderTimelineControls = () => {
+    return (
+      <>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Jump to first snapshot"
+          title="First (Home)"
+          onClick={() => {
+            if (actionTimelineSnapshots.length > 0) {
+              handleJumpToSnapshot(actionTimelineSnapshots[0]!.id)
+            }
+          }}
+          disabled={actionTimelineSnapshots.length === 0 || activeActionSnapshotIndex <= 0}
+        >
+          {renderHistoryControlIcon('first')}
+        </button>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Jump to previous snapshot"
+          title="Previous (Left Arrow)"
+          onClick={() => {
+            if (activeActionSnapshotIndex > 0) {
+              handleJumpToSnapshot(actionTimelineSnapshots[activeActionSnapshotIndex - 1]!.id)
+            }
+          }}
+          disabled={activeActionSnapshotIndex <= 0}
+        >
+          {renderHistoryControlIcon('previous')}
+        </button>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Jump to next snapshot"
+          title="Next (Right Arrow)"
+          onClick={() => {
+            if (activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1) {
+              handleJumpToSnapshot(actionTimelineSnapshots[activeActionSnapshotIndex + 1]!.id)
+            }
+          }}
+          disabled={activeActionSnapshotIndex < 0 || activeActionSnapshotIndex >= actionTimelineSnapshots.length - 1}
+        >
+          {renderHistoryControlIcon('next')}
+        </button>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Jump to latest snapshot"
+          title="Latest (End)"
+          onClick={() => {
+            if (latestActionSnapshotId) {
+              handleJumpToSnapshot(latestActionSnapshotId)
+            }
+          }}
+          disabled={!latestActionSnapshotId || activeActionSnapshotId === latestActionSnapshotId}
+        >
+          {renderHistoryControlIcon('latest')}
+        </button>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Branch from active snapshot"
+          title="Branch (B)"
+          onClick={handleBranchFromSnapshot}
+          disabled={!activeSnapshotId}
+        >
+          {renderHistoryControlIcon('branch')}
+        </button>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Copy replay payload"
+          title="Copy Replay Payload (C)"
+          onClick={() => void handleCopyReplayPayload()}
+        >
+          {renderHistoryControlIcon('copy')}
+        </button>
+        <button
+          className="history-icon-button"
+          type="button"
+          aria-label="Validate replay determinism"
+          title="Validate Replay (V)"
+          onClick={handleValidateReplayDeterminism}
+        >
+          {renderHistoryControlIcon('validate')}
+        </button>
+        <span className="history-snapshot-active-label">
+          Active step: {activeActionSnapshot ? activeActionSnapshot.phase === 'pre' ? 'Start' : `#${activeActionSnapshot.id}` : 'none'}
+        </span>
+      </>
+    )
+  }
+
+  const renderTimelineSnapshotList = () => {
+    return (
+      <ul className="snapshot-list" aria-label="Action timeline">
+        {actionTimelineSnapshots.map((snapshot) => {
+          const isActive = snapshot.id === activeActionSnapshotId
+
+          return (
+            <li key={snapshot.id}>
+              <button
+                type="button"
+                className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
+                onClick={() => handleJumpToSnapshot(snapshot.id)}
+              >
+                {snapshot.phase === 'pre'
+                  ? `Start T${snapshot.turnNumber}`
+                  : `#${snapshot.id} T${snapshot.turnNumber} ${snapshot.actionKind}`}
+              </button>
+            </li>
+          )
+        })}
+      </ul>
+    )
+  }
+
   return (
     <>
       <Toaster
@@ -1256,7 +1469,7 @@ function App() {
         className="history-button"
         onClick={() => setIsHistoryModalOpen(true)}
         aria-haspopup="dialog"
-        aria-expanded={isHistoryModalOpen}
+        aria-expanded={isHistoryModalOpen || isReplayModeOpen}
       >
         History ({visibleHistoryEntries.length})
       </button>
@@ -1277,102 +1490,25 @@ function App() {
           >
             <header className="history-modal-head">
               <strong>Action History</strong>
-              <button type="button" onClick={() => setIsHistoryModalOpen(false)}>
-                Close
-              </button>
+              <div className="history-modal-head-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsReplayModeOpen(true)
+                    setIsHistoryModalOpen(false)
+                  }}
+                >
+                  Open Replay Bar
+                </button>
+                <button type="button" onClick={() => setIsHistoryModalOpen(false)}>
+                  Close
+                </button>
+              </div>
             </header>
             <div className="history-modal-body">
-              <div className="history-snapshot-controls">
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Jump to first snapshot"
-                  title="First (Home)"
-                  onClick={() => {
-                    if (actionTimelineSnapshots.length > 0) {
-                      handleJumpToSnapshot(actionTimelineSnapshots[0]!.id)
-                    }
-                  }}
-                  disabled={actionTimelineSnapshots.length === 0 || activeActionSnapshotIndex <= 0}
-                >
-                  {renderHistoryControlIcon('first')}
-                </button>
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Jump to previous snapshot"
-                  title="Previous (Left Arrow)"
-                  onClick={() => {
-                    if (activeActionSnapshotIndex > 0) {
-                      handleJumpToSnapshot(actionTimelineSnapshots[activeActionSnapshotIndex - 1]!.id)
-                    }
-                  }}
-                  disabled={activeActionSnapshotIndex <= 0}
-                >
-                  {renderHistoryControlIcon('previous')}
-                </button>
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Jump to next snapshot"
-                  title="Next (Right Arrow)"
-                  onClick={() => {
-                    if (activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1) {
-                      handleJumpToSnapshot(actionTimelineSnapshots[activeActionSnapshotIndex + 1]!.id)
-                    }
-                  }}
-                  disabled={activeActionSnapshotIndex < 0 || activeActionSnapshotIndex >= actionTimelineSnapshots.length - 1}
-                >
-                  {renderHistoryControlIcon('next')}
-                </button>
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Jump to latest snapshot"
-                  title="Latest (End)"
-                  onClick={() => {
-                    if (latestActionSnapshotId) {
-                      handleJumpToSnapshot(latestActionSnapshotId)
-                    }
-                  }}
-                  disabled={!latestActionSnapshotId || activeActionSnapshotId === latestActionSnapshotId}
-                >
-                  {renderHistoryControlIcon('latest')}
-                </button>
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Branch from active snapshot"
-                  title="Branch (B)"
-                  onClick={handleBranchFromSnapshot}
-                  disabled={!activeSnapshotId}
-                >
-                  {renderHistoryControlIcon('branch')}
-                </button>
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Copy replay payload"
-                  title="Copy Replay Payload (C)"
-                  onClick={() => void handleCopyReplayPayload()}
-                >
-                  {renderHistoryControlIcon('copy')}
-                </button>
-                <button
-                  className="history-icon-button"
-                  type="button"
-                  aria-label="Validate replay determinism"
-                  title="Validate Replay (V)"
-                  onClick={handleValidateReplayDeterminism}
-                >
-                  {renderHistoryControlIcon('validate')}
-                </button>
-                <span className="history-snapshot-active-label">
-                  Active step: {activeActionSnapshot ? activeActionSnapshot.phase === 'pre' ? 'Start' : `#${activeActionSnapshot.id}` : 'none'}
-                </span>
-              </div>
+              <div className="history-snapshot-controls">{renderTimelineControls()}</div>
               <p className="history-shortcuts">
-                H toggle, Esc close, Home first, End latest, Left/Right navigate, B branch, C copy, V validate
+                H cycle (closed/fullscreen/overlay), Esc close, Home first, End latest, Left/Right navigate, B branch, C copy, V validate
               </p>
               {visibleHistoryEntries.length === 0 ? (
                 <p className="history-empty">No actions resolved yet.</p>
@@ -1391,28 +1527,38 @@ function App() {
                       return <ol className="history-list">{filteredHistoryEntries.map(renderHistoryRow)}</ol>
                     })()}
                   </div>
-                  <ul className="snapshot-list" aria-label="Action timeline">
-                    {actionTimelineSnapshots.map((snapshot) => {
-                      const isActive = snapshot.id === activeActionSnapshotId
-
-                      return (
-                        <li key={snapshot.id}>
-                          <button
-                            type="button"
-                            className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
-                            onClick={() => handleJumpToSnapshot(snapshot.id)}
-                          >
-                            {snapshot.phase === 'pre'
-                              ? `Start T${snapshot.turnNumber}`
-                              : `#${snapshot.id} T${snapshot.turnNumber} ${snapshot.actionKind}`}
-                          </button>
-                        </li>
-                      )
-                    })}
-                  </ul>
+                  {renderTimelineSnapshotList()}
                 </>
               )}
             </div>
+          </section>
+        </div>
+      ) : null}
+      {isReplayModeOpen ? (
+        <div className="replay-bar-overlay" role="presentation">
+          <section className="replay-bar" aria-label="Replay mode timeline">
+            <header className="replay-bar-head">
+              <strong>Replay Mode</strong>
+              <div className="replay-bar-head-actions">
+                <button
+                  type="button"
+                  onClick={() => {
+                    setIsHistoryModalOpen(true)
+                    setIsReplayModeOpen(false)
+                  }}
+                >
+                  Open History
+                </button>
+                <button type="button" onClick={() => setIsReplayModeOpen(false)}>
+                  Close
+                </button>
+              </div>
+            </header>
+            <div className="history-snapshot-controls replay-snapshot-controls">{renderTimelineControls()}</div>
+            <p className="history-shortcuts replay-shortcuts">
+              Replay bar mode: interact with the board as usual. Actions from older steps auto-branch.
+            </p>
+            {renderTimelineSnapshotList()}
           </section>
         </div>
       ) : null}
