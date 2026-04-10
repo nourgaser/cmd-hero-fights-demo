@@ -55,6 +55,7 @@
 
 #root {
   width: min(1580px, 100%);
+  max-width: 100vw;
   margin: auto;
   text-align: center;
   background: var(--panel);
@@ -63,10 +64,12 @@
   display: flex;
   flex-direction: column;
   box-sizing: border-box;
+  overflow-x: hidden;
 }
 
 body {
   margin: 0;
+  overflow-x: hidden;
   background:
     linear-gradient(90deg, rgba(0, 0, 0, 0.03) 1px, transparent 1px),
     linear-gradient(rgba(0, 0, 0, 0.03) 1px, transparent 1px),
@@ -75,6 +78,7 @@ body {
 }
 
 html {
+  overflow-x: hidden;
   scrollbar-color: var(--scrollbar-thumb-firefox) transparent;
   scrollbar-width: thin;
 }
