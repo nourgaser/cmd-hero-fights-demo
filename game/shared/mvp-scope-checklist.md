@@ -148,14 +148,14 @@ Validation notes:
 
 - [x] Add timeline snapshots in app state after each resolved action (state, action input, produced events, nextSequence)
 - [x] Include pre-action and post-action snapshots to inspect invalid actions and successful transitions
-- [ ] Add snapshot list UI controls (jump to snapshot, step backward, step forward, jump to latest)
+- [x] Add snapshot list UI controls (jump to snapshot, step backward, step forward, jump to latest)
 - [x] Add clear snapshot labels (turn, actor, action kind, short result summary)
-- [ ] Add branch-from-snapshot flow so we can continue gameplay from any prior snapshot for what-if debugging
-- [ ] Make snapshot parsable from URL so it's shareable and repeatable easily. Similar to chess. -- CRITICAL --
-- [ ] Add deterministic RNG checkpoint metadata per snapshot (seed + rng cursor/step count)
-- [ ] Add engine RNG restore/advance utility so loading a snapshot resumes with the same future roll sequence
-- [ ] Validate replay determinism by rebuilding from seed + action log and comparing snapshot events/state
-- [ ] Add quick copy/export for action log plus snapshot metadata for bug reports and repro sharing
+- [x] Add branch-from-snapshot flow so we can continue gameplay from any prior snapshot for what-if debugging
+- [x] Make snapshot parsable from URL so it's shareable and repeatable easily. Similar to chess. -- CRITICAL --
+- [x] Add deterministic RNG checkpoint metadata per snapshot (seed + rng cursor/step count)
+- [x] Add engine RNG restore/advance utility so loading a snapshot resumes with the same future roll sequence
+- [x] Validate replay determinism by rebuilding from seed + action log and comparing snapshot events/state
+- [x] Add quick copy/export for action log plus snapshot metadata for bug reports and repro sharing
 
 ### Unified Extensible Game Debugger
 

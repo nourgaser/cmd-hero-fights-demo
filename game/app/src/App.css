@@ -1619,6 +1619,37 @@ html[data-shift-held='true'] .game-toast-detail {
   overflow: auto;
 }
 
+.history-snapshot-controls {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px;
+  padding: 10px;
+  border-bottom: 1px solid color-mix(in srgb, #8ea2d6 20%, transparent);
+}
+
+.history-snapshot-controls button {
+  border: 1px solid #5f76ab;
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 4px 10px;
+  color: #dce8ff;
+  font-size: 11px;
+  font-weight: 700;
+  background: color-mix(in srgb, #24395f 84%, #ffffff 16%);
+  cursor: pointer;
+}
+
+.history-snapshot-controls button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.history-snapshot-active-label {
+  font-size: 11px;
+  opacity: 0.84;
+}
+
 .history-entry {
   border: 1px solid color-mix(in srgb, #8ea2d6 26%, transparent);
   border-radius: 10px;
@@ -1672,6 +1703,35 @@ html[data-shift-held='true'] .game-toast-detail {
   opacity: 0.8;
 }
 
+.snapshot-list {
+  margin: 0;
+  padding: 10px;
+  list-style: none;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 6px;
+  border-top: 1px solid color-mix(in srgb, #8ea2d6 20%, transparent);
+  overflow: auto;
+}
+
+.snapshot-chip {
+  border: 1px solid #536b9f;
+  border-radius: 999px;
+  min-height: 28px;
+  padding: 4px 10px;
+  color: #dce8ff;
+  font-size: 11px;
+  font-weight: 600;
+  background: color-mix(in srgb, #1f3258 86%, #ffffff 14%);
+  cursor: pointer;
+}
+
+.snapshot-chip-active {
+  border-color: #f0c778;
+  color: #1f1208;
+  background: linear-gradient(180deg, #f2d498, #deb163);
+}
+
 @media (max-width: 880px) {
   .history-button {
     top: 12px;
@@ -1684,6 +1744,19 @@ html[data-shift-held='true'] .game-toast-detail {
 
   .history-modal {
     max-height: 92vh;
+  }
+
+  .history-snapshot-controls {
+    padding: 8px;
+    gap: 6px;
+  }
+
+  .history-snapshot-controls button {
+    min-height: 32px;
+  }
+
+  .snapshot-list {
+    padding: 8px;
   }
 }
 

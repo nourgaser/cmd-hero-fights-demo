@@ -3,8 +3,12 @@ import { useEffect, useRef, useState } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../shared/models'
 import {
+  type AppReplayActionLogEntry,
+  branchSessionFromSnapshot,
   createInitialBattleSession,
   type AppActionHistoryEntry,
+  jumpSessionToSnapshot,
+  replaySessionFromActionLog,
   type AppBattleSession,
   type AppBattlePreview,
   resolveSessionBasicAttack,
@@ -14,6 +18,11 @@ import {
 } from './game-client.ts'
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from './data/game-bootstrap.ts'
 import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from './utils/render-numeric-text.tsx'
+import {
+  createReplayUrlPayload,
+  readReplayPayloadFromLocation,
+  writeReplayPayloadToLocation,
+} from './utils/replay-url.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 
@@ -36,6 +45,14 @@ function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRun
     session: initial.session,
     preview: initial.preview,
   }
+}
+
+function createActionLogFromSession(session: AppBattleSession): AppReplayActionLogEntry[] {
+  return session.snapshots
+    .filter((snapshot) => snapshot.phase === 'post')
+    .map((snapshot) => ({
+      action: snapshot.action,
+    }))
 }
 
 function incrementSeed(seed: string): string {
@@ -164,11 +181,25 @@ function describeCardCastCondition(cardDefinition: unknown): string | null {
 }
 
 function App() {
-  const [initialBootstrapConfig] = useState(() => loadBootstrapConfig())
+  const [initialReplayPayload] = useState(() => readReplayPayloadFromLocation())
+  const [initialBootstrapConfig] = useState(() => initialReplayPayload?.bootstrapConfig ?? loadBootstrapConfig())
   const [bootstrapConfig, setBootstrapConfig] = useState(initialBootstrapConfig)
   const [startupError] = useState(() => {
     try {
-      createRuntimeFromConfig(initialBootstrapConfig)
+      if (initialReplayPayload) {
+        const replayResult = replaySessionFromActionLog({
+          config: initialReplayPayload.bootstrapConfig,
+          actionLog: initialReplayPayload.actionLog,
+          snapshotId: initialReplayPayload.snapshotId ?? undefined,
+        })
+
+        if (!replayResult.ok) {
+          throw new Error(replayResult.reason)
+        }
+      } else {
+        createRuntimeFromConfig(initialBootstrapConfig)
+      }
+
       return null as string | null
     } catch (error) {
       return error instanceof Error ? error.message : 'Failed to create battle preview.'
@@ -176,6 +207,23 @@ function App() {
   })
   const [runtime, setRuntime] = useState<AppRuntime | null>(() => {
     try {
+      if (initialReplayPayload) {
+        const replayResult = replaySessionFromActionLog({
+          config: initialReplayPayload.bootstrapConfig,
+          actionLog: initialReplayPayload.actionLog,
+          snapshotId: initialReplayPayload.snapshotId ?? undefined,
+        })
+
+        if (!replayResult.ok) {
+          return null
+        }
+
+        return {
+          session: replayResult.session,
+          preview: replayResult.preview,
+        }
+      }
+
       return createRuntimeFromConfig(initialBootstrapConfig)
     } catch {
       return null
@@ -285,6 +333,21 @@ function App() {
       void audio.play().catch(() => {})
     }
   }, [isMusicMuted])
+
+  useEffect(() => {
+    if (!runtime) {
+      return
+    }
+
+    const actionLog = createActionLogFromSession(runtime.session)
+    const payload = createReplayUrlPayload({
+      bootstrapConfig,
+      seed: runtime.session.state.seed,
+      actionLog,
+      snapshotId: runtime.session.activeSnapshotId,
+    })
+    writeReplayPayloadToLocation(payload)
+  }, [bootstrapConfig, runtime])
 
   useEffect(() => {
     if (!isHistoryModalOpen) {
@@ -475,6 +538,15 @@ function App() {
 
   const preview = runtime.preview
   const historyEntries = runtime.session.history
+  const snapshots = runtime.session.snapshots
+  const latestSnapshotId = snapshots.at(-1)?.id ?? null
+  const activeSnapshotId = runtime.session.activeSnapshotId ?? latestSnapshotId
+  const activeSnapshot = activeSnapshotId
+    ? snapshots.find((snapshot) => snapshot.id === activeSnapshotId) ?? null
+    : null
+  const activeSnapshotIndex = activeSnapshot
+    ? snapshots.findIndex((snapshot) => snapshot.id === activeSnapshot.id)
+    : -1
   const cardsById = runtime.session.gameApi.cardsById as Record<
     string,
     (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
@@ -701,6 +773,143 @@ function App() {
     }
   }
 
+  const handleJumpToSnapshot = (snapshotId: number) => {
+    let failureReason: string | null = null
+
+    setRuntime((prev) => {
+      if (!prev) {
+        return prev
+      }
+
+      const result = jumpSessionToSnapshot({
+        session: prev.session,
+        snapshotId,
+      })
+
+      if (!result.ok) {
+        failureReason = result.reason
+        return prev
+      }
+
+      return {
+        session: result.session,
+        preview: result.preview,
+      }
+    })
+
+    if (failureReason) {
+      showActionErrorToast(failureReason)
+    }
+  }
+
+  const handleBranchFromSnapshot = () => {
+    if (!activeSnapshotId) {
+      return
+    }
+
+    let failureReason: string | null = null
+    let branchMessage: string | null = null
+
+    setRuntime((prev) => {
+      if (!prev) {
+        return prev
+      }
+
+      const result = branchSessionFromSnapshot({
+        session: prev.session,
+        snapshotId: activeSnapshotId,
+      })
+
+      if (!result.ok) {
+        failureReason = result.reason
+        return prev
+      }
+
+      branchMessage = `Branch resumed from snapshot ${activeSnapshotId}.`
+
+      return {
+        session: result.session,
+        preview: result.preview,
+      }
+    })
+
+    if (failureReason) {
+      showActionErrorToast(failureReason)
+    } else if (branchMessage) {
+      showActionSuccessToast(branchMessage, [])
+    }
+  }
+
+  const handleCopyReplayPayload = async () => {
+    if (!runtime) {
+      return
+    }
+
+    const payload = createReplayUrlPayload({
+      bootstrapConfig,
+      seed: runtime.session.state.seed,
+      actionLog: createActionLogFromSession(runtime.session),
+      snapshotId: runtime.session.activeSnapshotId,
+    })
+
+    try {
+      await navigator.clipboard.writeText(JSON.stringify(payload, null, 2))
+      showActionSuccessToast('Replay payload copied to clipboard.', [])
+    } catch {
+      showActionErrorToast('Failed to copy replay payload.')
+    }
+  }
+
+  const handleValidateReplayDeterminism = () => {
+    if (!activeSnapshotId || !activeSnapshot) {
+      showActionErrorToast('Select a snapshot before validating replay determinism.')
+      return
+    }
+
+    const replayResult = replaySessionFromActionLog({
+      config: {
+        ...bootstrapConfig,
+        seed: runtime.session.state.seed,
+      },
+      actionLog: createActionLogFromSession(runtime.session),
+      snapshotId: activeSnapshotId,
+    })
+
+    if (!replayResult.ok) {
+      showActionErrorToast(`Replay validation failed: ${replayResult.reason}`)
+      return
+    }
+
+    const rebuiltSnapshot = replayResult.session.snapshots.find(
+      (snapshot) => snapshot.id === activeSnapshotId,
+    )
+    if (!rebuiltSnapshot) {
+      showActionErrorToast(`Replay validation failed: snapshot ${activeSnapshotId} was not rebuilt.`)
+      return
+    }
+
+    const sameState = JSON.stringify(rebuiltSnapshot.state) === JSON.stringify(activeSnapshot.state)
+    const sameEvents = JSON.stringify(rebuiltSnapshot.events) === JSON.stringify(activeSnapshot.events)
+    const sameSequence = rebuiltSnapshot.nextSequence === activeSnapshot.nextSequence
+    const sameRngStep = rebuiltSnapshot.rngCheckpoint.stepCount === activeSnapshot.rngCheckpoint.stepCount
+
+    if (sameState && sameEvents && sameSequence && sameRngStep) {
+      showActionSuccessToast(`Replay validation passed at snapshot ${activeSnapshotId}.`, [])
+      return
+    }
+
+    let mismatch = 'state mismatch'
+    if (!sameEvents) {
+      mismatch = 'event mismatch'
+    } else if (!sameSequence) {
+      mismatch = 'nextSequence mismatch'
+    } else if (!sameRngStep) {
+      mismatch = 'RNG step mismatch'
+    }
+
+    showActionErrorToast(`Replay validation failed at snapshot ${activeSnapshotId}: ${mismatch}.`)
+  }
+
   const renderHistoryRow = (entry: AppActionHistoryEntry) => {
     return (
       <li key={entry.id} className={`history-entry ${entry.success ? 'history-entry-success' : 'history-entry-failure'}`}>
@@ -765,10 +974,80 @@ function App() {
                 Close
               </button>
             </header>
+            <div className="history-snapshot-controls">
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeSnapshotIndex > 0) {
+                    handleJumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
+                  }
+                }}
+                disabled={activeSnapshotIndex <= 0}
+              >
+                Previous
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
+                    handleJumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
+                  }
+                }}
+                disabled={activeSnapshotIndex < 0 || activeSnapshotIndex >= snapshots.length - 1}
+              >
+                Next
+              </button>
+              <button
+                type="button"
+                onClick={() => {
+                  if (latestSnapshotId) {
+                    handleJumpToSnapshot(latestSnapshotId)
+                  }
+                }}
+                disabled={!latestSnapshotId || activeSnapshotId === latestSnapshotId}
+              >
+                Latest
+              </button>
+              <button
+                type="button"
+                onClick={handleBranchFromSnapshot}
+                disabled={!activeSnapshotId}
+              >
+                Branch From Snapshot
+              </button>
+              <button type="button" onClick={() => void handleCopyReplayPayload()}>
+                Copy Replay Payload
+              </button>
+              <button type="button" onClick={handleValidateReplayDeterminism}>
+                Validate Replay
+              </button>
+              <span className="history-snapshot-active-label">
+                Active snapshot: {activeSnapshot ? `${activeSnapshot.id} (${activeSnapshot.phase})` : 'none'}
+              </span>
+            </div>
             {historyEntries.length === 0 ? (
               <p className="history-empty">No actions resolved yet.</p>
             ) : (
-              <ol className="history-list">{historyEntries.map(renderHistoryRow)}</ol>
+              <>
+                <ol className="history-list">{historyEntries.map(renderHistoryRow)}</ol>
+                <ul className="snapshot-list" aria-label="Snapshots">
+                  {snapshots.map((snapshot) => {
+                    const isActive = snapshot.id === activeSnapshotId
+
+                    return (
+                      <li key={snapshot.id}>
+                        <button
+                          type="button"
+                          className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
+                          onClick={() => handleJumpToSnapshot(snapshot.id)}
+                        >
+                          #{snapshot.id} {snapshot.phase} T{snapshot.turnNumber} {snapshot.actionKind}
+                        </button>
+                      </li>
+                    )
+                  })}
+                </ul>
+              </>
             )}
           </section>
         </div>

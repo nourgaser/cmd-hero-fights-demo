@@ -1351,7 +1351,7 @@ export type AppActionHistoryEntry = {
   id: number
   turnNumber: number
   actorHeroEntityId: string
-  actionKind: BattleAction['kind']
+  actionKind: BattleAction['kind'] | 'branch'
   resultMessage: string
   success: boolean
   failureReason?: string
@@ -1359,6 +1359,17 @@ export type AppActionHistoryEntry = {
   preSnapshotId: number
   postSnapshotId: number
 }
+
+type SnapshotSessionResult =
+  | {
+      ok: true
+      session: AppBattleSession
+      preview: AppBattlePreview
+    }
+  | {
+      ok: false
+      reason: string
+    }
 
 export type AppBattleSession = {
   gameApi: ReturnType<typeof createGameApi>
@@ -2669,4 +2680,178 @@ export function createInitialBattlePreview(
   config: GameBootstrapConfig = DEFAULT_GAME_BOOTSTRAP_CONFIG,
 ): AppBattlePreview {
   return createInitialBattleSession(config).preview
+}
+
+export function jumpSessionToSnapshot(options: {
+  session: AppBattleSession
+  snapshotId: number
+}): SnapshotSessionResult {
+  const { session, snapshotId } = options
+  const snapshot = session.snapshots.find((entry) => entry.id === snapshotId)
+
+  if (!snapshot) {
+    return {
+      ok: false,
+      reason: `Snapshot ${snapshotId} was not found.`,
+    }
+  }
+
+  const nextSession: AppBattleSession = {
+    ...session,
+    state: cloneSerializable(snapshot.state),
+    nextSequence: snapshot.nextSequence,
+    battleRng: session.gameApi.createBattleRngFromCheckpoint(snapshot.rngCheckpoint),
+    activeSnapshotId: snapshot.id,
+  }
+
+  return {
+    ok: true,
+    session: nextSession,
+    preview: buildPreviewFromState({
+      gameApi: session.gameApi,
+      state: nextSession.state,
+    }),
+  }
+}
+
+export function branchSessionFromSnapshot(options: {
+  session: AppBattleSession
+  snapshotId: number
+}): SnapshotSessionResult {
+  const jumpResult = jumpSessionToSnapshot(options)
+  if (!jumpResult.ok) {
+    return jumpResult
+  }
+
+  const sourceSnapshot = jumpResult.session.snapshots.find((entry) => entry.id === options.snapshotId)
+  if (!sourceSnapshot) {
+    return {
+      ok: false,
+      reason: `Snapshot ${options.snapshotId} was not found.`,
+    }
+  }
+
+  const truncatedSnapshots = jumpResult.session.snapshots.filter((entry) => entry.id <= sourceSnapshot.id)
+  const truncatedHistory = jumpResult.session.history.filter(
+    (entry) => entry.postSnapshotId <= sourceSnapshot.id,
+  )
+  const nextHistoryEntryId = (truncatedHistory.at(-1)?.id ?? 0) + 1
+
+  const historyEntry: AppActionHistoryEntry = {
+    id: nextHistoryEntryId,
+    turnNumber: sourceSnapshot.turnNumber,
+    actorHeroEntityId: sourceSnapshot.actorHeroEntityId,
+    actionKind: 'branch',
+    resultMessage: `Branched from snapshot ${sourceSnapshot.id} (${sourceSnapshot.phase}).`,
+    success: true,
+    eventCount: 0,
+    preSnapshotId: sourceSnapshot.id,
+    postSnapshotId: sourceSnapshot.id,
+  }
+
+  const nextSession: AppBattleSession = {
+    ...jumpResult.session,
+    snapshots: truncatedSnapshots,
+    nextSnapshotId: sourceSnapshot.id + 1,
+    history: [...truncatedHistory, historyEntry],
+    nextHistoryEntryId: historyEntry.id + 1,
+  }
+
+  return {
+    ok: true,
+    session: nextSession,
+    preview: jumpResult.preview,
+  }
+}
+
+export type AppReplayActionLogEntry = {
+  action: BattleAction
+}
+
+export function replaySessionFromActionLog(options: {
+  config: GameBootstrapConfig
+  actionLog: AppReplayActionLogEntry[]
+  snapshotId?: number
+}):
+  | {
+      ok: true
+      session: AppBattleSession
+      preview: AppBattlePreview
+    }
+  | {
+      ok: false
+      reason: string
+    } {
+  const { config, actionLog, snapshotId } = options
+  let runtime = createInitialBattleSession(config)
+
+  for (const entry of actionLog) {
+    const action = entry.action
+    let result: SessionResolutionSuccess | SessionResolutionFailure
+
+    switch (action.kind) {
+      case 'playCard':
+        result = resolveSessionPlayCard({
+          session: runtime.session,
+          actorHeroEntityId: action.actorHeroEntityId,
+          handCardId: action.handCardId,
+          targetEntityId: action.selection.targetEntityId,
+          targetPosition: action.selection.targetPosition,
+        })
+        break
+      case 'basicAttack':
+        result = resolveSessionBasicAttack({
+          session: runtime.session,
+          actorHeroEntityId: action.actorHeroEntityId,
+          attackerEntityId: action.attackerEntityId,
+          targetEntityId: action.selection.targetEntityId,
+        })
+        break
+      case 'useEntityActive':
+        result = resolveSessionUseEntityActive({
+          session: runtime.session,
+          actorHeroEntityId: action.actorHeroEntityId,
+          sourceEntityId: action.sourceEntityId,
+          targetEntityId: action.selection.targetEntityId,
+        })
+        break
+      case 'pressLuck':
+      case 'endTurn':
+        result = resolveSessionSimpleAction({
+          session: runtime.session,
+          actorHeroEntityId: action.actorHeroEntityId,
+          kind: action.kind,
+        })
+        break
+      default:
+        return {
+          ok: false,
+          reason: `Unsupported action kind in replay log: ${(action as { kind: string }).kind}`,
+        }
+    }
+
+    runtime = {
+      session: result.session,
+      preview: result.preview,
+    }
+  }
+
+  if (snapshotId !== undefined) {
+    const jumpResult = jumpSessionToSnapshot({
+      session: runtime.session,
+      snapshotId,
+    })
+
+    if (!jumpResult.ok) {
+      return jumpResult
+    }
+
+    return jumpResult
+  }
+
+  return {
+    ok: true,
+    session: runtime.session,
+    preview: runtime.preview,
+  }
 }
