@@ -219,9 +219,10 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const isHighlightedTarget = highlightedSet.has(occupier.entityId)
             const isSelectedTarget = selectedTargetEntityId === occupier.entityId
             const isSelectedConfirmEntity = selectedEntityConfirmId === occupier.entityId
-            const isSelectedForAction = isSelectedTarget || isSelectedConfirmEntity
             const isSelectableTarget = !!onSelectTargetEntityId && isHighlightedTarget
             const isSelectableEntity = !!onSelectEntityId
+            const hasAvailableInteraction = availableInteractionSet.has(occupier.entityId)
+            const showInteractionAvailable = hasAvailableInteraction && !isSelectedConfirmEntity
             const ownerClass =
               occupier.ownerHeroEntityId === selfId
                 ? 'owner-self'
@@ -244,7 +245,6 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               entityStats.ownerHeroEntityId === selfId &&
               entityStats.kind !== 'hero' &&
               entityStats.movePoints > 0
-            const hasAvailableInteraction = availableInteractionSet.has(occupier.entityId)
             const activeListeners = entityStats?.activeListeners ?? []
             const reflectListener = activeListeners.find((listener) => /reflect/i.test(listener.listenerId) || /reflect/i.test(listener.label))
             const activeListenerBadgeText = activeListeners.length === 1
@@ -266,7 +266,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             return (
               <div
                 key={`occupier:${occupier.entityId}`}
-                className={`battle-slot occupied ${sideClass} ${ownerClass} ${hasAvailableInteraction ? 'interaction-available' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedForAction ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
+                className={`battle-slot occupied ${sideClass} ${ownerClass} ${showInteractionAvailable ? 'interaction-available' : ''} ${isSelectedConfirmEntity ? 'source-armed' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedTarget ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
                 role="gridcell"
                 aria-label={isSelectableTarget ? `${ariaLabel}. Selectable target.` : ariaLabel}
                 style={{
@@ -294,10 +294,14 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 }}
                 tabIndex={0}
               >
-                {isSelectedForAction && (isSelectableTarget || isSelectedConfirmEntity) ? (
+                {isSelectedTarget && isSelectableTarget ? (
                   <span className="target-check-icon" aria-hidden="true">
                     <Icon icon="game-icons:check-mark" />
                   </span>
+                ) : null}
+
+                {isSelectedConfirmEntity ? (
+                  <span className="source-armed-badge" aria-hidden="true">Armed</span>
                 ) : null}
 
                 {luckCloverCount > 0 && luckIsFavored !== null ? (

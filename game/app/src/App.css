@@ -2724,23 +2724,49 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .battle-slot.interaction-available {
+  cursor: pointer;
   box-shadow:
-    inset 0 0 0 3px color-mix(in srgb, #31e44d 82%, #ffffff 18%),
-    0 0 0 1px color-mix(in srgb, #1a7d2a 48%, transparent),
-    0 0 14px color-mix(in srgb, #2ce14c 48%, transparent);
+    inset 0 0 0 2px color-mix(in srgb, #34dc4f 72%, #ffffff 28%),
+    0 0 0 1px color-mix(in srgb, #1a7d2a 32%, transparent),
+    0 0 10px color-mix(in srgb, #2ce14c 30%, transparent);
 }
 
 .battle-slot.interaction-available::after {
   content: '';
   position: absolute;
+  inset: -1px;
+  border-radius: 10px;
+  border: 2px solid color-mix(in srgb, #3be95a 72%, #ffffff 28%);
+  box-shadow:
+    0 0 0 1px color-mix(in srgb, #104d1a 34%, transparent),
+    0 0 12px color-mix(in srgb, #35ea53 28%, transparent);
+  opacity: 0.56;
+  animation: interaction-available-pulse 1.45s ease-in-out infinite;
+  pointer-events: none;
+}
+
+.battle-slot.interaction-available:hover,
+.battle-slot.interaction-available:focus-visible {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, #46ed62 78%, #ffffff 22%),
+    0 0 0 1px color-mix(in srgb, #1a7d2a 48%, transparent),
+    0 0 14px color-mix(in srgb, #47eb66 40%, transparent);
+}
+
+.battle-slot.source-armed {
+  box-shadow:
+    inset 0 0 0 2px color-mix(in srgb, #ffffff 80%, #49bcff 20%),
+    0 0 0 3px color-mix(in srgb, #4da5ff 66%, transparent),
+    0 0 16px color-mix(in srgb, #4da5ff 42%, transparent);
+}
+
+.battle-slot.source-armed::before {
+  content: '';
+  position: absolute;
   inset: -2px;
   border-radius: 10px;
-  border: 3px solid color-mix(in srgb, #36ea4f 88%, #ffffff 12%);
-  box-shadow:
-    0 0 0 1px color-mix(in srgb, #104d1a 52%, transparent),
-    0 0 18px color-mix(in srgb, #35ea53 44%, transparent);
-  opacity: 0.72;
-  animation: interaction-available-pulse 1.22s ease-in-out infinite;
+  border: 2px dashed color-mix(in srgb, #6bb7ff 66%, transparent);
+  opacity: 0.76;
   pointer-events: none;
 }
 
@@ -2790,8 +2816,12 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .battle-slot.target-highlighted {
-  outline: 2px solid #f0cb58;
+  outline: 2px solid color-mix(in srgb, #ff5a5a 76%, #ffffff 24%);
   outline-offset: -2px;
+  box-shadow:
+    inset 0 0 0 1px color-mix(in srgb, #8a1f1f 42%, transparent),
+    0 0 0 1px color-mix(in srgb, #8a1f1f 30%, transparent),
+    0 0 12px color-mix(in srgb, #ff4a4a 42%, transparent);
 }
 
 .battle-slot.target-selectable {
@@ -2800,15 +2830,18 @@ html[data-shift-held='true'] .game-toast-detail {
 
 .battle-slot.target-selectable:hover,
 .battle-slot.target-selectable:focus-visible {
+  transform: translateY(-1px);
   box-shadow:
-    inset 0 0 0 2px color-mix(in srgb, #f0cb58 70%, transparent),
-    0 0 0 2px color-mix(in srgb, #f0cb58 45%, transparent);
+    inset 0 0 0 2px color-mix(in srgb, #ff6a6a 78%, transparent),
+    0 0 0 2px color-mix(in srgb, #ff4a4a 55%, transparent),
+    0 0 14px color-mix(in srgb, #ff5050 48%, transparent);
 }
 
 .battle-slot.target-selected {
   box-shadow:
-    inset 0 0 0 2px color-mix(in srgb, #241d14 78%, transparent),
-    0 0 0 3px color-mix(in srgb, #f0cb58 75%, transparent);
+    inset 0 0 0 2px color-mix(in srgb, #ffffff 72%, #ff6a6a 28%),
+    0 0 0 3px color-mix(in srgb, #ff5a5a 70%, transparent),
+    0 0 16px color-mix(in srgb, #ff5a5a 42%, transparent);
 }
 
 @keyframes interaction-available-pulse {
@@ -2838,9 +2871,9 @@ html[data-shift-held='true'] .game-toast-detail {
   border-radius: 999px;
   display: grid;
   place-items: center;
-  border: 1px solid color-mix(in srgb, #3b311f 65%, transparent);
-  background: color-mix(in srgb, #f2d47d 86%, #ffffff 14%);
-  color: #241d14;
+  border: 1px solid color-mix(in srgb, #5f1f1f 62%, transparent);
+  background: color-mix(in srgb, #ff8f8f 84%, #ffffff 16%);
+  color: #3a0e0e;
   box-shadow:
     inset 0 1px 1px rgba(255, 255, 255, 0.45),
     0 3px 8px rgba(0, 0, 0, 0.22);
@@ -2850,6 +2883,27 @@ html[data-shift-held='true'] .game-toast-detail {
 .target-check-icon svg {
   width: 17px;
   height: 17px;
+}
+
+.source-armed-badge {
+  position: absolute;
+  top: -9px;
+  left: 50%;
+  transform: translateX(-50%);
+  padding: 2px 8px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #2b4f78 62%, transparent);
+  background: linear-gradient(180deg, #dff0ff, #9ed0ff);
+  color: #10345d;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.2),
+    inset 0 1px 0 rgba(255, 255, 255, 0.5);
+  z-index: var(--layer-badge);
+  pointer-events: none;
 }
 
 .battle-slot.placement-highlighted {
