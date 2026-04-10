@@ -34,6 +34,7 @@ type BattlefieldGridProps = {
   selfId: string
   enemyId: string
   shouldFlipRows: boolean
+  availableInteractionEntityIds?: string[]
   highlightedTargetEntityIds?: string[]
   selectedTargetEntityId?: string | null
   selectedEntityConfirmId?: string | null
@@ -51,6 +52,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     selfId,
     enemyId,
     shouldFlipRows,
+    availableInteractionEntityIds = [],
     highlightedTargetEntityIds = [],
     selectedTargetEntityId,
     selectedEntityConfirmId,
@@ -63,6 +65,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
   } = props
   const halfRows = Math.floor(preview.battlefield.rows / 2)
   const highlightedSet = new Set(highlightedTargetEntityIds)
+  const availableInteractionSet = new Set(availableInteractionEntityIds)
   const highlightedPlacementSet = new Set(
     highlightedPlacementPositions.map((position) => `${position.row}:${position.column}`),
   )
@@ -241,6 +244,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
               entityStats.ownerHeroEntityId === selfId &&
               entityStats.kind !== 'hero' &&
               entityStats.movePoints > 0
+            const hasAvailableInteraction = availableInteractionSet.has(occupier.entityId)
             const activeListeners = entityStats?.activeListeners ?? []
             const reflectListener = activeListeners.find((listener) => /reflect/i.test(listener.listenerId) || /reflect/i.test(listener.label))
             const activeListenerBadgeText = activeListeners.length === 1
@@ -262,7 +266,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             return (
               <div
                 key={`occupier:${occupier.entityId}`}
-                className={`battle-slot occupied ${sideClass} ${ownerClass} ${hasMovesRemaining ? 'moves-remaining' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedForAction ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
+                className={`battle-slot occupied ${sideClass} ${ownerClass} ${hasAvailableInteraction ? 'interaction-available' : ''} ${isHighlightedTarget ? 'target-highlighted' : ''} ${isSelectedForAction ? 'target-selected' : ''} ${isSelectableTarget ? 'target-selectable' : ''}`.trim()}
                 role="gridcell"
                 aria-label={isSelectableTarget ? `${ariaLabel}. Selectable target.` : ariaLabel}
                 style={{

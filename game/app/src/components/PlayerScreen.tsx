@@ -749,6 +749,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
             selfId={selfId}
             enemyId={enemyId}
             shouldFlipRows={shouldFlipRows}
+            availableInteractionEntityIds={isActivePlayer ? entityActiveSourceIds : []}
             highlightedTargetEntityIds={isActivePlayer ? highlightedTargetEntityIds : []}
             selectedTargetEntityId={selectedTargetEntityId}
             selectedEntityConfirmId={selectedEntityConfirmId}

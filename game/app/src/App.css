@@ -2723,24 +2723,24 @@ html[data-shift-held='true'] .game-toast-detail {
   background: color-mix(in srgb, var(--enemy-side-color) 12%, var(--bg));
 }
 
-.battle-slot.moves-remaining {
+.battle-slot.interaction-available {
   box-shadow:
-    inset 0 0 0 3px color-mix(in srgb, #f0cb58 82%, #ffffff 18%),
-    0 0 0 2px color-mix(in srgb, #8a691b 22%, transparent),
-    0 0 16px color-mix(in srgb, #f0cb58 28%, transparent);
+    inset 0 0 0 3px color-mix(in srgb, #31e44d 82%, #ffffff 18%),
+    0 0 0 1px color-mix(in srgb, #1a7d2a 48%, transparent),
+    0 0 14px color-mix(in srgb, #2ce14c 48%, transparent);
 }
 
-.battle-slot.moves-remaining::after {
+.battle-slot.interaction-available::after {
   content: '';
   position: absolute;
   inset: -2px;
   border-radius: 10px;
-  border: 3px solid color-mix(in srgb, #f0cb58 86%, #ffffff 14%);
+  border: 3px solid color-mix(in srgb, #36ea4f 88%, #ffffff 12%);
   box-shadow:
-    0 0 0 1px color-mix(in srgb, #3d2e12 52%, transparent),
-    0 0 18px color-mix(in srgb, #f0cb58 34%, transparent);
-  opacity: 0.58;
-  animation: moves-remaining-pulse 1.4s ease-in-out infinite;
+    0 0 0 1px color-mix(in srgb, #104d1a 52%, transparent),
+    0 0 18px color-mix(in srgb, #35ea53 44%, transparent);
+  opacity: 0.72;
+  animation: interaction-available-pulse 1.22s ease-in-out infinite;
   pointer-events: none;
 }
 
@@ -2811,20 +2811,20 @@ html[data-shift-held='true'] .game-toast-detail {
     0 0 0 3px color-mix(in srgb, #f0cb58 75%, transparent);
 }
 
-@keyframes moves-remaining-pulse {
+@keyframes interaction-available-pulse {
   0%,
   100% {
-    opacity: 0.58;
+    opacity: 0.7;
     transform: scale(1);
   }
   50% {
-    opacity: 0.95;
-    transform: scale(1.02);
+    opacity: 1;
+    transform: scale(1.024);
   }
 }
 
 @media (prefers-reduced-motion: reduce) {
-  .battle-slot.moves-remaining::after {
+  .battle-slot.interaction-available::after {
     animation: none;
   }
 }
