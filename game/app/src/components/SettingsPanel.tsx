@@ -32,6 +32,7 @@ type SettingsPanelProps = {
   deckEditorHeroIndex: 0 | 1
   onSeedChange: (seed: string) => void
   onBootstrapConfigChange: (config: GameBootstrapConfig) => boolean
+  onCopyDataLink: () => void
   onCloseDeckEditor: () => void
   onHardReset: () => void
   onClosePanel?: () => void
@@ -186,7 +187,7 @@ const persistState = (state: SettingsPanelPersistedState) => {
 }
 
 export function SettingsPanel(props: SettingsPanelProps) {
-  const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCloseDeckEditor, onHardReset, onClosePanel } = props
+  const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCopyDataLink, onCloseDeckEditor, onHardReset, onClosePanel } = props
   const [persistedState, setPersistedState] = useState<SettingsPanelPersistedState>(() => loadPersistedState())
   const [draftSeed, setDraftSeed] = useState(seed)
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
@@ -742,6 +743,9 @@ export function SettingsPanel(props: SettingsPanelProps) {
               </button>
               <button type="button" onClick={handleCopy}>
                 Copy JSON
+              </button>
+              <button type="button" onClick={onCopyDataLink}>
+                Copy Data Link
               </button>
               <button type="button" onClick={onHardReset}>
                 Hard Reset
