@@ -1,13 +1,9 @@
-import { useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
+import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { LUCK_BALANCE_LIMIT } from '../../../shared/game-constants.ts'
 import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
 import { KEYBOARD_SHORTCUT_HINT_ROWS, resolveKeyboardShortcutAction } from '../config/keyboard-shortcuts.ts'
-import {
-  renderTextWithHighlightedNumbers,
-  splitTooltipDetailLabel,
-} from '../utils/render-numeric-text.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
 import { InspectPanel } from './InspectPanel.tsx'
@@ -83,8 +79,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
     delta: 0,
     contributions: [],
   }
-  const selfHandCards =
-    preview.heroHands.find((heroHand) => heroHand.heroEntityId === selfId)?.cards ?? []
+  const selfHandCards = useMemo(
+    () => preview.heroHands.find((heroHand) => heroHand.heroEntityId === selfId)?.cards ?? [],
+    [preview.heroHands, selfId],
+  )
   const selfActionTargets =
     preview.heroActionTargets.find((entry) => entry.heroEntityId === selfId) ?? null
   const isActivePlayer = preview.activeHeroEntityId === selfId
@@ -205,7 +203,10 @@ export function PlayerScreen(props: PlayerScreenProps) {
       : sortedPassiveEffects
   const hiddenPassiveCount = sortedPassiveEffects.length - visiblePassiveEffects.length
 
-  const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
+  const basicAttackTargetEntityIds = useMemo(
+    () => selfActionTargets?.basicAttack.validTargetEntityIds ?? [],
+    [selfActionTargets],
+  )
   const basicAttackMoveCost = selfActionTargets?.basicAttack.moveCost ?? 0
   const canUseHeroBasicAttackSource =
     isActivePlayer &&
@@ -253,7 +254,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
       ? entityActiveHighlightedIds
       : focusedCard?.validTargetEntityIds ?? []
 
-  const handleFocusCard = (handCardId: string) => {
+  const handleFocusCard = useCallback((handCardId: string) => {
     if (!isActivePlayer) {
       return
     }
@@ -264,7 +265,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
-  }
+  }, [isActivePlayer])
 
   const handleInspectEntity = (entityId: string) => {
     setInspectTarget({ kind: 'entity', entityId })
@@ -363,7 +364,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedPlacementPosition(position)
   }
 
-  const handleConfirmFocusedCard = () => {
+  const handleConfirmFocusedCard = useCallback(() => {
     if (!focusedCard) {
       return
     }
@@ -388,23 +389,22 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
-  }
+  }, [focusedCard, onPlayCard, selectedPlacementPosition, selectedTargetEntityId])
 
-  const handleBeginHeroBasicAttackEntityActive = () => {
+  const handleBeginHeroBasicAttackEntityActive = useCallback(() => {
     if (!canUseHeroBasicAttackSource) {
       return
     }
 
     setFocusedHandCardId(null)
     setSelectedEntityActiveSourceId(null)
-    setPendingActionMode('basicAttack')
     setSelectedTargetEntityId(null)
     setPendingActionMode('entityActiveTarget')
     setSelectedEntityActiveSourceId(selfId)
     setSelectedPlacementPosition(null)
-  }
+  }, [canUseHeroBasicAttackSource, selfId])
 
-  const handleConfirmEntityActive = () => {
+  const handleConfirmEntityActive = useCallback(() => {
     if (pendingActionMode !== 'entityActiveTarget') {
       return
     }
@@ -433,9 +433,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedEntityActiveSourceId(null)
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
-  }
+  }, [
+    basicAttackTargetEntityIds,
+    entityActiveTargetEntityIds,
+    onBasicAttack,
+    onUseEntityActive,
+    pendingActionMode,
+    selectedEntityActiveRequiresTarget,
+    selectedEntityActiveSourceId,
+    selectedTargetEntityId,
+    selfId,
+  ])
 
-  const handleBeginPressLuck = () => {
+  const handleBeginPressLuck = useCallback(() => {
     if (!isActivePlayer || pressLuckUsedThisTurn || pressLuckAtFavorableLimit || selfMovePoints < pressLuckMoveCost) {
       return
     }
@@ -445,9 +455,21 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setPendingActionMode('pressLuckConfirm')
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
-  }
+  }, [isActivePlayer, pressLuckAtFavorableLimit, pressLuckMoveCost, pressLuckUsedThisTurn, selfMovePoints])
 
-  const handlePressLuckOverlayClick = () => {
+  const handleConfirmPressLuck = useCallback(() => {
+    if (!canConfirmPressLuck || pendingActionMode !== 'pressLuckConfirm') {
+      return
+    }
+
+    onPressLuck()
+    setPendingActionMode(null)
+    setSelectedEntityActiveSourceId(null)
+    setSelectedTargetEntityId(null)
+    setSelectedPlacementPosition(null)
+  }, [canConfirmPressLuck, onPressLuck, pendingActionMode])
+
+  const handlePressLuckOverlayClick = useCallback(() => {
     if (!isActivePlayer) {
       return
     }
@@ -458,19 +480,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     }
 
     handleBeginPressLuck()
-  }
-
-  const handleConfirmPressLuck = () => {
-    if (!canConfirmPressLuck || pendingActionMode !== 'pressLuckConfirm') {
-      return
-    }
-
-    onPressLuck()
-    setPendingActionMode(null)
-    setSelectedEntityActiveSourceId(null)
-    setSelectedTargetEntityId(null)
-    setSelectedPlacementPosition(null)
-  }
+  }, [handleBeginPressLuck, handleConfirmPressLuck, isActivePlayer, pendingActionMode])
 
   const handleClearFocus = () => {
     setFocusedHandCardId(null)
@@ -618,6 +628,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
       window.removeEventListener('keydown', onKeyDown)
     }
   }, [
+    pendingActionMode,
     canConfirmFocusedCardShortcut,
     focusedHandCardId,
     basicAttackTargetEntityIds,
