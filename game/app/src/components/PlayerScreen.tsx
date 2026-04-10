@@ -6,9 +6,7 @@ import { LUCK_VISUALS, SIDE_VISUALS } from '../data/visual-metadata.ts'
 import { KEYBOARD_SHORTCUT_HINT_ROWS, resolveKeyboardShortcutAction } from '../config/keyboard-shortcuts.ts'
 import {
   renderTextWithHighlightedNumbers,
-  simplifyTooltipSummaryText,
   splitTooltipDetailLabel,
-  splitDetailTextIntoLines,
 } from '../utils/render-numeric-text.tsx'
 import { BattlefieldGrid } from './BattlefieldGrid.tsx'
 import { HandBar } from './HandBar.tsx'
@@ -97,17 +95,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
     row: number
     column: number
   } | null>(null)
-  const [pendingActionMode, setPendingActionMode] = useState<'basicAttack' | 'entityActiveTarget' | 'pressLuckConfirm' | null>(null)
+  const [pendingActionMode, setPendingActionMode] = useState<'entityActiveTarget' | 'pressLuckConfirm' | null>(null)
   const [selectedEntityActiveSourceId, setSelectedEntityActiveSourceId] = useState<string | null>(null)
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
-  const [openTouchTooltip, setOpenTouchTooltip] = useState<
-    'basic-attack' | 'deck' | 'press-luck' | null
-  >(null)
+  const [openTouchTooltip, setOpenTouchTooltip] = useState<'deck' | 'press-luck' | null>(null)
   const [selectedPassiveEffectId, setSelectedPassiveEffectId] = useState<string | null>(null)
   const [showAllPassiveEffects, setShowAllPassiveEffects] = useState(false)
   const [inspectTarget, setInspectTarget] = useState<InspectTarget | null>(null)
 
-  const toggleTouchTooltip = (tooltipId: 'basic-attack' | 'deck' | 'press-luck') => {
+  const toggleTouchTooltip = (tooltipId: 'deck' | 'press-luck') => {
     setOpenTouchTooltip((current) => (current === tooltipId ? null : tooltipId))
   }
 
@@ -211,6 +207,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
   const basicAttackTargetEntityIds = selfActionTargets?.basicAttack.validTargetEntityIds ?? []
   const basicAttackMoveCost = selfActionTargets?.basicAttack.moveCost ?? 0
+  const canUseHeroBasicAttackSource =
+    isActivePlayer &&
+    selfMovePoints >= basicAttackMoveCost &&
+    basicAttackTargetEntityIds.length > 0
+  const heroBasicAttackSourceId = canUseHeroBasicAttackSource ? selfId : null
   const pressLuckMoveCost = selfActionTargets?.pressLuck.moveCost ?? 3
   const pressLuckUsedThisTurn = preview.turn.pressLuckUsedThisTurn
   const isSelfLuckAnchor = preview.luck.anchorHeroEntityId === selfId
@@ -219,11 +220,17 @@ export function PlayerScreen(props: PlayerScreenProps) {
     : preview.luck.balance <= -LUCK_BALANCE_LIMIT
   const canConfirmPressLuck = isActivePlayer && !pressLuckUsedThisTurn && !pressLuckAtFavorableLimit && selfMovePoints >= pressLuckMoveCost
   const entityActiveOptions = selfActionTargets?.entityActive ?? []
-  const entityActiveSourceIds = entityActiveOptions.map((entry) => entry.sourceEntityId)
+  const entityActiveSourceIds =
+    heroBasicAttackSourceId !== null
+      ? [heroBasicAttackSourceId, ...entityActiveOptions.map((entry) => entry.sourceEntityId)]
+      : entityActiveOptions.map((entry) => entry.sourceEntityId)
   const selectedEntityActiveOption = selectedEntityActiveSourceId
     ? entityActiveOptions.find((entry) => entry.sourceEntityId === selectedEntityActiveSourceId) ?? null
     : null
-  const entityActiveTargetEntityIds = selectedEntityActiveOption?.validTargetEntityIds ?? []
+  const entityActiveTargetEntityIds =
+    selectedEntityActiveSourceId === selfId
+      ? basicAttackTargetEntityIds
+      : selectedEntityActiveOption?.validTargetEntityIds ?? []
   const selectedEntityActiveRequiresTarget = entityActiveTargetEntityIds.length > 0
   const entityActiveHighlightedIds = pendingActionMode === 'entityActiveTarget'
     ? Array.from(new Set([...entityActiveSourceIds, ...entityActiveTargetEntityIds]))
@@ -232,7 +239,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
     pendingActionMode === 'entityActiveTarget' && !selectedEntityActiveRequiresTarget
       ? selectedEntityActiveSourceId
       : null
-  const canBeginBasicAttack = isActivePlayer && selfMovePoints >= basicAttackMoveCost
   const canBeginPressLuck = isActivePlayer && !pressLuckUsedThisTurn && !pressLuckAtFavorableLimit && selfMovePoints >= pressLuckMoveCost
   const highlightedPlacementPositions = focusedCard?.validPlacementPositions ?? []
   const focusedNeedsTarget = !!focusedCard && focusedCard.validTargetEntityIds.length > 0
@@ -243,11 +249,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
     (!focusedNeedsTarget || !!selectedTargetEntityId) &&
     (!focusedNeedsPlacement || !!selectedPlacementPosition)
   const highlightedTargetEntityIds =
-    pendingActionMode === 'basicAttack'
-      ? basicAttackTargetEntityIds
-      : pendingActionMode === 'entityActiveTarget'
-          ? entityActiveHighlightedIds
-          : focusedCard?.validTargetEntityIds ?? []
+    pendingActionMode === 'entityActiveTarget'
+      ? entityActiveHighlightedIds
+      : focusedCard?.validTargetEntityIds ?? []
 
   const handleFocusCard = (handCardId: string) => {
     if (!isActivePlayer) {
@@ -275,20 +279,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }
 
   const handleSelectTarget = (targetEntityId: string) => {
-    if (pendingActionMode === 'basicAttack') {
-      if (!basicAttackTargetEntityIds.includes(targetEntityId)) {
-        return
-      }
-
-      if (selectedTargetEntityId === targetEntityId) {
-        handleConfirmBasicAttack()
-        return
-      }
-
-      setSelectedTargetEntityId(targetEntityId)
-      return
-    }
-
     if (pendingActionMode === 'entityActiveTarget') {
       if (entityActiveSourceIds.includes(targetEntityId)) {
         if (selectedEntityActiveSourceId === targetEntityId && !selectedEntityActiveRequiresTarget) {
@@ -333,7 +323,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
       return
     }
 
-    if (pendingActionMode === 'basicAttack' || pendingActionMode === 'entityActiveTarget' || focusedCard) {
+    if (pendingActionMode === 'entityActiveTarget' || focusedCard) {
       handleSelectTarget(entityId)
       return
     }
@@ -400,8 +390,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedPlacementPosition(null)
   }
 
-  const handleBeginBasicAttack = () => {
-    if (!isActivePlayer || selfMovePoints < basicAttackMoveCost) {
+  const handleBeginHeroBasicAttackEntityActive = () => {
+    if (!canUseHeroBasicAttackSource) {
       return
     }
 
@@ -409,20 +399,9 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setSelectedEntityActiveSourceId(null)
     setPendingActionMode('basicAttack')
     setSelectedTargetEntityId(null)
+    setPendingActionMode('entityActiveTarget')
+    setSelectedEntityActiveSourceId(selfId)
     setSelectedPlacementPosition(null)
-  }
-
-  const handleBasicAttackOverlayClick = () => {
-    if (!isActivePlayer) {
-      return
-    }
-
-    if (pendingActionMode === 'basicAttack') {
-      handleConfirmBasicAttack()
-      return
-    }
-
-    handleBeginBasicAttack()
   }
 
   const handleConfirmEntityActive = () => {
@@ -439,26 +418,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
       return
     }
 
-    onUseEntityActive({
-      sourceEntityId: selectedEntityActiveSourceId,
-      targetEntityId: selectedTargetEntityId ?? undefined,
-    })
+    if (selectedEntityActiveSourceId === selfId) {
+      if (!selectedTargetEntityId || !basicAttackTargetEntityIds.includes(selectedTargetEntityId)) {
+        return
+      }
+      onBasicAttack({ targetEntityId: selectedTargetEntityId })
+    } else {
+      onUseEntityActive({
+        sourceEntityId: selectedEntityActiveSourceId,
+        targetEntityId: selectedTargetEntityId ?? undefined,
+      })
+    }
     setPendingActionMode(null)
     setSelectedEntityActiveSourceId(null)
-    setSelectedTargetEntityId(null)
-    setSelectedPlacementPosition(null)
-  }
-
-  const handleConfirmBasicAttack = () => {
-    if (!selectedTargetEntityId || pendingActionMode !== 'basicAttack') {
-      return
-    }
-    if (!basicAttackTargetEntityIds.includes(selectedTargetEntityId)) {
-      return
-    }
-
-    onBasicAttack({ targetEntityId: selectedTargetEntityId })
-    setPendingActionMode(null)
     setSelectedTargetEntityId(null)
     setSelectedPlacementPosition(null)
   }
@@ -513,10 +485,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
     '--self-side-color': `var(${SIDE_VISUALS[selfSideKey].sideColorVar})`,
     '--enemy-side-color': `var(${SIDE_VISUALS[enemySideKey].sideColorVar})`,
   } as CSSProperties
-
-  const basicAttackDetailLines = selfHeroDetails?.basicAttack.summaryDetailText
-    ? splitDetailTextIntoLines(selfHeroDetails.basicAttack.summaryDetailText)
-    : []
 
   const hasSelectionState =
     !!focusedHandCardId ||
@@ -610,7 +578,16 @@ export function PlayerScreen(props: PlayerScreenProps) {
           event.preventDefault()
           return
         case 'basicAttack':
-          handleBasicAttackOverlayClick()
+          if (
+            pendingActionMode === 'entityActiveTarget' &&
+            selectedEntityActiveSourceId === selfId &&
+            selectedTargetEntityId &&
+            basicAttackTargetEntityIds.includes(selectedTargetEntityId)
+          ) {
+            handleConfirmEntityActive()
+          } else {
+            handleBeginHeroBasicAttackEntityActive()
+          }
           event.preventDefault()
           return
         case 'pressLuck':
@@ -643,14 +620,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
   }, [
     canConfirmFocusedCardShortcut,
     focusedHandCardId,
-    handleBasicAttackOverlayClick,
+    basicAttackTargetEntityIds,
+    handleBeginHeroBasicAttackEntityActive,
+    handleConfirmEntityActive,
     handleConfirmFocusedCard,
     handleFocusCard,
     handlePressLuckOverlayClick,
     isActivePlayer,
     isCoarsePointer,
     onEndTurn,
+    selectedEntityActiveSourceId,
+    selectedTargetEntityId,
     selfHandCards,
+    selfId,
   ])
 
   return (
@@ -785,79 +767,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
       </section>
 
         <section className="battle-overlay-layer">
-          <aside className="battle-action-overlay action-overlay-left" aria-label="Basic attack action">
-            <span className={`battle-action-shell hint-wrap ${openTouchTooltip === 'basic-attack' ? 'force-tooltip-open' : ''}`.trim()} tabIndex={0}>
-              <button
-                type="button"
-                className="battle-action-stack basic"
-                onClick={handleBasicAttackOverlayClick}
-                disabled={!canBeginBasicAttack}
-                aria-label={
-                  pendingActionMode === 'basicAttack'
-                    ? `Basic attack selected. Confirm by clicking again.`
-                    : `Basic attack. Costs ${basicAttackMoveCost} moves.`
-                }
-              >
-                <Icon icon="game-icons:crossed-swords" className="battle-action-icon" aria-hidden="true" />
-                <span className="battle-action-label">Attack</span>
-                <span className="battle-action-cost">{basicAttackMoveCost}</span>
-                <span className="sr-only">Basic attack</span>
-                {pendingActionMode === 'basicAttack' ? (
-                  <span className="battle-action-check" aria-hidden="true">
-                    <Icon icon="game-icons:check-mark" />
-                  </span>
-                ) : null}
-              </button>
-              <span className="hover-card battle-action-hover-card" role="tooltip">
-                <strong>Basic Attack</strong>
-                <span className="tooltip-main-line">
-                  {selfHeroDetails?.basicAttack.summaryText
-                    ? simplifyTooltipSummaryText(selfHeroDetails.basicAttack.summaryText)
-                    : `Spend ${basicAttackMoveCost} moves to attack one highlighted enemy target.`}
-                </span>
-                {shouldShowDetailedTooltips && selfHeroDetails?.basicAttack.summaryDetailText ? (
-                  <span className="battle-tooltip-detail">
-                    {basicAttackDetailLines.map((line, index) => (
-                      <span key={`${index}-${line}`} className="battle-tooltip-detail-line tooltip-detail-row">
-                        {(() => {
-                          const parts = splitTooltipDetailLabel(line)
-                          return parts.label ? (
-                            <>
-                              <span className="tooltip-detail-label">{parts.label}</span>
-                              <span className="tooltip-detail-value">{renderTextWithHighlightedNumbers(parts.value)}</span>
-                            </>
-                          ) : (
-                            <span className="tooltip-detail-value tooltip-detail-value-full">{renderTextWithHighlightedNumbers(line)}</span>
-                          )
-                        })()}
-                      </span>
-                    ))}
-                  </span>
-                ) : null}
-                {!shouldShowDetailedTooltips && selfHeroDetails?.basicAttack.summaryDetailText ? (
-                  <span className="tooltip-shift-hint">Hold Shift or enable Details.</span>
-                ) : null}
-                <span className="tooltip-row">
-                  <strong className="tooltip-inline-label">Passive:</strong>
-                  {selfHeroDetails?.passiveText ?? 'Passive unavailable.'}
-                </span>
-                <span className="tooltip-divider" aria-hidden="true" />
-                <span className="tooltip-row tooltip-row-muted">
-                  <strong className="tooltip-inline-label">Use:</strong>
-                  Click once to arm it, then click the badge again to confirm.
-                </span>
-              </span>
-            </span>
-            <button
-              type="button"
-              className="touch-tooltip-toggle battle-tooltip-toggle"
-              aria-label="Show basic attack details"
-              aria-pressed={openTouchTooltip === 'basic-attack'}
-              onClick={() => toggleTouchTooltip('basic-attack')}
-            >
-              <Icon icon="game-icons:info" aria-hidden="true" />
-            </button>
-          </aside>
 
           <BattlefieldGrid
             preview={preview}
@@ -871,11 +780,11 @@ export function PlayerScreen(props: PlayerScreenProps) {
             onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
             onInspectEntity={handleInspectEntity}
             highlightedPlacementPositions={
-              isActivePlayer && pendingActionMode !== 'basicAttack' ? highlightedPlacementPositions : []
+              isActivePlayer ? highlightedPlacementPositions : []
             }
             selectedPlacementPosition={selectedPlacementPosition}
             onSelectPlacementPosition={
-              isActivePlayer && pendingActionMode !== 'basicAttack'
+              isActivePlayer
                 ? handleSelectPlacementPosition
                 : undefined
             }
