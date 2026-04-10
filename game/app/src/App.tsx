@@ -4,6 +4,7 @@ import { Toaster, toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../shared/models'
 import {
   createInitialBattleSession,
+  type AppActionHistoryEntry,
   type AppBattleSession,
   type AppBattlePreview,
   resolveSessionBasicAttack,
@@ -187,6 +188,7 @@ function App() {
   const [isDeckEditorOpen, setIsDeckEditorOpen] = useState(false)
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
+  const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
@@ -283,6 +285,23 @@ function App() {
       void audio.play().catch(() => {})
     }
   }, [isMusicMuted])
+
+  useEffect(() => {
+    if (!isHistoryModalOpen) {
+      return
+    }
+
+    const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.key === 'Escape') {
+        setIsHistoryModalOpen(false)
+      }
+    }
+
+    window.addEventListener('keydown', handleKeyDown)
+    return () => {
+      window.removeEventListener('keydown', handleKeyDown)
+    }
+  }, [isHistoryModalOpen])
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {
@@ -455,6 +474,7 @@ function App() {
   }
 
   const preview = runtime.preview
+  const historyEntries = runtime.session.history
   const cardsById = runtime.session.gameApi.cardsById as Record<
     string,
     (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
@@ -681,6 +701,26 @@ function App() {
     }
   }
 
+  const renderHistoryRow = (entry: AppActionHistoryEntry) => {
+    return (
+      <li key={entry.id} className={`history-entry ${entry.success ? 'history-entry-success' : 'history-entry-failure'}`}>
+        <div className="history-entry-head">
+          <strong>Turn {entry.turnNumber}</strong>
+          <span>{entry.actionKind}</span>
+          <span>{entry.success ? 'Success' : 'Failed'}</span>
+        </div>
+        <p className="history-entry-message">{entry.resultMessage}</p>
+        <div className="history-entry-meta">
+          <span>Actor: {entry.actorHeroEntityId}</span>
+          <span>Events: {entry.eventCount}</span>
+          <span>
+            Snapshots: {entry.preSnapshotId} {'->'} {entry.postSnapshotId}
+          </span>
+        </div>
+      </li>
+    )
+  }
+
   return (
     <>
       <Toaster
@@ -695,6 +735,44 @@ function App() {
       <div key={`announcement-${liveAnnouncement.id}`} className="sr-only" aria-live="polite" aria-atomic="true">
         {liveAnnouncement.text}
       </div>
+      <button
+        type="button"
+        className="history-button"
+        onClick={() => setIsHistoryModalOpen(true)}
+        aria-haspopup="dialog"
+        aria-expanded={isHistoryModalOpen}
+      >
+        History ({historyEntries.length})
+      </button>
+      {isHistoryModalOpen ? (
+        <div
+          className="history-modal-overlay"
+          onClick={() => setIsHistoryModalOpen(false)}
+          role="presentation"
+        >
+          <section
+            className="history-modal"
+            role="dialog"
+            aria-modal="true"
+            aria-label="Action history"
+            onClick={(event) => {
+              event.stopPropagation()
+            }}
+          >
+            <header className="history-modal-head">
+              <strong>Action History</strong>
+              <button type="button" onClick={() => setIsHistoryModalOpen(false)}>
+                Close
+              </button>
+            </header>
+            {historyEntries.length === 0 ? (
+              <p className="history-empty">No actions resolved yet.</p>
+            ) : (
+              <ol className="history-list">{historyEntries.map(renderHistoryRow)}</ol>
+            )}
+          </section>
+        </div>
+      ) : null}
       {isSettingsPanelOpen ? (
         <SettingsPanel
           state={runtime.session.state as Record<string, unknown>}

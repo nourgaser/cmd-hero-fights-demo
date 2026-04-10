@@ -18,7 +18,13 @@ import {
 } from "./engine/actions/resolve-action";
 import { resolveEffectiveNumber } from "./engine/core/number-resolver";
 import type { BattleAction, BattleState } from "./shared/models";
-import type { BattleRng } from "./engine/core/rng";
+import {
+  advanceBattleRngSteps,
+  createBattleRng,
+  createBattleRngFromCheckpoint,
+  type BattleRng,
+  type BattleRngCheckpoint,
+} from "./engine/core/rng";
 
 export type GameCreateBattleInput = CreateBattleInput;
 
@@ -49,6 +55,9 @@ export type GameApi = {
     clampMax?: number;
   }): ReturnType<typeof resolveEffectiveNumber>;
   createBattle(input: GameCreateBattleInput): CreatedBattle;
+  createBattleRng(seed: string): BattleRng;
+  createBattleRngFromCheckpoint(checkpoint: BattleRngCheckpoint): BattleRng;
+  advanceBattleRngSteps(battleRng: BattleRng, steps: number): void;
   resolveAction(input: GameResolveActionInput): ResolveActionResult;
 };
 
@@ -76,6 +85,15 @@ export function createGameApi(): GameApi {
         },
       });
     },
+    createBattleRng(seed) {
+      return createBattleRng(seed);
+    },
+    createBattleRngFromCheckpoint(checkpoint) {
+      return createBattleRngFromCheckpoint(checkpoint);
+    },
+    advanceBattleRngSteps(battleRng, steps) {
+      advanceBattleRngSteps(battleRng, steps);
+    },
     resolveAction(input) {
       return resolveActionCore({
         ...input,
@@ -100,3 +118,4 @@ export {
 };
 
 export type { CreatedBattle, ResolveActionResult };
+export type { BattleRng, BattleRngCheckpoint };

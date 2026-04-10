@@ -138,18 +138,18 @@ Validation notes:
 
 ### Action/Toast History
 
-- [ ] Persist a history list of engine result messages in app state (ordered timeline)
-- [ ] Capture action metadata per entry (turn number, actor, action kind, result text, success/failure)
-- [ ] Add "History" button to open a modal timeline view
-- [ ] Modal UX: dismiss with close button, outside click, and Escape key
-- [ ] Ensure history panel styling follows current game theme and remains readable on mobile
+- [x] Persist a history list of engine result messages in app state (ordered timeline)
+- [x] Capture action metadata per entry (turn number, actor, action kind, result text, success/failure)
+- [x] Add "History" button to open a modal timeline view
+- [x] Modal UX: dismiss with close button, outside click, and Escape key
+- [x] Ensure history panel styling follows current game theme and remains readable on mobile
 
 ### Replayable Snapshot Debugger
 
-- [ ] Add timeline snapshots in app state after each resolved action (state, action input, produced events, nextSequence)
-- [ ] Include pre-action and post-action snapshots to inspect invalid actions and successful transitions
+- [x] Add timeline snapshots in app state after each resolved action (state, action input, produced events, nextSequence)
+- [x] Include pre-action and post-action snapshots to inspect invalid actions and successful transitions
 - [ ] Add snapshot list UI controls (jump to snapshot, step backward, step forward, jump to latest)
-- [ ] Add clear snapshot labels (turn, actor, action kind, short result summary)
+- [x] Add clear snapshot labels (turn, actor, action kind, short result summary)
 - [ ] Add branch-from-snapshot flow so we can continue gameplay from any prior snapshot for what-if debugging
 - [ ] Make snapshot parsable from URL so it's shareable and repeatable easily. Similar to chess. -- CRITICAL --
 - [ ] Add deterministic RNG checkpoint metadata per snapshot (seed + rng cursor/step count)
