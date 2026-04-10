@@ -157,20 +157,18 @@ Validation notes:
 - [x] Validate replay determinism by rebuilding from seed + action log and comparing snapshot events/state
 - [x] Add quick copy/export for action log plus snapshot metadata for bug reports and repro sharing
 
-### Unified Extensible Game Debugger
+### Unified Extensible Game Settings
 
-- [ ] Rename current debugger surface to `Game Debugger` and route all debug tools through one entry point
-- [ ] Define debugger module structure by feature section (battle state, events, action history, snapshots, RNG, inspector)
+- [ ] Define settings module structure by feature section (battle state, events, action history, snapshots, RNG, inspector)
 - [ ] Add collapsible sections with independent open/closed state persistence
 - [ ] Add global "collapse all / expand all" controls for fast navigation
-- [ ] Add fully minimized mode that collapses debugger into a very small docked chip/button
+- [ ] Add fully minimized mode that collapses settings into a very small docked chip/button
 - [ ] Add quick restore from minimized mode while preserving current tab/section state
 - [ ] Add compact and full layout modes (compact for gameplay, full for deep debugging)
-- [ ] Persist debugger UI preferences in local storage (position, size, collapsed sections, minimized state)
+- [ ] Persist settings UI preferences in local storage (position, size, collapsed sections, minimized state)
 - [ ] Add keyboard shortcuts for open/close, minimize, and section navigation
-- [ ] Add extensibility contract for new debugger sections (shared section API + registration pattern)
-- [ ] Ensure debugger can be safely extended without changing engine architecture (UI-only composition over game API)
-- [ ] Keep debugger read-only against engine state except explicit debug actions (jump to snapshot, branch, replay)
+- [ ] Add extensibility contract for new settings sections (shared section API + registration pattern)
+- [ ] Ensure settings can be safely extended without changing engine architecture (UI-only composition over game API)
 - [ ] Add visual polish pass for readability (spacing, hierarchy, sticky controls, scroll behavior)
 - [ ] Ensure responsive behavior: usable on mobile and narrow desktop widths
 
