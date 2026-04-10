@@ -145,7 +145,11 @@ export function HandBar(props: HandBarProps) {
       return
     }
 
-    if (target.closest('.hand-card-item, .hand-focus-panel, .hand-pill-button, .move-meter, .clear-focus, .confirm-play')) {
+    if (
+      target.closest(
+        '.hand-card-item, .hand-focus-panel, .hand-pill-button, .hand-deck-chip, .hand-side-rail, .hand-luck-cluster, .hand-luck-orb, .move-meter, .clear-focus, .confirm-play',
+      )
+    ) {
       return
     }
 
