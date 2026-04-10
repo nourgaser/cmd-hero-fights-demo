@@ -914,3 +914,5 @@ This task is successful when the client no longer feels like it is fighting the 
 Rework the entire client information architecture away from overloaded hover tooltips into a unified selection-based inspect/details system with stable panels, reusable detail components, overflow-safe battlefield indicators, comparison support, and mobile-first interaction patterns. Preserve all gameplay-critical information, reduce duplication, eliminate interaction conflicts, and make dense stat/state inspection practical for both desktop and mobile.
 
 ```
+
+- [ ] Add tutorial / rulebook.
