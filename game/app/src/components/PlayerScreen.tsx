@@ -28,6 +28,7 @@ type PlayerScreenProps = {
     targetPosition?: { row: number; column: number }
   }) => void
   onOpenDeckEditor: () => void
+  onHardReroll?: () => void
   isMusicMuted?: boolean
   onToggleMusic?: () => void
   showMusicControl?: boolean
@@ -52,6 +53,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     onEndTurn,
     onPlayCard,
     onOpenDeckEditor,
+    onHardReroll,
     isMusicMuted,
     onToggleMusic,
     showMusicControl,
@@ -622,6 +624,28 @@ export function PlayerScreen(props: PlayerScreenProps) {
           </div>
         </div>
         <div className="screen-head-actions">
+          <button
+            type="button"
+            className="help-chip deck-editor-chip hint-wrap"
+            onClick={onOpenDeckEditor}
+            data-hover-align="right"
+          >
+            <Icon icon="game-icons:card-pick" aria-hidden="true" />
+            <span className="sr-only">Edit deck</span>
+            <span className="hover-card" role="tooltip">Edit Deck</span>
+          </button>
+          {onHardReroll ? (
+            <button
+              type="button"
+              className="help-chip hard-reroll-chip hint-wrap"
+              onClick={onHardReroll}
+              data-hover-align="right"
+            >
+              <span aria-hidden="true">↻</span>
+              <span className="sr-only">Hard reroll battle seed</span>
+              <span className="hover-card" role="tooltip">Hard Reroll Seed</span>
+            </button>
+          ) : null}
           {showMusicControl ? (
             <button
               type="button"
@@ -643,16 +667,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
               <span aria-hidden="true">⚙</span>
             </button>
           ) : null}
-          <button
-            type="button"
-            className="help-chip deck-editor-chip hint-wrap"
-            onClick={onOpenDeckEditor}
-            data-hover-align="right"
-          >
-            <Icon icon="game-icons:card-pick" aria-hidden="true" />
-            <span className="sr-only">Edit deck</span>
-            <span className="hover-card" role="tooltip">Edit Deck</span>
-          </button>
           <span className="help-chip keyboard-shortcuts-chip hint-wrap" tabIndex={0} data-hover-align="right">
             <Icon icon="game-icons:keyboard" aria-hidden="true" />
             <span className="sr-only">Keyboard shortcuts</span>

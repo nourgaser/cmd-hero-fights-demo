@@ -825,6 +825,19 @@ function App() {
     }
   }
 
+  const handleHardReroll = () => {
+    const nextSeed = incrementSeed(bootstrapConfig.seed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed)
+    const nextConfig: GameBootstrapConfig = {
+      ...bootstrapConfig,
+      seed: nextSeed,
+    }
+
+    const changed = handleBootstrapConfigChange(nextConfig)
+    if (changed) {
+      showActionSuccessToast(`Hard reroll complete. New seed: ${nextSeed}.`, [])
+    }
+  }
+
   const handleCopyDataLink = async () => {
     const url = createLoadDataShareUrl({
       storageKeys: LOAD_DATA_STORAGE_KEYS,
@@ -1675,6 +1688,7 @@ function App() {
           onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroAId)}
           onOpenDeckEditor={() => handleOpenDeckEditor(0)}
+          onHardReroll={handleHardReroll}
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl
@@ -1695,6 +1709,7 @@ function App() {
           onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroBId)}
           onOpenDeckEditor={() => handleOpenDeckEditor(1)}
+          onHardReroll={handleHardReroll}
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl

@@ -244,11 +244,18 @@ html[data-shift-held='true'] .game-toast-detail {
   font-size: 12px;
   min-width: 0;
   min-height: 0;
-  height: 100%;
-  max-height: 100%;
   color: #dce8ff;
   display: grid;
   gap: 8px;
+}
+
+.settings-modal-collapsed {
+  width: min(840px, 100%);
+  max-height: 330px;
+}
+
+.settings-modal-collapsed .settings-tree-wrap {
+  padding-bottom: 6px;
 }
 
 .settings-section {
@@ -2172,7 +2179,7 @@ html[data-shift-held='true'] .game-toast-detail {
   z-index: var(--layer-tooltip);
 }
 
-.deck-editor-chip {
+.help-chip.deck-editor-chip {
   cursor: pointer;
   background: linear-gradient(180deg, rgba(32, 45, 74, 0.92), rgba(24, 34, 58, 0.92));
   border: 1px solid #3e5080;
@@ -2180,11 +2187,32 @@ html[data-shift-held='true'] .game-toast-detail {
   transition: background 0.15s, border-color 0.15s, color 0.15s;
 }
 
-.deck-editor-chip:hover,
-.deck-editor-chip:focus-visible {
+.help-chip.deck-editor-chip:hover,
+.help-chip.deck-editor-chip:focus-visible {
   background: linear-gradient(180deg, rgba(48, 66, 108, 0.96), rgba(36, 52, 88, 0.96));
   border-color: #6a84be;
   color: #e8eeff;
+}
+
+.help-chip.deck-editor-chip svg {
+  color: inherit;
+  opacity: 1;
+}
+
+.help-chip.hard-reroll-chip {
+  background: linear-gradient(180deg, #f3d08c, #dfad58);
+  border: 1px solid #9d6c2d;
+  color: #2c1a08;
+  font-size: 22px;
+  font-weight: 800;
+  line-height: 1;
+  transition: transform 0.15s ease, filter 0.15s ease;
+}
+
+.help-chip.hard-reroll-chip:hover,
+.help-chip.hard-reroll-chip:focus-visible {
+  filter: brightness(1.05);
+  border-color: #c48e46;
 }
 
 .screen-head h1 {

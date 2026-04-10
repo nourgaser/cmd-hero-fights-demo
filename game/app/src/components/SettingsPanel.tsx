@@ -690,6 +690,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   }
 
   const isAllSectionsOpen = SETTINGS_SECTION_ORDER.every((key) => sectionOpen[key])
+  const isAllSectionsClosed = SETTINGS_SECTION_ORDER.every((key) => !sectionOpen[key])
 
   return (
     <>
@@ -703,7 +704,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
         role="presentation"
       >
         <section
-          className="settings-modal"
+          className={`settings-modal ${isAllSectionsClosed ? 'settings-modal-collapsed' : ''}`.trim()}
           role="dialog"
           aria-modal="true"
           aria-label="Settings"
