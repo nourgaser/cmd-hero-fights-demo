@@ -974,81 +974,85 @@ function App() {
                 Close
               </button>
             </header>
-            <div className="history-snapshot-controls">
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeSnapshotIndex > 0) {
-                    handleJumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
-                  }
-                }}
-                disabled={activeSnapshotIndex <= 0}
-              >
-                Previous
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
-                    handleJumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
-                  }
-                }}
-                disabled={activeSnapshotIndex < 0 || activeSnapshotIndex >= snapshots.length - 1}
-              >
-                Next
-              </button>
-              <button
-                type="button"
-                onClick={() => {
-                  if (latestSnapshotId) {
-                    handleJumpToSnapshot(latestSnapshotId)
-                  }
-                }}
-                disabled={!latestSnapshotId || activeSnapshotId === latestSnapshotId}
-              >
-                Latest
-              </button>
-              <button
-                type="button"
-                onClick={handleBranchFromSnapshot}
-                disabled={!activeSnapshotId}
-              >
-                Branch From Snapshot
-              </button>
-              <button type="button" onClick={() => void handleCopyReplayPayload()}>
-                Copy Replay Payload
-              </button>
-              <button type="button" onClick={handleValidateReplayDeterminism}>
-                Validate Replay
-              </button>
-              <span className="history-snapshot-active-label">
-                Active snapshot: {activeSnapshot ? `${activeSnapshot.id} (${activeSnapshot.phase})` : 'none'}
-              </span>
-            </div>
-            {historyEntries.length === 0 ? (
-              <p className="history-empty">No actions resolved yet.</p>
-            ) : (
-              <>
-                <ol className="history-list">{historyEntries.map(renderHistoryRow)}</ol>
-                <ul className="snapshot-list" aria-label="Snapshots">
-                  {snapshots.map((snapshot) => {
-                    const isActive = snapshot.id === activeSnapshotId
+            <div className="history-modal-body">
+              <div className="history-snapshot-controls">
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeSnapshotIndex > 0) {
+                      handleJumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
+                    }
+                  }}
+                  disabled={activeSnapshotIndex <= 0}
+                >
+                  Previous
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
+                      handleJumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
+                    }
+                  }}
+                  disabled={activeSnapshotIndex < 0 || activeSnapshotIndex >= snapshots.length - 1}
+                >
+                  Next
+                </button>
+                <button
+                  type="button"
+                  onClick={() => {
+                    if (latestSnapshotId) {
+                      handleJumpToSnapshot(latestSnapshotId)
+                    }
+                  }}
+                  disabled={!latestSnapshotId || activeSnapshotId === latestSnapshotId}
+                >
+                  Latest
+                </button>
+                <button
+                  type="button"
+                  onClick={handleBranchFromSnapshot}
+                  disabled={!activeSnapshotId}
+                >
+                  Branch From Snapshot
+                </button>
+                <button type="button" onClick={() => void handleCopyReplayPayload()}>
+                  Copy Replay Payload
+                </button>
+                <button type="button" onClick={handleValidateReplayDeterminism}>
+                  Validate Replay
+                </button>
+                <span className="history-snapshot-active-label">
+                  Active snapshot: {activeSnapshot ? `${activeSnapshot.id} (${activeSnapshot.phase})` : 'none'}
+                </span>
+              </div>
+              {historyEntries.length === 0 ? (
+                <p className="history-empty">No actions resolved yet.</p>
+              ) : (
+                <>
+                  <div className="history-log-scroll">
+                    <ol className="history-list">{historyEntries.map(renderHistoryRow)}</ol>
+                  </div>
+                  <ul className="snapshot-list" aria-label="Snapshots">
+                    {snapshots.map((snapshot) => {
+                      const isActive = snapshot.id === activeSnapshotId
 
-                    return (
-                      <li key={snapshot.id}>
-                        <button
-                          type="button"
-                          className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
-                          onClick={() => handleJumpToSnapshot(snapshot.id)}
-                        >
-                          #{snapshot.id} {snapshot.phase} T{snapshot.turnNumber} {snapshot.actionKind}
-                        </button>
-                      </li>
-                    )
-                  })}
-                </ul>
-              </>
-            )}
+                      return (
+                        <li key={snapshot.id}>
+                          <button
+                            type="button"
+                            className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
+                            onClick={() => handleJumpToSnapshot(snapshot.id)}
+                          >
+                            #{snapshot.id} {snapshot.phase} T{snapshot.turnNumber} {snapshot.actionKind}
+                          </button>
+                        </li>
+                      )
+                    })}
+                  </ul>
+                </>
+              )}
+            </div>
           </section>
         </div>
       ) : null}

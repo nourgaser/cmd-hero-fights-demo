@@ -1582,6 +1582,12 @@ html[data-shift-held='true'] .game-toast-detail {
   overflow: hidden;
 }
 
+.history-modal-body {
+  min-height: 0;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr) auto;
+}
+
 .history-modal-head {
   display: flex;
   align-items: center;
@@ -1610,13 +1616,18 @@ html[data-shift-held='true'] .game-toast-detail {
   cursor: pointer;
 }
 
+.history-log-scroll {
+  min-height: 0;
+  overflow: auto;
+  padding: 10px;
+}
+
 .history-list {
   margin: 0;
-  padding: 10px;
+  padding: 0;
   list-style: none;
   display: grid;
   gap: 8px;
-  overflow: auto;
 }
 
 .history-snapshot-controls {
@@ -1626,6 +1637,7 @@ html[data-shift-held='true'] .game-toast-detail {
   gap: 8px;
   padding: 10px;
   border-bottom: 1px solid color-mix(in srgb, #8ea2d6 20%, transparent);
+  background: color-mix(in srgb, #1b2a49 92%, #ffffff 8%);
 }
 
 .history-snapshot-controls button {
@@ -1708,10 +1720,15 @@ html[data-shift-held='true'] .game-toast-detail {
   padding: 10px;
   list-style: none;
   display: flex;
-  flex-wrap: wrap;
+  flex-wrap: nowrap;
   gap: 6px;
   border-top: 1px solid color-mix(in srgb, #8ea2d6 20%, transparent);
-  overflow: auto;
+  overflow-x: auto;
+  overflow-y: hidden;
+}
+
+.snapshot-list li {
+  flex: 0 0 auto;
 }
 
 .snapshot-chip {
@@ -1756,6 +1773,10 @@ html[data-shift-held='true'] .game-toast-detail {
   }
 
   .snapshot-list {
+    padding: 8px;
+  }
+
+  .history-log-scroll {
     padding: 8px;
   }
 }
