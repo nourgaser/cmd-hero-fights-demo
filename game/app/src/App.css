@@ -2324,8 +2324,8 @@ html[data-shift-held='true'] .game-toast-detail {
 }
 
 .entity-luck-clover {
-  width: 12px;
-  height: 12px;
+  width: 18px;
+  height: 18px;
   filter: drop-shadow(0 1px 1px rgba(0, 0, 0, 0.2));
 }
 
