@@ -1585,7 +1585,8 @@ html[data-shift-held='true'] .game-toast-detail {
 .history-modal-body {
   min-height: 0;
   display: grid;
-  grid-template-rows: auto minmax(0, 1fr) auto;
+  grid-template-rows: auto auto minmax(0, 1fr) auto;
+  overflow: hidden;
 }
 
 .history-modal-head {
@@ -1679,6 +1680,17 @@ html[data-shift-held='true'] .game-toast-detail {
 .history-snapshot-active-label {
   font-size: 11px;
   opacity: 0.84;
+}
+
+.history-shortcuts {
+  margin: 0;
+  padding: 6px 10px 8px;
+  font-size: 10px;
+  line-height: 1.35;
+  letter-spacing: 0.02em;
+  color: color-mix(in srgb, #dce8ff 86%, #9eb3de 14%);
+  background: color-mix(in srgb, #1b2a49 94%, #ffffff 6%);
+  border-bottom: 1px solid color-mix(in srgb, #8ea2d6 14%, transparent);
 }
 
 .history-entry {
@@ -1785,6 +1797,10 @@ html[data-shift-held='true'] .game-toast-detail {
   .history-snapshot-controls {
     padding: 8px;
     gap: 6px;
+  }
+
+  .history-shortcuts {
+    padding: 4px 8px 6px;
   }
 
   .history-snapshot-controls button {

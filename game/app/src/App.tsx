@@ -180,6 +180,24 @@ function describeCardCastCondition(cardDefinition: unknown): string | null {
   return `Only playable when your hero is below ${threshold} HP.`
 }
 
+function isTypingTarget(event: KeyboardEvent): boolean {
+  const target = event.target as HTMLElement | null
+  if (!target) {
+    return false
+  }
+
+  if (target.isContentEditable) {
+    return true
+  }
+
+  const tagName = target.tagName
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
+    return true
+  }
+
+  return target.closest('[role="textbox"]') !== null
+}
+
 function App() {
   const [initialReplayPayload] = useState(() => readReplayPayloadFromLocation())
   const [initialBootstrapConfig] = useState(() => initialReplayPayload?.bootstrapConfig ?? loadBootstrapConfig())
@@ -350,13 +368,222 @@ function App() {
   }, [bootstrapConfig, runtime])
 
   useEffect(() => {
-    if (!isHistoryModalOpen) {
-      return
-    }
-
     const handleKeyDown = (event: KeyboardEvent) => {
+      if (event.defaultPrevented || isTypingTarget(event)) {
+        return
+      }
+
+      const key = event.key.toLowerCase()
+      if (key === 'h') {
+        event.preventDefault()
+        setIsHistoryModalOpen((current) => !current)
+        return
+      }
+
+      if (!isHistoryModalOpen) {
+        return
+      }
+
       if (event.key === 'Escape') {
+        event.preventDefault()
         setIsHistoryModalOpen(false)
+        return
+      }
+
+      if (!runtime || runtime.session.snapshots.length === 0) {
+        return
+      }
+
+      const snapshots = runtime.session.snapshots
+      const latestSnapshotId = snapshots.at(-1)?.id ?? null
+      const activeSnapshotId = runtime.session.activeSnapshotId ?? latestSnapshotId
+      const activeSnapshotIndex = activeSnapshotId
+        ? snapshots.findIndex((snapshot) => snapshot.id === activeSnapshotId)
+        : -1
+
+      const jumpToSnapshot = (snapshotId: number) => {
+        setRuntime((prev) => {
+          if (!prev) {
+            return prev
+          }
+
+          const result = jumpSessionToSnapshot({
+            session: prev.session,
+            snapshotId,
+          })
+
+          if (!result.ok) {
+            return prev
+          }
+
+          return {
+            session: result.session,
+            preview: result.preview,
+          }
+        })
+      }
+
+      if (event.key === 'Home' && snapshots.length > 0) {
+        event.preventDefault()
+        jumpToSnapshot(snapshots[0]!.id)
+        return
+      }
+
+      if (event.key === 'End' && latestSnapshotId) {
+        event.preventDefault()
+        jumpToSnapshot(latestSnapshotId)
+        return
+      }
+
+      if (event.key === 'ArrowLeft' && activeSnapshotIndex > 0) {
+        event.preventDefault()
+        jumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
+        return
+      }
+
+      if (event.key === 'ArrowRight' && activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
+        event.preventDefault()
+        jumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
+        return
+      }
+
+      if (key === 'b' && activeSnapshotId) {
+        event.preventDefault()
+        let branchMessage: string | null = null
+
+        setRuntime((prev) => {
+          if (!prev) {
+            return prev
+          }
+
+          const result = branchSessionFromSnapshot({
+            session: prev.session,
+            snapshotId: activeSnapshotId,
+          })
+
+          if (!result.ok) {
+            return prev
+          }
+
+          branchMessage = `Branch resumed from snapshot ${activeSnapshotId}.`
+          return {
+            session: result.session,
+            preview: result.preview,
+          }
+        })
+
+        if (branchMessage) {
+          setLiveAnnouncement((current) => ({ id: current.id + 1, text: branchMessage ?? '' }))
+          toast.success(branchMessage, {
+            id: ACTION_TOAST_ID,
+            duration: ACTION_TOAST_DURATION_MS,
+          })
+        }
+        return
+      }
+
+      if (key === 'c') {
+        event.preventDefault()
+        const payload = createReplayUrlPayload({
+          bootstrapConfig,
+          seed: runtime.session.state.seed,
+          actionLog: createActionLogFromSession(runtime.session),
+          snapshotId: runtime.session.activeSnapshotId,
+        })
+
+        void navigator.clipboard
+          .writeText(JSON.stringify(payload, null, 2))
+          .then(() => {
+            setLiveAnnouncement((current) => ({ id: current.id + 1, text: 'Replay payload copied to clipboard.' }))
+            toast.success('Replay payload copied to clipboard.', {
+              id: ACTION_TOAST_ID,
+              duration: ACTION_TOAST_DURATION_MS,
+            })
+          })
+          .catch(() => {
+            setLiveAnnouncement((current) => ({ id: current.id + 1, text: 'Failed to copy replay payload.' }))
+            toast.error('Failed to copy replay payload.', {
+              id: ACTION_TOAST_ID,
+              duration: ACTION_TOAST_DURATION_MS,
+            })
+          })
+        return
+      }
+
+      if (key === 'v') {
+        event.preventDefault()
+        const activeSnapshot = snapshots.find((snapshot) => snapshot.id === activeSnapshotId)
+        if (!activeSnapshot) {
+          setLiveAnnouncement((current) => ({ id: current.id + 1, text: 'Select a snapshot before validating replay determinism.' }))
+          toast.error('Select a snapshot before validating replay determinism.', {
+            id: ACTION_TOAST_ID,
+            duration: ACTION_TOAST_DURATION_MS,
+          })
+          return
+        }
+
+        const replayResult = replaySessionFromActionLog({
+          config: {
+            ...bootstrapConfig,
+            seed: runtime.session.state.seed,
+          },
+          actionLog: createActionLogFromSession(runtime.session),
+          snapshotId: activeSnapshotId ?? undefined,
+        })
+
+        if (!replayResult.ok) {
+          const message = `Replay validation failed: ${replayResult.reason}`
+          setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
+          toast.error(message, {
+            id: ACTION_TOAST_ID,
+            duration: ACTION_TOAST_DURATION_MS,
+          })
+          return
+        }
+
+        const rebuiltSnapshot = replayResult.session.snapshots.find(
+          (snapshot) => snapshot.id === activeSnapshotId,
+        )
+        if (!rebuiltSnapshot) {
+          const message = `Replay validation failed: snapshot ${activeSnapshotId} was not rebuilt.`
+          setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
+          toast.error(message, {
+            id: ACTION_TOAST_ID,
+            duration: ACTION_TOAST_DURATION_MS,
+          })
+          return
+        }
+
+        const sameState = JSON.stringify(rebuiltSnapshot.state) === JSON.stringify(activeSnapshot.state)
+        const sameEvents = JSON.stringify(rebuiltSnapshot.events) === JSON.stringify(activeSnapshot.events)
+        const sameSequence = rebuiltSnapshot.nextSequence === activeSnapshot.nextSequence
+        const sameRngStep = rebuiltSnapshot.rngCheckpoint.stepCount === activeSnapshot.rngCheckpoint.stepCount
+
+        if (sameState && sameEvents && sameSequence && sameRngStep) {
+          const message = `Replay validation passed at snapshot ${activeSnapshotId}.`
+          setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
+          toast.success(message, {
+            id: ACTION_TOAST_ID,
+            duration: ACTION_TOAST_DURATION_MS,
+          })
+          return
+        }
+
+        let mismatch = 'state mismatch'
+        if (!sameEvents) {
+          mismatch = 'event mismatch'
+        } else if (!sameSequence) {
+          mismatch = 'nextSequence mismatch'
+        } else if (!sameRngStep) {
+          mismatch = 'RNG step mismatch'
+        }
+
+        const message = `Replay validation failed at snapshot ${activeSnapshotId}: ${mismatch}.`
+        setLiveAnnouncement((current) => ({ id: current.id + 1, text: message }))
+        toast.error(message, {
+          id: ACTION_TOAST_ID,
+          duration: ACTION_TOAST_DURATION_MS,
+        })
       }
     }
 
@@ -364,7 +591,7 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [isHistoryModalOpen])
+  }, [bootstrapConfig, isHistoryModalOpen, runtime])
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {
@@ -872,7 +1099,7 @@ function App() {
         seed: runtime.session.state.seed,
       },
       actionLog: createActionLogFromSession(runtime.session),
-      snapshotId: activeSnapshotId,
+      snapshotId: activeSnapshotId ?? undefined,
     })
 
     if (!replayResult.ok) {
@@ -1037,7 +1264,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Jump to first snapshot"
-                  title="First"
+                  title="First (Home)"
                   onClick={() => {
                     if (snapshots.length > 0) {
                       handleJumpToSnapshot(snapshots[0]!.id)
@@ -1051,7 +1278,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Jump to previous snapshot"
-                  title="Previous"
+                  title="Previous (Left Arrow)"
                   onClick={() => {
                     if (activeSnapshotIndex > 0) {
                       handleJumpToSnapshot(snapshots[activeSnapshotIndex - 1]!.id)
@@ -1065,7 +1292,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Jump to next snapshot"
-                  title="Next"
+                  title="Next (Right Arrow)"
                   onClick={() => {
                     if (activeSnapshotIndex >= 0 && activeSnapshotIndex < snapshots.length - 1) {
                       handleJumpToSnapshot(snapshots[activeSnapshotIndex + 1]!.id)
@@ -1079,7 +1306,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Jump to latest snapshot"
-                  title="Latest"
+                  title="Latest (End)"
                   onClick={() => {
                     if (latestSnapshotId) {
                       handleJumpToSnapshot(latestSnapshotId)
@@ -1093,7 +1320,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Branch from active snapshot"
-                  title="Branch"
+                  title="Branch (B)"
                   onClick={handleBranchFromSnapshot}
                   disabled={!activeSnapshotId}
                 >
@@ -1103,7 +1330,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Copy replay payload"
-                  title="Copy Replay Payload"
+                  title="Copy Replay Payload (C)"
                   onClick={() => void handleCopyReplayPayload()}
                 >
                   {renderHistoryControlIcon('copy')}
@@ -1112,7 +1339,7 @@ function App() {
                   className="history-icon-button"
                   type="button"
                   aria-label="Validate replay determinism"
-                  title="Validate Replay"
+                  title="Validate Replay (V)"
                   onClick={handleValidateReplayDeterminism}
                 >
                   {renderHistoryControlIcon('validate')}
@@ -1121,6 +1348,9 @@ function App() {
                   Active snapshot: {activeSnapshot ? `${activeSnapshot.id} (${activeSnapshot.phase})` : 'none'}
                 </span>
               </div>
+              <p className="history-shortcuts">
+                H toggle, Esc close, Home first, End latest, Left/Right navigate, B branch, C copy, V validate
+              </p>
               {historyEntries.length === 0 ? (
                 <p className="history-empty">No actions resolved yet.</p>
               ) : (
