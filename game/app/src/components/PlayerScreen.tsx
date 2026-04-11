@@ -463,7 +463,35 @@ export function PlayerScreen(props: PlayerScreenProps) {
       return
     }
 
-    const handleOutsideInspectPointerDown = (event: PointerEvent) => {
+    const SCROLL_THRESHOLD_PX = 6
+
+    type PointerState = { startX: number; startY: number; didScroll: boolean }
+    const pointers = new Map<number, PointerState>()
+
+    const handlePointerDown = (event: PointerEvent) => {
+      pointers.set(event.pointerId, { startX: event.clientX, startY: event.clientY, didScroll: false })
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      const state = pointers.get(event.pointerId)
+      if (!state || state.didScroll) {
+        return
+      }
+      const dx = Math.abs(event.clientX - state.startX)
+      const dy = Math.abs(event.clientY - state.startY)
+      if (dx > SCROLL_THRESHOLD_PX || dy > SCROLL_THRESHOLD_PX) {
+        state.didScroll = true
+      }
+    }
+
+    const handlePointerUp = (event: PointerEvent) => {
+      const state = pointers.get(event.pointerId)
+      pointers.delete(event.pointerId)
+
+      if (state?.didScroll) {
+        return
+      }
+
       const target = event.target
       if (!(target instanceof Element)) {
         return
@@ -473,12 +501,20 @@ export function PlayerScreen(props: PlayerScreenProps) {
         return
       }
 
+      if (target.closest('button, input, textarea, [role="button"]')) {
+        return
+      }
+
       setInspectTarget(null)
     }
 
-    window.addEventListener('pointerdown', handleOutsideInspectPointerDown)
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
     return () => {
-      window.removeEventListener('pointerdown', handleOutsideInspectPointerDown)
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
     }
   }, [inspectTarget])
 
@@ -848,6 +884,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           selfId={selfId}
           selfHandCards={selfHandCards}
           shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          hasActiveAction={hasSelectionState}
           onClose={handleCloseInspect}
         />
     </section>

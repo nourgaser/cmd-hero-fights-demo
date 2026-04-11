@@ -1,3 +1,4 @@
+import { useEffect, useRef } from 'react'
 import { Icon } from '@iconify/react/offline'
 import type { AppBattlePreview } from '../game-client.ts'
 import { CARD_ICON_META, ENTITY_ICON_META } from '../data/visual-metadata.ts'
@@ -615,18 +616,27 @@ type InspectPanelProps = {
   selfId: string
   selfHandCards: HandBarCard[]
   shouldShowDetailedTooltips: boolean
+  hasActiveAction: boolean
   onClose: () => void
 }
 
 export function InspectPanel(props: InspectPanelProps) {
-  const { target, preview, selfId, selfHandCards, shouldShowDetailedTooltips, onClose } = props
+  const { target, preview, selfId, selfHandCards, shouldShowDetailedTooltips, hasActiveAction, onClose } = props
+  const panelRef = useRef<HTMLElement>(null)
+
+  useEffect(() => {
+    if (!target || !panelRef.current || hasActiveAction) {
+      return
+    }
+    panelRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
+  }, [target, hasActiveAction])
 
   if (!target) {
     return null
   }
 
   return (
-    <section className="inspect-panel card" aria-label="Inspect details" aria-live="polite">
+    <section ref={panelRef} className="inspect-panel card" aria-label="Inspect details" aria-live="polite">
       <div className="inspect-panel-head">
         <span className="inspect-panel-label">
           {target.kind === 'entity' ? 'Entity' : 'Card'}
