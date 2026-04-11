@@ -616,19 +616,20 @@ type InspectPanelProps = {
   selfId: string
   selfHandCards: HandBarCard[]
   shouldShowDetailedTooltips: boolean
+  hasActiveAction: boolean
   onClose: () => void
 }
 
 export function InspectPanel(props: InspectPanelProps) {
-  const { target, preview, selfId, selfHandCards, shouldShowDetailedTooltips, onClose } = props
+  const { target, preview, selfId, selfHandCards, shouldShowDetailedTooltips, hasActiveAction, onClose } = props
   const panelRef = useRef<HTMLElement>(null)
 
   useEffect(() => {
-    if (!target || !panelRef.current) {
+    if (!target || !panelRef.current || hasActiveAction) {
       return
     }
     panelRef.current.scrollIntoView({ behavior: 'smooth', block: 'nearest' })
-  }, [target])
+  }, [target, hasActiveAction])
 
   if (!target) {
     return null

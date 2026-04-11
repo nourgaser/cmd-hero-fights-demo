@@ -884,6 +884,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           selfId={selfId}
           selfHandCards={selfHandCards}
           shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          hasActiveAction={hasSelectionState}
           onClose={handleCloseInspect}
         />
     </section>
