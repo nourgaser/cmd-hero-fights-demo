@@ -4159,8 +4159,9 @@ html {
 .hand-card:not(.unplayable):focus-visible .hand-card-name,
 .hand-card:not(.unplayable).focused .hand-card-name {
   white-space: normal;
-  overflow: visible;
+  overflow: hidden;
   text-overflow: unset;
+  word-break: break-word;
 }
 
 .hand-card.rarity-rare:not(.unplayable):hover,
@@ -4274,7 +4275,6 @@ html {
   min-height: 2.1em;
   padding: 0 2px;
   align-self: stretch;
-  display: flex;
   justify-content: center;
   overflow: hidden;
   text-overflow: ellipsis;
