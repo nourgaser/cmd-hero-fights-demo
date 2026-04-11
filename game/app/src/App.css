@@ -24,6 +24,14 @@ html {
   -webkit-user-select: none;
 }
 
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
 #__react-hot-toast {
   z-index: var(--layer-toast) !important;
 }
