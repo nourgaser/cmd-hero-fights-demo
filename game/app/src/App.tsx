@@ -1593,9 +1593,13 @@ function App() {
   }, [activeActionSnapshotId, isReplayModeOpen])
 
   useEffect(() => {
+    if (!isReplayModeOpen) {
+      return
+    }
+
     const handleMouseMove = (e: MouseEvent) => {
       const dragState = replayBarDragStateRef.current
-      if (!dragState.isDragging || !isReplayModeOpen) {
+      if (!dragState.isDragging) {
         return
       }
 
@@ -1615,13 +1619,11 @@ function App() {
       }
     }
 
-    if (isReplayModeOpen) {
-      document.addEventListener('mousemove', handleMouseMove)
-      document.addEventListener('mouseup', handleMouseUp)
-      return () => {
-        document.removeEventListener('mousemove', handleMouseMove)
-        document.removeEventListener('mouseup', handleMouseUp)
-      }
+    document.addEventListener('mousemove', handleMouseMove)
+    document.addEventListener('mouseup', handleMouseUp)
+    return () => {
+      document.removeEventListener('mousemove', handleMouseMove)
+      document.removeEventListener('mouseup', handleMouseUp)
     }
   }, [isReplayModeOpen, replayBarPosition])
 
@@ -2287,19 +2289,6 @@ function App() {
         >
           {renderHistoryControlIcon('next')}
         </button>
-        {showPlaybackControls ? (
-          <button
-            className="history-icon-button replay-speed-button"
-            type="button"
-            aria-label={`Playback speed ${replayPlaybackSpeed}x`}
-            title={`Playback speed: ${replayPlaybackSpeed}x`}
-            onClick={() => {
-              setReplayPlaybackSpeedIndex((current) => (current + 1) % REPLAY_PLAYBACK_SPEEDS.length)
-            }}
-          >
-            <span className="replay-speed-button-label">{formatReplayPlaybackSpeed(replayPlaybackSpeed)}</span>
-          </button>
-        ) : null}
         <button
           className="history-icon-button"
           type="button"
@@ -2314,6 +2303,19 @@ function App() {
         >
           {renderHistoryControlIcon('latest')}
         </button>
+        {showPlaybackControls ? (
+          <button
+            className="history-icon-button replay-speed-button"
+            type="button"
+            aria-label={`Playback speed ${replayPlaybackSpeed}x`}
+            title={`Playback speed: ${replayPlaybackSpeed}x`}
+            onClick={() => {
+              setReplayPlaybackSpeedIndex((current) => (current + 1) % REPLAY_PLAYBACK_SPEEDS.length)
+            }}
+          >
+            <span className="replay-speed-button-label">{formatReplayPlaybackSpeed(replayPlaybackSpeed)}</span>
+          </button>
+        ) : null}
         <button
           className="history-icon-button"
           type="button"
