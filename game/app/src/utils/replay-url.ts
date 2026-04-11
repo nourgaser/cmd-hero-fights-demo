@@ -1,21 +1,20 @@
 import type { BattleAction } from '../../../shared/models'
+import { deflateSync, inflateSync } from 'fflate'
 import type { GameBootstrapConfig } from '../data/game-bootstrap.ts'
 import type { AppReplayActionLogEntry } from '../game-client.ts'
 
 const REPLAY_PARAM_KEY = 'replay'
 
-type ReplayUrlPayloadV1 = {
-  version: 1
+type ReplayUrlPayloadV2 = {
+  version: 2
   bootstrapConfig: GameBootstrapConfig
-  seed: string
   actionLog: AppReplayActionLogEntry[]
   snapshotId: number | null
 }
 
-export type ReplayUrlPayload = ReplayUrlPayloadV1
+export type ReplayUrlPayload = ReplayUrlPayloadV2
 
-function base64UrlEncode(value: string): string {
-  const bytes = new TextEncoder().encode(value)
+function base64UrlEncodeBytes(bytes: Uint8Array): string {
   let binary = ''
   for (const byte of bytes) {
     binary += String.fromCharCode(byte)
@@ -27,15 +26,14 @@ function base64UrlEncode(value: string): string {
     .replaceAll('=', '')
 }
 
-function base64UrlDecode(value: string): string {
+function base64UrlDecodeBytes(value: string): Uint8Array {
   const padded = value
     .replaceAll('-', '+')
     .replaceAll('_', '/')
     .padEnd(Math.ceil(value.length / 4) * 4, '=')
 
   const binary = atob(padded)
-  const bytes = Uint8Array.from(binary, (char) => char.charCodeAt(0))
-  return new TextDecoder().decode(bytes)
+  return Uint8Array.from(binary, (char) => char.charCodeAt(0))
 }
 
 export function createReplayUrlPayload(options: {
@@ -45,12 +43,11 @@ export function createReplayUrlPayload(options: {
   snapshotId: number | null
 }): ReplayUrlPayload {
   return {
-    version: 1,
+    version: 2,
     bootstrapConfig: {
       ...options.bootstrapConfig,
       seed: options.seed,
     },
-    seed: options.seed,
     actionLog: options.actionLog.map((entry) => ({
       action: entry.action as BattleAction,
     })),
@@ -59,13 +56,17 @@ export function createReplayUrlPayload(options: {
 }
 
 export function encodeReplayUrlPayload(payload: ReplayUrlPayload): string {
-  return base64UrlEncode(JSON.stringify(payload))
+  const jsonBytes = new TextEncoder().encode(JSON.stringify(payload))
+  const compressed = deflateSync(jsonBytes, { level: 6 })
+  return base64UrlEncodeBytes(compressed)
 }
 
 export function decodeReplayUrlPayload(encoded: string): ReplayUrlPayload | null {
   try {
-    const parsed = JSON.parse(base64UrlDecode(encoded)) as ReplayUrlPayload
-    if (parsed.version !== 1) {
+    const compressed = base64UrlDecodeBytes(encoded)
+    const decompressed = inflateSync(compressed)
+    const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload
+    if (parsed.version !== 2) {
       return null
     }
     if (!Array.isArray(parsed.actionLog)) {
