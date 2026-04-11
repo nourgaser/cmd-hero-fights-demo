@@ -5,6 +5,7 @@ import type { BattleEvent } from '../../shared/models'
 import { LUCK_BALANCE_LIMIT } from '../../shared/game-constants.ts'
 import {
   type AppReplayActionLogEntry,
+  type AppBattleSnapshot,
   branchSessionFromSnapshot,
   createInitialBattleSession,
   type AppActionHistoryEntry,
@@ -118,6 +119,27 @@ function createActionLogFromSession(session: AppBattleSession): AppReplayActionL
     .map((snapshot) => ({
       action: snapshot.action,
     }))
+}
+
+function getReplayModeActiveSnapshot(session: AppBattleSession): AppBattleSnapshot | null {
+  if (session.snapshots.length === 0) {
+    return null
+  }
+
+  const postSnapshots = session.snapshots.filter((snapshot) => snapshot.phase === 'post')
+  const latestSnapshotId = postSnapshots.at(-1)?.id ?? null
+  const currentSnapshotId = session.activeSnapshotId ?? latestSnapshotId
+
+  if (!currentSnapshotId) {
+    return null
+  }
+
+  const currentSnapshot = session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
+  if (!currentSnapshot || currentSnapshot.phase === 'pre') {
+    return null
+  }
+
+  return currentSnapshot
 }
 
 function ensureSessionReadyForAction(session: AppBattleSession) {
@@ -905,6 +927,45 @@ function App() {
       duration: EVENT_TOAST_DURATION_MS,
     })
   }
+
+  const showReplaySnapshotToasts = (snapshot: AppBattleSnapshot) => {
+    if (!snapshot.success) {
+      showActionErrorToast(snapshot.resultMessage)
+      return
+    }
+
+    showActionSuccessToast(snapshot.resultMessage, snapshot.events)
+    for (const event of snapshot.events) {
+      showBattleEventToast(event)
+    }
+  }
+
+  useEffect(() => {
+    if (!isReplayModeOpen) {
+      return
+    }
+
+    toast.dismiss()
+
+    if (!runtime) {
+      return () => {
+        toast.dismiss()
+      }
+    }
+
+    const activeReplaySnapshot = getReplayModeActiveSnapshot(runtime.session)
+    if (!activeReplaySnapshot) {
+      return () => {
+        toast.dismiss()
+      }
+    }
+
+    showReplaySnapshotToasts(activeReplaySnapshot)
+
+    return () => {
+      toast.dismiss()
+    }
+  }, [isReplayModeOpen, runtime])
 
   const handleSeedChange = (seed: string) => {
     const nextConfig: GameBootstrapConfig = {
