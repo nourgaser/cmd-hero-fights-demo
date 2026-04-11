@@ -458,6 +458,30 @@ export function PlayerScreen(props: PlayerScreenProps) {
     setInspectTarget(null)
   }
 
+  useEffect(() => {
+    if (!inspectTarget) {
+      return
+    }
+
+    const handleOutsideInspectPointerDown = (event: PointerEvent) => {
+      const target = event.target
+      if (!(target instanceof Element)) {
+        return
+      }
+
+      if (target.closest('.inspect-panel')) {
+        return
+      }
+
+      setInspectTarget(null)
+    }
+
+    window.addEventListener('pointerdown', handleOutsideInspectPointerDown)
+    return () => {
+      window.removeEventListener('pointerdown', handleOutsideInspectPointerDown)
+    }
+  }, [inspectTarget])
+
   const screenStyle = {
     '--self-side-color': `var(${SIDE_VISUALS[selfSideKey].sideColorVar})`,
     '--enemy-side-color': `var(${SIDE_VISUALS[enemySideKey].sideColorVar})`,
