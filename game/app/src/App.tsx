@@ -1597,14 +1597,14 @@ function App() {
       return
     }
 
-    const handleMouseMove = (e: MouseEvent) => {
+    const applyDragMove = (clientX: number, clientY: number) => {
       const dragState = replayBarDragStateRef.current
       if (!dragState.isDragging) {
         return
       }
 
-      const deltaX = e.clientX - dragState.startX
-      const deltaY = e.clientY - dragState.startY
+      const deltaX = clientX - dragState.startX
+      const deltaY = clientY - dragState.startY
 
       const newX = dragState.offsetX + deltaX
       const newY = dragState.offsetY + deltaY
@@ -1612,29 +1612,62 @@ function App() {
       setReplayBarPosition({ x: newX, y: newY })
     }
 
-    const handleMouseUp = () => {
+    const finishDrag = () => {
       if (replayBarDragStateRef.current.isDragging) {
         replayBarDragStateRef.current.isDragging = false
         window.localStorage.setItem('REPLAY_BAR_POSITION', JSON.stringify(replayBarPosition))
       }
     }
 
+    const handleMouseMove = (e: MouseEvent) => applyDragMove(e.clientX, e.clientY)
+    const handleMouseUp = () => finishDrag()
+
+    const handleTouchMove = (e: TouchEvent) => {
+      const touch = e.touches[0]
+      if (!touch || !replayBarDragStateRef.current.isDragging) {
+        return
+      }
+      e.preventDefault()
+      applyDragMove(touch.clientX, touch.clientY)
+    }
+
+    const handleTouchEnd = () => finishDrag()
+
     document.addEventListener('mousemove', handleMouseMove)
     document.addEventListener('mouseup', handleMouseUp)
+    document.addEventListener('touchmove', handleTouchMove, { passive: false })
+    document.addEventListener('touchend', handleTouchEnd)
+    document.addEventListener('touchcancel', handleTouchEnd)
     return () => {
       document.removeEventListener('mousemove', handleMouseMove)
       document.removeEventListener('mouseup', handleMouseUp)
+      document.removeEventListener('touchmove', handleTouchMove)
+      document.removeEventListener('touchend', handleTouchEnd)
+      document.removeEventListener('touchcancel', handleTouchEnd)
     }
   }, [isReplayModeOpen, replayBarPosition])
 
-  const handleReplayBarDragStart = (e: React.MouseEvent) => {
+  const handleReplayBarDragStart = (e: React.MouseEvent | React.TouchEvent) => {
     if ((e.target as HTMLElement).closest('button, input, a')) {
       return
     }
+    let clientX: number
+    let clientY: number
+    if ('touches' in e) {
+      const touch = e.touches[0]
+      if (!touch) {
+        return
+      }
+      clientX = touch.clientX
+      clientY = touch.clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
     replayBarDragStateRef.current = {
       isDragging: true,
-      startX: e.clientX,
-      startY: e.clientY,
+      startX: clientX,
+      startY: clientY,
       offsetX: replayBarPosition.x,
       offsetY: replayBarPosition.y,
     }
@@ -2510,11 +2543,14 @@ function App() {
         >
           <section
             className="replay-bar"
-            onMouseDown={handleReplayBarDragStart}
-            style={{ cursor: replayBarDragStateRef.current.isDragging ? 'grabbing' : 'grab' }}
             aria-label="Replay mode timeline"
           >
-            <header className="replay-bar-head">
+            <header
+              className="replay-bar-head"
+              onMouseDown={handleReplayBarDragStart}
+              onTouchStart={handleReplayBarDragStart}
+              style={{ cursor: replayBarDragStateRef.current.isDragging ? 'grabbing' : 'grab', touchAction: 'none' }}
+            >
               <strong>Replay Mode</strong>
               <div className="replay-bar-head-actions">
                 <button
