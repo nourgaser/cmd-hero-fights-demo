@@ -415,6 +415,7 @@ function App() {
     return clampAutoPlayDelay(parsed)
   })
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
+  const replayTimelineListRef = useRef<HTMLUListElement | null>(null)
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
       return false
@@ -1430,6 +1431,40 @@ function App() {
     ? actionTimelineSnapshots.findIndex((snapshot) => snapshot.id === activeActionSnapshot.id)
     : -1
   const canAdvanceReplay = activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1
+
+  useEffect(() => {
+    if (!isReplayModeOpen || !activeActionSnapshotId) {
+      return
+    }
+
+    const list = replayTimelineListRef.current
+    if (!list) {
+      return
+    }
+
+    const activeButton = list.querySelector<HTMLButtonElement>(`[data-snapshot-id="${activeActionSnapshotId}"]`)
+    if (!activeButton) {
+      return
+    }
+
+    const listRect = list.getBoundingClientRect()
+    const buttonRect = activeButton.getBoundingClientRect()
+    const padding = 16
+    const isOutOfView = buttonRect.left < listRect.left + padding || buttonRect.right > listRect.right - padding
+
+    if (!isOutOfView) {
+      return
+    }
+
+    const frame = window.requestAnimationFrame(() => {
+      activeButton.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })
+    })
+
+    return () => {
+      window.cancelAnimationFrame(frame)
+    }
+  }, [activeActionSnapshotId, isReplayModeOpen])
+
   const cardsById = runtime.session.gameApi.cardsById as Record<
     string,
     (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
@@ -2073,7 +2108,7 @@ function App() {
 
   const renderTimelineSnapshotList = () => {
     return (
-      <ul className="snapshot-list" aria-label="Action timeline">
+      <ul ref={replayTimelineListRef} className="snapshot-list" aria-label="Action timeline">
         {actionTimelineSnapshots.map((snapshot) => {
           const isActive = snapshot.id === activeActionSnapshotId
 
@@ -2082,6 +2117,7 @@ function App() {
               <button
                 type="button"
                 className={`snapshot-chip ${isActive ? 'snapshot-chip-active' : ''}`}
+                data-snapshot-id={snapshot.id}
                 onClick={() => handleJumpToSnapshot(snapshot.id)}
               >
                 {snapshot.phase === 'pre'

@@ -2048,6 +2048,8 @@ html {
   border-top: 1px solid color-mix(in srgb, #8ea2d6 20%, transparent);
   overflow-x: auto;
   overflow-y: hidden;
+  scroll-padding-inline: 16px;
+  scroll-behavior: smooth;
 }
 
 .snapshot-list li {
@@ -2064,6 +2066,7 @@ html {
   font-weight: 600;
   background: color-mix(in srgb, #1f3258 86%, #ffffff 14%);
   cursor: pointer;
+  scroll-margin-inline: 16px;
 }
 
 .snapshot-chip-active {
