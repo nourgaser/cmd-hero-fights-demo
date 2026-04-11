@@ -1233,6 +1233,7 @@ function App() {
 
   const runAutoPlayStep = useCallback((side: 'a' | 'b') => {
     let failureReason: string | null = null
+    let successResult: { resultMessage: string; events: BattleEvent[] } | null = null
 
     setRuntime((prev) => {
       if (!prev) {
@@ -1390,6 +1391,7 @@ function App() {
           })
 
           if (fallbackResult.ok) {
+            successResult = { resultMessage: fallbackResult.resultMessage, events: fallbackResult.events }
             return {
               session: fallbackResult.session,
               preview: fallbackResult.preview,
@@ -1401,6 +1403,7 @@ function App() {
         return prev
       }
 
+      successResult = { resultMessage: result.resultMessage, events: result.events }
       return {
         session: result.session,
         preview: result.preview,
@@ -1417,6 +1420,11 @@ function App() {
         id: ACTION_TOAST_ID,
         duration: ACTION_TOAST_DURATION_MS,
       })
+    } else if (successResult) {
+      showActionSuccessToast(successResult.resultMessage, successResult.events)
+      for (const event of successResult.events) {
+        showBattleEventToast(event)
+      }
     }
   }, [autoPlayAutoEndTurnWhenNoLegalMoves, autoPlayUseEntityActives])
 

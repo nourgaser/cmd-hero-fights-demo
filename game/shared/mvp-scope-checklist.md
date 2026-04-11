@@ -23,4 +23,4 @@
 - [x] Force desktop mode on mobile devices.
 - [x] Disable double tap to zoom and other game-interaction breaking controls on mobile (and desktop).
 - [ ] Fix issue where updating the URL fragment does not reflect until you explicitly refresh the page. The app needs to listen to fragment changes and handle them just like URL parameter changes.
-- [ ] Auto play does not show toasts so if you play vs a bot or make bots plays vs each other no toasts show up at all. (Handle carefully when auto play delay is small -> visual spam and performance)
+- [x] Auto play does not show toasts so if you play vs a bot or make bots plays vs each other no toasts show up at all. (Handle carefully when auto play delay is small -> visual spam and performance)
