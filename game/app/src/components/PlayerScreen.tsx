@@ -463,7 +463,31 @@ export function PlayerScreen(props: PlayerScreenProps) {
       return
     }
 
-    const handleOutsideInspectPointerDown = (event: PointerEvent) => {
+    let startX = 0
+    let startY = 0
+    let didScroll = false
+
+    const handlePointerDown = (event: PointerEvent) => {
+      startX = event.clientX
+      startY = event.clientY
+      didScroll = false
+    }
+
+    const handlePointerMove = (event: PointerEvent) => {
+      if (!didScroll) {
+        const dx = Math.abs(event.clientX - startX)
+        const dy = Math.abs(event.clientY - startY)
+        if (dx > 6 || dy > 6) {
+          didScroll = true
+        }
+      }
+    }
+
+    const handlePointerUp = (event: PointerEvent) => {
+      if (didScroll) {
+        return
+      }
+
       const target = event.target
       if (!(target instanceof Element)) {
         return
@@ -473,12 +497,20 @@ export function PlayerScreen(props: PlayerScreenProps) {
         return
       }
 
+      if (target.closest('button, input, textarea, [role="button"]')) {
+        return
+      }
+
       setInspectTarget(null)
     }
 
-    window.addEventListener('pointerdown', handleOutsideInspectPointerDown)
+    window.addEventListener('pointerdown', handlePointerDown)
+    window.addEventListener('pointermove', handlePointerMove)
+    window.addEventListener('pointerup', handlePointerUp)
     return () => {
-      window.removeEventListener('pointerdown', handleOutsideInspectPointerDown)
+      window.removeEventListener('pointerdown', handlePointerDown)
+      window.removeEventListener('pointermove', handlePointerMove)
+      window.removeEventListener('pointerup', handlePointerUp)
     }
   }, [inspectTarget])
 
