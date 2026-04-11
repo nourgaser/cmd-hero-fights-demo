@@ -20,3 +20,6 @@
 
 ## Product / UX Backlog
 - [ ] Add tutorial / rulebook.
+- [ ] Force desktop mode on mobile devices.
+- [ ] Disable double tap to zoom and other game-interaction breaking controls on mobile (and desktop).
+- [ ] Fix issue where updating the URL fragment does not reflect until you explicitly refresh the page. The app needs to listen to fragment changes and handle them just like URL parameter changes.
