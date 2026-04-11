@@ -35,6 +35,7 @@ type SettingsPanelProps = {
   onCloseDeckEditor: () => void
   onHardReset: () => void
   onClosePanel?: () => void
+  isVisible?: boolean
 }
 
 const SETTINGS_PANEL_STORAGE_KEY = 'cmd-hero:settings-panel-state'
@@ -171,7 +172,7 @@ const persistState = (state: SettingsPanelPersistedState) => {
 }
 
 export function SettingsPanel(props: SettingsPanelProps) {
-  const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCopyDataLink, onCloseDeckEditor, onHardReset, onClosePanel } = props
+  const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCopyDataLink, onCloseDeckEditor, onHardReset, onClosePanel, isVisible = true } = props
   const [persistedState, setPersistedState] = useState<SettingsPanelPersistedState>(() => loadPersistedState())
   const [draftSeed, setDraftSeed] = useState(seed)
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
@@ -694,7 +695,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
 
   return (
     <>
-      <div
+      {isVisible ? <div
         className="settings-modal-overlay"
         onClick={() => {
           if (onClosePanel) {
@@ -993,7 +994,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </section>
           </div>
         </section>
-      </div>
+      </div> : null}
 
       {isDeckEditorOpen && typeof document !== 'undefined'
         ? createPortal(

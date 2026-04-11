@@ -3708,7 +3708,9 @@ html[data-shift-held='true'] .game-toast-detail {
 .hand-deck-chip {
   min-height: 32px;
   min-width: 44px;
+  max-width: 100%;
   padding: 4px 10px;
+  overflow: hidden;
   border: 2px solid color-mix(in srgb, #5b4a2b 40%, var(--border));
   border-radius: 12px;
   background: color-mix(in srgb, #f3e7c8 82%, #ffffff 18%);
@@ -3734,10 +3736,11 @@ html[data-shift-held='true'] .game-toast-detail {
 .hand-deck-chip-count {
   color: #1a140d;
   font-weight: 800;
-  font-size: 18px;
+  font-size: clamp(12px, 1.1rem, 18px);
   line-height: 1;
   letter-spacing: 0.2px;
   text-shadow: 0 1px 0 rgba(255, 255, 255, 0.45);
+  white-space: nowrap;
 }
 
 .hand-content-row {

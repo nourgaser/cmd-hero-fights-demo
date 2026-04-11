@@ -809,7 +809,6 @@ function App() {
 
   const handleOpenDeckEditor = (heroIndex: 0 | 1) => {
     setDeckEditorHeroIndex(heroIndex)
-    setIsSettingsPanelOpen(true)
     setIsDeckEditorOpen(true)
   }
 
@@ -1652,7 +1651,7 @@ function App() {
           </section>
         </div>
       ) : null}
-      {isSettingsPanelOpen ? (
+      {(isSettingsPanelOpen || isDeckEditorOpen) ? (
         <SettingsPanel
           state={runtime.session.state as Record<string, unknown>}
           bootstrapConfig={bootstrapConfig}
@@ -1666,6 +1665,7 @@ function App() {
           onCloseDeckEditor={handleCloseDeckEditor}
           onHardReset={handleHardReset}
           onClosePanel={() => setIsSettingsPanelOpen(false)}
+          isVisible={isSettingsPanelOpen}
         />
       ) : null}
 
