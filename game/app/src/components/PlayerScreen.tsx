@@ -783,15 +783,6 @@ export function PlayerScreen(props: PlayerScreenProps) {
 
         </section>
 
-        <InspectPanel
-          target={inspectTarget}
-          preview={preview}
-          selfId={selfId}
-          selfHandCards={selfHandCards}
-          shouldShowDetailedTooltips={shouldShowDetailedTooltips}
-          onClose={handleCloseInspect}
-        />
-
         <HandBar
           cards={selfHandCards}
           isActivePlayer={isActivePlayer}
@@ -825,6 +816,15 @@ export function PlayerScreen(props: PlayerScreenProps) {
           onConfirmFocusedCard={handleConfirmFocusedCard}
           onClearFocus={handleClearFocus}
           onInspectCard={handleInspectCard}
+        />
+
+        <InspectPanel
+          target={inspectTarget}
+          preview={preview}
+          selfId={selfId}
+          selfHandCards={selfHandCards}
+          shouldShowDetailedTooltips={shouldShowDetailedTooltips}
+          onClose={handleCloseInspect}
         />
     </section>
   )
