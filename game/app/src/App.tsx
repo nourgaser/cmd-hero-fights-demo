@@ -1411,7 +1411,7 @@ function App() {
     })
 
     const capturedFailureReason = failureReason
-    const capturedSuccessResult = successResult
+    const capturedSuccessResult = successResult as { resultMessage: string; events: BattleEvent[] } | null
     if (capturedFailureReason) {
       if (side === 'a') {
         setIsAutoPlayAEnabled(false)
