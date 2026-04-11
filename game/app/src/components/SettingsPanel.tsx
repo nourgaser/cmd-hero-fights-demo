@@ -34,6 +34,14 @@ type SettingsPanelProps = {
   onCopyDataLink: () => void
   onCloseDeckEditor: () => void
   onHardReset: () => void
+  autoPlayButtonsVisible: boolean
+  autoPlayDelayMs: number
+  autoPlayAutoEndTurnWhenNoLegalMoves: boolean
+  autoPlayUseEntityActives: boolean
+  onAutoPlayButtonsVisibleChange: (nextValue: boolean) => void
+  onAutoPlayDelayMsChange: (nextValue: number) => void
+  onAutoPlayAutoEndTurnWhenNoLegalMovesChange: (nextValue: boolean) => void
+  onAutoPlayUseEntityActivesChange: (nextValue: boolean) => void
   onClosePanel?: () => void
   isVisible?: boolean
 }
@@ -172,7 +180,29 @@ const persistState = (state: SettingsPanelPersistedState) => {
 }
 
 export function SettingsPanel(props: SettingsPanelProps) {
-  const { state, bootstrapConfig, deckEditorCards, seed, isDeckEditorOpen, deckEditorHeroIndex, onSeedChange, onBootstrapConfigChange, onCopyDataLink, onCloseDeckEditor, onHardReset, onClosePanel, isVisible = true } = props
+  const {
+    state,
+    bootstrapConfig,
+    deckEditorCards,
+    seed,
+    isDeckEditorOpen,
+    deckEditorHeroIndex,
+    onSeedChange,
+    onBootstrapConfigChange,
+    onCopyDataLink,
+    onCloseDeckEditor,
+    onHardReset,
+    autoPlayButtonsVisible,
+    autoPlayDelayMs,
+    autoPlayAutoEndTurnWhenNoLegalMoves,
+    autoPlayUseEntityActives,
+    onAutoPlayButtonsVisibleChange,
+    onAutoPlayDelayMsChange,
+    onAutoPlayAutoEndTurnWhenNoLegalMovesChange,
+    onAutoPlayUseEntityActivesChange,
+    onClosePanel,
+    isVisible = true,
+  } = props
   const [persistedState, setPersistedState] = useState<SettingsPanelPersistedState>(() => loadPersistedState())
   const [draftSeed, setDraftSeed] = useState(seed)
   const [editorMode, setEditorMode] = useState<'form' | 'json'>('form')
@@ -774,6 +804,51 @@ export function SettingsPanel(props: SettingsPanelProps) {
               <button type="button" onClick={handleSeedApply}>
                 Apply Seed
               </button>
+              <div className="settings-seed-field">
+                <span>Auto-Play button</span>
+                <button
+                  type="button"
+                  onClick={() => onAutoPlayButtonsVisibleChange(!autoPlayButtonsVisible)}
+                  aria-pressed={autoPlayButtonsVisible}
+                >
+                  {autoPlayButtonsVisible ? 'On' : 'Off'}
+                </button>
+              </div>
+              <label className="settings-seed-field">
+                <span>Auto-Play Delay (ms)</span>
+                <input
+                  type="number"
+                  min={50}
+                  step={10}
+                  value={autoPlayDelayMs}
+                  onChange={(event) => {
+                    const parsed = Number.parseInt(event.target.value, 10)
+                    if (Number.isFinite(parsed)) {
+                      onAutoPlayDelayMsChange(parsed)
+                    }
+                  }}
+                />
+              </label>
+              <div className="settings-seed-field">
+                <span>Auto-End Turn When No Legal Moves</span>
+                <button
+                  type="button"
+                  onClick={() => onAutoPlayAutoEndTurnWhenNoLegalMovesChange(!autoPlayAutoEndTurnWhenNoLegalMoves)}
+                  aria-pressed={autoPlayAutoEndTurnWhenNoLegalMoves}
+                >
+                  {autoPlayAutoEndTurnWhenNoLegalMoves ? 'On' : 'Off'}
+                </button>
+              </div>
+              <div className="settings-seed-field">
+                <span>Use Companion / Weapon Actives</span>
+                <button
+                  type="button"
+                  onClick={() => onAutoPlayUseEntityActivesChange(!autoPlayUseEntityActives)}
+                  aria-pressed={autoPlayUseEntityActives}
+                >
+                  {autoPlayUseEntityActives ? 'On' : 'Off'}
+                </button>
+              </div>
             </div>
               ) : null}
             </section>

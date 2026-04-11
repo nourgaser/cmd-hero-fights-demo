@@ -1663,6 +1663,24 @@ html[data-shift-held='true'] .game-toast-detail {
   top: 62px;
 }
 
+.auto-play-button {
+  min-width: 112px;
+}
+
+.auto-play-button-a {
+  top: 106px;
+}
+
+.auto-play-button-b {
+  top: 150px;
+}
+
+.auto-play-button-active {
+  border-color: #7fd0a4;
+  color: #0a2416;
+  background: linear-gradient(180deg, #a5dfbd, #6fc995);
+}
+
 .settings-launch-button-active {
   border-color: #f0c778;
   color: #1f1208;

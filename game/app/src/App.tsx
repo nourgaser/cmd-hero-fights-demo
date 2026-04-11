@@ -1,7 +1,8 @@
 import './App.css'
-import { useEffect, useRef, useState } from 'react'
+import { useCallback, useEffect, useRef, useState } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../shared/models'
+import { LUCK_BALANCE_LIMIT } from '../../shared/game-constants.ts'
 import {
   type AppReplayActionLogEntry,
   branchSessionFromSnapshot,
@@ -35,10 +36,16 @@ const SETTINGS_BOOTSTRAP_STORAGE_KEY = 'cmd-hero:settings-bootstrap-config'
 const MUSIC_MUTED_STORAGE_KEY = 'cmd-hero:music-muted'
 const SETTINGS_PANEL_STORAGE_KEY = 'cmd-hero:settings-panel-state'
 const SAVED_DECKS_STORAGE_KEY = 'cmd-hero:saved-decks'
+const AUTO_PLAY_BUTTONS_VISIBLE_STORAGE_KEY = 'cmd-hero:autoplay-buttons-visible'
+const AUTO_PLAY_DELAY_STORAGE_KEY = 'cmd-hero:autoplay-delay-ms'
+const AUTO_PLAY_AUTO_END_TURN_STORAGE_KEY = 'cmd-hero:autoplay-auto-end-turn-when-stuck'
+const AUTO_PLAY_USE_ENTITY_ACTIVES_STORAGE_KEY = 'cmd-hero:autoplay-use-entity-actives'
 const MUSIC_SOURCE = '/game_music.mp3'
 const ACTION_TOAST_ID = 'action-feedback'
 const ACTION_TOAST_DURATION_MS = 7000
 const EVENT_TOAST_DURATION_MS = 4500
+const AUTO_PLAY_MIN_DELAY_MS = 50
+const AUTO_PLAY_DEFAULT_DELAY_MS = 200
 const LOAD_DATA_STORAGE_KEYS = [
   SETTINGS_SEED_STORAGE_KEY,
   SETTINGS_BOOTSTRAP_STORAGE_KEY,
@@ -50,6 +57,46 @@ const LOAD_DATA_STORAGE_KEYS = [
 type AppRuntime = {
   session: AppBattleSession
   preview: AppBattlePreview
+}
+
+type PlannedAutoPlayAction =
+  | {
+      kind: 'playCard'
+      handCardId: string
+      targetEntityId?: string
+      targetPosition?: { row: number; column: number }
+    }
+  | {
+      kind: 'basicAttack'
+      targetEntityId: string
+    }
+  | {
+      kind: 'useEntityActive'
+      sourceEntityId: string
+      targetEntityId?: string
+    }
+  | {
+      kind: 'pressLuck'
+    }
+  | {
+      kind: 'endTurn'
+    }
+
+function clampAutoPlayDelay(delayMs: number): number {
+  if (!Number.isFinite(delayMs)) {
+    return AUTO_PLAY_DEFAULT_DELAY_MS
+  }
+
+  return Math.max(AUTO_PLAY_MIN_DELAY_MS, Math.floor(delayMs))
+}
+
+function pickRandom<T>(items: T[]): T | null {
+  if (items.length === 0) {
+    return null
+  }
+
+  const index = Math.floor(Math.random() * items.length)
+  return items[index] ?? null
 }
 
 function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRuntime {
@@ -66,6 +113,37 @@ function createActionLogFromSession(session: AppBattleSession): AppReplayActionL
     .map((snapshot) => ({
       action: snapshot.action,
     }))
+}
+
+function ensureSessionReadyForAction(session: AppBattleSession) {
+  const latestSnapshotId = session.snapshots.at(-1)?.id ?? null
+  const activeSnapshotId = session.activeSnapshotId ?? latestSnapshotId
+
+  if (!latestSnapshotId || !activeSnapshotId || activeSnapshotId === latestSnapshotId) {
+    return {
+      ok: true as const,
+      session,
+      branchedFromSnapshotId: null as number | null,
+    }
+  }
+
+  const branchResult = branchSessionFromSnapshot({
+    session,
+    snapshotId: activeSnapshotId,
+  })
+
+  if (!branchResult.ok) {
+    return {
+      ok: false as const,
+      reason: branchResult.reason,
+    }
+  }
+
+  return {
+    ok: true as const,
+    session: branchResult.session,
+    branchedFromSnapshotId: activeSnapshotId,
+  }
 }
 
 function incrementSeed(seed: string): string {
@@ -272,6 +350,39 @@ function App() {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [isReplayModeOpen, setIsReplayModeOpen] = useState(false)
+  const [autoPlayButtonsVisible, setAutoPlayButtonsVisible] = useState(() => {
+    if (typeof window === 'undefined') {
+      return false
+    }
+
+    return window.localStorage.getItem(AUTO_PLAY_BUTTONS_VISIBLE_STORAGE_KEY) === 'true'
+  })
+  const [isAutoPlayAEnabled, setIsAutoPlayAEnabled] = useState(false)
+  const [isAutoPlayBEnabled, setIsAutoPlayBEnabled] = useState(false)
+  const [autoPlayAutoEndTurnWhenNoLegalMoves, setAutoPlayAutoEndTurnWhenNoLegalMoves] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true
+    }
+
+    const stored = window.localStorage.getItem(AUTO_PLAY_AUTO_END_TURN_STORAGE_KEY)
+    return stored === null ? true : stored === 'true'
+  })
+  const [autoPlayUseEntityActives, setAutoPlayUseEntityActives] = useState(() => {
+    if (typeof window === 'undefined') {
+      return true
+    }
+
+    const stored = window.localStorage.getItem(AUTO_PLAY_USE_ENTITY_ACTIVES_STORAGE_KEY)
+    return stored === null ? true : stored === 'true'
+  })
+  const [autoPlayDelayMs, setAutoPlayDelayMs] = useState(() => {
+    if (typeof window === 'undefined') {
+      return AUTO_PLAY_DEFAULT_DELAY_MS
+    }
+
+    const parsed = Number.parseInt(window.localStorage.getItem(AUTO_PLAY_DELAY_STORAGE_KEY) ?? '', 10)
+    return clampAutoPlayDelay(parsed)
+  })
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
@@ -383,6 +494,38 @@ function App() {
     })
     writeReplayPayloadToLocation(payload)
   }, [bootstrapConfig, runtime])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(AUTO_PLAY_BUTTONS_VISIBLE_STORAGE_KEY, String(autoPlayButtonsVisible))
+  }, [autoPlayButtonsVisible])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(AUTO_PLAY_DELAY_STORAGE_KEY, String(clampAutoPlayDelay(autoPlayDelayMs)))
+  }, [autoPlayDelayMs])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(AUTO_PLAY_AUTO_END_TURN_STORAGE_KEY, String(autoPlayAutoEndTurnWhenNoLegalMoves))
+  }, [autoPlayAutoEndTurnWhenNoLegalMoves])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    window.localStorage.setItem(AUTO_PLAY_USE_ENTITY_ACTIVES_STORAGE_KEY, String(autoPlayUseEntityActives))
+  }, [autoPlayUseEntityActives])
 
   useEffect(() => {
     if (!loadDataImportResult.applied && !loadDataImportResult.error) {
@@ -837,6 +980,26 @@ function App() {
     }
   }
 
+  const handleAutoPlayButtonsVisibleChange = (nextValue: boolean) => {
+    setAutoPlayButtonsVisible(nextValue)
+    if (!nextValue) {
+      setIsAutoPlayAEnabled(false)
+      setIsAutoPlayBEnabled(false)
+    }
+  }
+
+  const handleAutoPlayDelayMsChange = (nextValue: number) => {
+    setAutoPlayDelayMs(clampAutoPlayDelay(nextValue))
+  }
+
+  const handleAutoPlayAutoEndTurnWhenNoLegalMovesChange = (nextValue: boolean) => {
+    setAutoPlayAutoEndTurnWhenNoLegalMoves(nextValue)
+  }
+
+  const handleAutoPlayUseEntityActivesChange = (nextValue: boolean) => {
+    setAutoPlayUseEntityActives(nextValue)
+  }
+
   const handleCopyDataLink = async () => {
     const url = createLoadDataShareUrl({
       storageKeys: LOAD_DATA_STORAGE_KEYS,
@@ -854,6 +1017,223 @@ function App() {
       showActionErrorToast('Failed to copy data share URL.')
     }
   }
+
+  const runAutoPlayStep = useCallback((side: 'a' | 'b') => {
+    let failureReason: string | null = null
+
+    setRuntime((prev) => {
+      if (!prev) {
+        return prev
+      }
+
+      const [currentHeroAId, currentHeroBId] = prev.preview.heroEntityIds
+      const heroEntityId = side === 'a' ? currentHeroAId : currentHeroBId
+      if (prev.preview.activeHeroEntityId !== heroEntityId) {
+        return prev
+      }
+
+      const branchPrep = ensureSessionReadyForAction(prev.session)
+      if (!branchPrep.ok) {
+        failureReason = branchPrep.reason
+        return prev
+      }
+
+      const heroTargets = prev.preview.heroActionTargets.find((entry) => entry.heroEntityId === heroEntityId)
+      if (!heroTargets) {
+        failureReason = 'Auto-play could not find hero action targets.'
+        return prev
+      }
+
+      const heroHand = prev.preview.heroHands.find((entry) => entry.heroEntityId === heroEntityId)
+      const heroCount = prev.preview.heroHandCounts.find((entry) => entry.heroEntityId === heroEntityId)
+      if (!heroCount) {
+        failureReason = 'Auto-play could not find hero move points.'
+        return prev
+      }
+
+      const plannedActions: PlannedAutoPlayAction[] = []
+
+      for (const card of heroHand?.cards ?? []) {
+        if (!card.isPlayable) {
+          continue
+        }
+
+        const hasEntityTargets = card.validTargetEntityIds.length > 0
+        const hasPlacementTargets = card.validPlacementPositions.length > 0
+        const shouldUseEntityTarget = hasEntityTargets && (!hasPlacementTargets || Math.random() < 0.5)
+        const targetEntityId = shouldUseEntityTarget
+          ? pickRandom(card.validTargetEntityIds) ?? undefined
+          : undefined
+        const targetPosition = !shouldUseEntityTarget && hasPlacementTargets
+          ? pickRandom(card.validPlacementPositions) ?? undefined
+          : undefined
+        plannedActions.push({
+          kind: 'playCard',
+          handCardId: card.handCardId,
+          targetEntityId,
+          targetPosition,
+        })
+      }
+
+      if (autoPlayUseEntityActives) {
+        for (const option of heroTargets.entityActive) {
+          plannedActions.push({
+            kind: 'useEntityActive',
+            sourceEntityId: option.sourceEntityId,
+            targetEntityId: pickRandom(option.validTargetEntityIds) ?? undefined,
+          })
+        }
+      }
+
+      const basicAttackTargetEntityId = pickRandom(heroTargets.basicAttack.validTargetEntityIds)
+      if (basicAttackTargetEntityId) {
+        plannedActions.push({
+          kind: 'basicAttack',
+          targetEntityId: basicAttackTargetEntityId,
+        })
+      }
+
+      const pressLuckMoveCost = heroTargets.pressLuck.moveCost
+      const isSelfLuckAnchor = prev.preview.luck.anchorHeroEntityId === heroEntityId
+      const pressLuckAtFavorableLimit = isSelfLuckAnchor
+        ? prev.preview.luck.balance >= LUCK_BALANCE_LIMIT
+        : prev.preview.luck.balance <= -LUCK_BALANCE_LIMIT
+      if (
+        !prev.preview.turn.pressLuckUsedThisTurn
+        && !pressLuckAtFavorableLimit
+        && heroCount.movePoints >= pressLuckMoveCost
+      ) {
+        plannedActions.push({ kind: 'pressLuck' })
+      }
+
+      let planned: PlannedAutoPlayAction | null
+      if (autoPlayAutoEndTurnWhenNoLegalMoves) {
+        planned = plannedActions.length > 0 ? pickRandom(plannedActions) : { kind: 'endTurn' }
+      } else {
+        plannedActions.push({ kind: 'endTurn' })
+        planned = pickRandom(plannedActions)
+      }
+      if (!planned) {
+        failureReason = 'Auto-play could not choose an action.'
+        return prev
+      }
+
+      let result:
+        | ReturnType<typeof resolveSessionPlayCard>
+        | ReturnType<typeof resolveSessionBasicAttack>
+        | ReturnType<typeof resolveSessionUseEntityActive>
+        | ReturnType<typeof resolveSessionSimpleAction>
+
+      switch (planned.kind) {
+        case 'playCard':
+          result = resolveSessionPlayCard({
+            session: branchPrep.session,
+            actorHeroEntityId: heroEntityId,
+            handCardId: planned.handCardId,
+            targetEntityId: planned.targetEntityId,
+            targetPosition: planned.targetPosition,
+          })
+          break
+        case 'basicAttack':
+          result = resolveSessionBasicAttack({
+            session: branchPrep.session,
+            actorHeroEntityId: heroEntityId,
+            attackerEntityId: heroEntityId,
+            targetEntityId: planned.targetEntityId,
+          })
+          break
+        case 'useEntityActive':
+          result = resolveSessionUseEntityActive({
+            session: branchPrep.session,
+            actorHeroEntityId: heroEntityId,
+            sourceEntityId: planned.sourceEntityId,
+            targetEntityId: planned.targetEntityId,
+          })
+          break
+        case 'pressLuck':
+          result = resolveSessionSimpleAction({
+            session: branchPrep.session,
+            actorHeroEntityId: heroEntityId,
+            kind: 'pressLuck',
+          })
+          break
+        case 'endTurn':
+          result = resolveSessionSimpleAction({
+            session: branchPrep.session,
+            actorHeroEntityId: heroEntityId,
+            kind: 'endTurn',
+          })
+          break
+        default:
+          return prev
+      }
+
+      if (!result.ok) {
+        if (autoPlayAutoEndTurnWhenNoLegalMoves && planned.kind !== 'endTurn') {
+          const fallbackResult = resolveSessionSimpleAction({
+            session: branchPrep.session,
+            actorHeroEntityId: heroEntityId,
+            kind: 'endTurn',
+          })
+
+          if (fallbackResult.ok) {
+            return {
+              session: fallbackResult.session,
+              preview: fallbackResult.preview,
+            }
+          }
+        }
+
+        failureReason = result.reason
+        return prev
+      }
+
+      return {
+        session: result.session,
+        preview: result.preview,
+      }
+    })
+
+    if (failureReason) {
+      if (side === 'a') {
+        setIsAutoPlayAEnabled(false)
+      } else {
+        setIsAutoPlayBEnabled(false)
+      }
+      toast.error(`Auto-play ${side.toUpperCase()} stopped: ${failureReason}`, {
+        id: ACTION_TOAST_ID,
+        duration: ACTION_TOAST_DURATION_MS,
+      })
+    }
+  }, [autoPlayAutoEndTurnWhenNoLegalMoves, autoPlayUseEntityActives])
+
+  useEffect(() => {
+    if (!runtime || !autoPlayButtonsVisible) {
+      return
+    }
+
+    const [currentHeroAId, currentHeroBId] = runtime.preview.heroEntityIds
+    const activeHeroEntityId = runtime.preview.activeHeroEntityId
+    if (activeHeroEntityId === currentHeroAId && !isAutoPlayAEnabled) {
+      return
+    }
+    if (activeHeroEntityId === currentHeroBId && !isAutoPlayBEnabled) {
+      return
+    }
+
+    const activeSide = activeHeroEntityId === currentHeroAId ? 'a' : activeHeroEntityId === currentHeroBId ? 'b' : null
+    if (!activeSide) {
+      return
+    }
+
+    const timeoutId = window.setTimeout(() => {
+      runAutoPlayStep(activeSide)
+    }, clampAutoPlayDelay(autoPlayDelayMs))
+
+    return () => {
+      window.clearTimeout(timeoutId)
+    }
+  }, [autoPlayButtonsVisible, autoPlayDelayMs, isAutoPlayAEnabled, isAutoPlayBEnabled, runAutoPlayStep, runtime])
 
   if (!runtime) {
     return (
@@ -943,37 +1323,6 @@ function App() {
   })
 
   const [heroAId, heroBId] = preview.heroEntityIds
-
-  const ensureSessionReadyForAction = (session: AppBattleSession) => {
-    const latestSnapshotId = session.snapshots.at(-1)?.id ?? null
-    const activeSnapshotId = session.activeSnapshotId ?? latestSnapshotId
-
-    if (!latestSnapshotId || !activeSnapshotId || activeSnapshotId === latestSnapshotId) {
-      return {
-        ok: true as const,
-        session,
-        branchedFromSnapshotId: null as number | null,
-      }
-    }
-
-    const branchResult = branchSessionFromSnapshot({
-      session,
-      snapshotId: activeSnapshotId,
-    })
-
-    if (!branchResult.ok) {
-      return {
-        ok: false as const,
-        reason: branchResult.reason,
-      }
-    }
-
-    return {
-      ok: true as const,
-      session: branchResult.session,
-      branchedFromSnapshotId: activeSnapshotId,
-    }
-  }
 
   const createBasicAttackHandler = (heroId: string) => {
     return (input: { targetEntityId: string }) => {
@@ -1562,6 +1911,28 @@ function App() {
       >
         Settings
       </button>
+      {autoPlayButtonsVisible ? (
+        <button
+          type="button"
+          className={`history-button auto-play-button auto-play-button-a ${isAutoPlayAEnabled ? 'auto-play-button-active' : ''}`.trim()}
+          onClick={() => setIsAutoPlayAEnabled((current) => !current)}
+          aria-pressed={isAutoPlayAEnabled}
+          title={`Auto-play A (${clampAutoPlayDelay(autoPlayDelayMs)}ms)`}
+        >
+          Auto Play A
+        </button>
+      ) : null}
+      {autoPlayButtonsVisible ? (
+        <button
+          type="button"
+          className={`history-button auto-play-button auto-play-button-b ${isAutoPlayBEnabled ? 'auto-play-button-active' : ''}`.trim()}
+          onClick={() => setIsAutoPlayBEnabled((current) => !current)}
+          aria-pressed={isAutoPlayBEnabled}
+          title={`Auto-play B (${clampAutoPlayDelay(autoPlayDelayMs)}ms)`}
+        >
+          Auto Play B
+        </button>
+      ) : null}
       {isHistoryModalOpen ? (
         <div
           className="history-modal-overlay"
@@ -1664,6 +2035,14 @@ function App() {
           onCopyDataLink={() => void handleCopyDataLink()}
           onCloseDeckEditor={handleCloseDeckEditor}
           onHardReset={handleHardReset}
+          autoPlayButtonsVisible={autoPlayButtonsVisible}
+          autoPlayDelayMs={autoPlayDelayMs}
+          autoPlayAutoEndTurnWhenNoLegalMoves={autoPlayAutoEndTurnWhenNoLegalMoves}
+          autoPlayUseEntityActives={autoPlayUseEntityActives}
+          onAutoPlayButtonsVisibleChange={handleAutoPlayButtonsVisibleChange}
+          onAutoPlayDelayMsChange={handleAutoPlayDelayMsChange}
+          onAutoPlayAutoEndTurnWhenNoLegalMovesChange={handleAutoPlayAutoEndTurnWhenNoLegalMovesChange}
+          onAutoPlayUseEntityActivesChange={handleAutoPlayUseEntityActivesChange}
           onClosePanel={() => setIsSettingsPanelOpen(false)}
           isVisible={isSettingsPanelOpen}
         />
