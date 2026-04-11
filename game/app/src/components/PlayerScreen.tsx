@@ -463,28 +463,32 @@ export function PlayerScreen(props: PlayerScreenProps) {
       return
     }
 
-    let startX = 0
-    let startY = 0
-    let didScroll = false
+    const SCROLL_THRESHOLD_PX = 6
+
+    type PointerState = { startX: number; startY: number; didScroll: boolean }
+    const pointers = new Map<number, PointerState>()
 
     const handlePointerDown = (event: PointerEvent) => {
-      startX = event.clientX
-      startY = event.clientY
-      didScroll = false
+      pointers.set(event.pointerId, { startX: event.clientX, startY: event.clientY, didScroll: false })
     }
 
     const handlePointerMove = (event: PointerEvent) => {
-      if (!didScroll) {
-        const dx = Math.abs(event.clientX - startX)
-        const dy = Math.abs(event.clientY - startY)
-        if (dx > 6 || dy > 6) {
-          didScroll = true
-        }
+      const state = pointers.get(event.pointerId)
+      if (!state || state.didScroll) {
+        return
+      }
+      const dx = Math.abs(event.clientX - state.startX)
+      const dy = Math.abs(event.clientY - state.startY)
+      if (dx > SCROLL_THRESHOLD_PX || dy > SCROLL_THRESHOLD_PX) {
+        state.didScroll = true
       }
     }
 
     const handlePointerUp = (event: PointerEvent) => {
-      if (didScroll) {
+      const state = pointers.get(event.pointerId)
+      pointers.delete(event.pointerId)
+
+      if (state?.didScroll) {
         return
       }
 
