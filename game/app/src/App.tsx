@@ -1410,19 +1410,21 @@ function App() {
       }
     })
 
-    if (failureReason) {
+    const capturedFailureReason = failureReason
+    const capturedSuccessResult = successResult
+    if (capturedFailureReason) {
       if (side === 'a') {
         setIsAutoPlayAEnabled(false)
       } else {
         setIsAutoPlayBEnabled(false)
       }
-      toast.error(`Auto-play ${side.toUpperCase()} stopped: ${failureReason}`, {
+      toast.error(`Auto-play ${side.toUpperCase()} stopped: ${capturedFailureReason}`, {
         id: ACTION_TOAST_ID,
         duration: ACTION_TOAST_DURATION_MS,
       })
-    } else if (successResult) {
-      showActionSuccessToast(successResult.resultMessage, successResult.events)
-      for (const event of successResult.events) {
+    } else if (capturedSuccessResult) {
+      showActionSuccessToast(capturedSuccessResult.resultMessage, capturedSuccessResult.events)
+      for (const event of capturedSuccessResult.events) {
         showBattleEventToast(event)
       }
     }
