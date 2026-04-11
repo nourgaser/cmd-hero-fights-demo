@@ -1932,6 +1932,28 @@ html {
   justify-content: center;
 }
 
+.replay-playback-button-active {
+  border-color: #f0c778 !important;
+  color: #1f1208 !important;
+  background: linear-gradient(180deg, #f2d498, #deb163) !important;
+}
+
+.replay-speed-button {
+  border-style: dashed;
+  min-width: 46px;
+  padding: 0 10px;
+  font-size: 11px;
+}
+
+.replay-speed-button-label {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  min-width: 26px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+}
+
 .history-control-icon {
   width: 16px;
   height: 16px;

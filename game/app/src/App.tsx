@@ -43,6 +43,7 @@ const ACTION_TOAST_DURATION_MS = 7000
 const EVENT_TOAST_DURATION_MS = 4500
 const AUTO_PLAY_MIN_DELAY_MS = 50
 const AUTO_PLAY_DEFAULT_DELAY_MS = 200
+const REPLAY_PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4] as const
 const SETTINGS_EXPORT_STORAGE_KEYS = [
   SETTINGS_SEED_STORAGE_KEY,
   SETTINGS_BOOTSTRAP_STORAGE_KEY,
@@ -103,6 +104,10 @@ function pickRandom<T>(items: T[]): T | null {
 
   const index = Math.floor(Math.random() * items.length)
   return items[index] ?? null
+}
+
+function formatReplayPlaybackSpeed(speed: number): string {
+  return Number.isInteger(speed) ? `${speed}x` : `${speed.toFixed(2).replace(/\.00$/, '')}x`
 }
 
 function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRuntime {
@@ -374,6 +379,8 @@ function App() {
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
   const [isReplayModeOpen, setIsReplayModeOpen] = useState(false)
+  const [isReplayPlaying, setIsReplayPlaying] = useState(false)
+  const [replayPlaybackSpeedIndex, setReplayPlaybackSpeedIndex] = useState(0)
   const [autoPlayButtonsVisible, setAutoPlayButtonsVisible] = useState(() => {
     if (typeof window === 'undefined') {
       return false
@@ -940,6 +947,73 @@ function App() {
     }
   }
 
+  const replayPlaybackSpeed = REPLAY_PLAYBACK_SPEEDS[replayPlaybackSpeedIndex] ?? 1
+
+  useEffect(() => {
+    if (!isReplayModeOpen) {
+      setIsReplayPlaying(false)
+      return
+    }
+
+    if (!isReplayPlaying || !runtime || runtime.session.snapshots.length === 0) {
+      return
+    }
+
+    const replayPostSnapshots = runtime.session.snapshots.filter((snapshot) => snapshot.phase === 'post')
+    const replayFirstPreSnapshot = runtime.session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
+    const replayTimelineSnapshots = replayFirstPreSnapshot ? [replayFirstPreSnapshot, ...replayPostSnapshots] : replayPostSnapshots
+    const replayTimelineLatestSnapshotId = replayTimelineSnapshots.at(-1)?.id ?? null
+    const replayCurrentSnapshotId = runtime.session.activeSnapshotId ?? replayTimelineLatestSnapshotId
+    const replayCurrentSnapshot = replayCurrentSnapshotId
+      ? runtime.session.snapshots.find((snapshot) => snapshot.id === replayCurrentSnapshotId) ?? null
+      : null
+    const replayActiveSnapshotId = replayCurrentSnapshot
+      ? replayCurrentSnapshot.phase === 'pre'
+        ? replayFirstPreSnapshot?.id ?? null
+        : replayCurrentSnapshot.id
+      : null
+    const replayActiveSnapshotIndex = replayActiveSnapshotId
+      ? replayTimelineSnapshots.findIndex((snapshot) => snapshot.id === replayActiveSnapshotId)
+      : -1
+
+    if (replayActiveSnapshotIndex < 0 || replayActiveSnapshotIndex >= replayTimelineSnapshots.length - 1) {
+      setIsReplayPlaying(false)
+      return
+    }
+
+    const nextSnapshotId = replayTimelineSnapshots[replayActiveSnapshotIndex + 1]?.id ?? null
+    if (!nextSnapshotId) {
+      setIsReplayPlaying(false)
+      return
+    }
+
+    const timeout = window.setTimeout(() => {
+      setRuntime((prev) => {
+        if (!prev) {
+          return prev
+        }
+
+        const result = jumpSessionToSnapshot({
+          session: prev.session,
+          snapshotId: nextSnapshotId,
+        })
+
+        if (!result.ok) {
+          return prev
+        }
+
+        return {
+          session: result.session,
+          preview: result.preview,
+        }
+      })
+    }, Math.max(120, Math.floor(1000 / replayPlaybackSpeed)))
+
+    return () => {
+      window.clearTimeout(timeout)
+    }
+  }, [isReplayModeOpen, isReplayPlaying, replayPlaybackSpeed, runtime])
+
   useEffect(() => {
     if (!isReplayModeOpen) {
       return
@@ -1355,6 +1429,7 @@ function App() {
   const activeActionSnapshotIndex = activeActionSnapshot
     ? actionTimelineSnapshots.findIndex((snapshot) => snapshot.id === activeActionSnapshot.id)
     : -1
+  const canAdvanceReplay = activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1
   const cardsById = runtime.session.gameApi.cardsById as Record<
     string,
     (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
@@ -1788,7 +1863,9 @@ function App() {
     )
   }
 
-  const renderHistoryControlIcon = (kind: 'first' | 'previous' | 'next' | 'latest' | 'branch' | 'copy' | 'validate') => {
+  const renderHistoryControlIcon = (
+    kind: 'first' | 'previous' | 'next' | 'play' | 'pause' | 'speed' | 'latest' | 'branch' | 'copy' | 'validate',
+  ) => {
     switch (kind) {
       case 'first':
         return (
@@ -1807,6 +1884,28 @@ function App() {
         return (
           <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
             <path d="M7 6l8 6-8 6" />
+          </svg>
+        )
+      case 'play':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5l11 7-11 7z" />
+          </svg>
+        )
+      case 'pause':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M8 5v14" />
+            <path d="M16 5v14" />
+          </svg>
+        )
+      case 'speed':
+        return (
+          <svg className="history-control-icon" viewBox="0 0 24 24" aria-hidden="true">
+            <path d="M5 15a7 7 0 1 1 14 0" />
+            <path d="M12 15l4-4" />
+            <path d="M17 8l2-2" />
+            <path d="M7 15h10" />
           </svg>
         )
       case 'latest':
@@ -1845,7 +1944,9 @@ function App() {
     }
   }
 
-  const renderTimelineControls = () => {
+  const renderTimelineControls = (options?: { showPlaybackControls?: boolean }) => {
+    const showPlaybackControls = options?.showPlaybackControls ?? false
+
     return (
       <>
         <button
@@ -1876,6 +1977,24 @@ function App() {
         >
           {renderHistoryControlIcon('previous')}
         </button>
+        {showPlaybackControls ? (
+          <button
+            className={`history-icon-button replay-playback-button ${isReplayPlaying ? 'replay-playback-button-active' : ''}`.trim()}
+            type="button"
+            aria-label={isReplayPlaying ? 'Pause replay playback' : 'Play replay playback'}
+            title={isReplayPlaying ? 'Pause (Space)' : 'Play (Space)'}
+            onClick={() => {
+              if (!canAdvanceReplay && !isReplayPlaying) {
+                return
+              }
+
+              setIsReplayPlaying((current) => !current)
+            }}
+            disabled={!isReplayPlaying && !canAdvanceReplay}
+          >
+            {renderHistoryControlIcon(isReplayPlaying ? 'pause' : 'play')}
+          </button>
+        ) : null}
         <button
           className="history-icon-button"
           type="button"
@@ -1890,6 +2009,19 @@ function App() {
         >
           {renderHistoryControlIcon('next')}
         </button>
+        {showPlaybackControls ? (
+          <button
+            className="history-icon-button replay-speed-button"
+            type="button"
+            aria-label={`Playback speed ${replayPlaybackSpeed}x`}
+            title={`Playback speed: ${replayPlaybackSpeed}x`}
+            onClick={() => {
+              setReplayPlaybackSpeedIndex((current) => (current + 1) % REPLAY_PLAYBACK_SPEEDS.length)
+            }}
+          >
+            <span className="replay-speed-button-label">{formatReplayPlaybackSpeed(replayPlaybackSpeed)}</span>
+          </button>
+        ) : null}
         <button
           className="history-icon-button"
           type="button"
@@ -2099,7 +2231,7 @@ function App() {
                 </button>
               </div>
             </header>
-            <div className="history-snapshot-controls replay-snapshot-controls">{renderTimelineControls()}</div>
+              <div className="history-snapshot-controls replay-snapshot-controls">{renderTimelineControls({ showPlaybackControls: true })}</div>
             <p className="history-shortcuts replay-shortcuts">
               Replay bar mode: interact with the board as usual. Actions from older steps auto-branch.
             </p>
