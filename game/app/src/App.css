@@ -1670,16 +1670,20 @@ html {
   top: 62px;
 }
 
+.shortlink-launch-button {
+  top: 106px;
+}
+
 .auto-play-button {
   min-width: 112px;
 }
 
 .auto-play-button-a {
-  top: 106px;
+  top: 150px;
 }
 
 .auto-play-button-b {
-  top: 150px;
+  top: 194px;
 }
 
 .auto-play-button-active {
@@ -2083,6 +2087,10 @@ html {
 
   .settings-launch-button {
     top: 56px;
+  }
+
+  .shortlink-launch-button {
+    top: 100px;
   }
 
   .settings-modal-overlay {

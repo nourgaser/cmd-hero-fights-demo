@@ -61,6 +61,12 @@ type SettingsExportPayloadV1 = {
   storage: Record<string, string>
 }
 
+type IsGdCreateResponse = {
+  shorturl?: string
+  errorcode?: number
+  errormessage?: string
+}
+
 type AppRuntime = {
   session: AppBattleSession
   preview: AppBattlePreview
@@ -108,6 +114,30 @@ function pickRandom<T>(items: T[]): T | null {
 
 function formatReplayPlaybackSpeed(speed: number): string {
   return Number.isInteger(speed) ? `${speed}x` : `${speed.toFixed(2).replace(/\.00$/, '')}x`
+}
+
+async function sha256Hex(input: string): Promise<string | null> {
+  if (typeof window === 'undefined' || !window.crypto?.subtle) {
+    return null
+  }
+
+  try {
+    const digest = await window.crypto.subtle.digest('SHA-256', new TextEncoder().encode(input))
+    const bytes = new Uint8Array(digest)
+    return Array.from(bytes)
+      .map((byte) => byte.toString(16).padStart(2, '0'))
+      .join('')
+  } catch {
+    return null
+  }
+}
+
+function buildIsGdShortlink(shortAlias: string): string {
+  return `https://is.gd/${shortAlias}`
+}
+
+function buildReplayShortAlias(replayHashHex: string): string {
+  return `cmd_hero_fights_${replayHashHex.slice(0, 7)}`
 }
 
 type ReplayNavigationDirection = -1 | 1
@@ -1908,6 +1938,70 @@ function App() {
     }
   }
 
+  const handleCopyShortlink = async () => {
+    const fullReplayUrl = typeof window !== 'undefined' ? window.location.href : ''
+
+    if (!fullReplayUrl) {
+      showActionErrorToast('Cannot copy shortlink outside browser mode.')
+      return
+    }
+
+    const replayHashSource = fullReplayUrl.includes('#replay=')
+      ? fullReplayUrl.slice(fullReplayUrl.indexOf('#replay=') + '#replay='.length)
+      : fullReplayUrl
+    const replayHashHex = await sha256Hex(replayHashSource)
+
+    if (!replayHashHex) {
+      try {
+        await navigator.clipboard.writeText(fullReplayUrl)
+        showActionErrorToast('Failed to hash replay for shortlink. Copied full replay URL instead.')
+      } catch {
+        showActionErrorToast('Failed to hash replay for shortlink and failed to copy fallback replay URL.')
+      }
+      return
+    }
+
+    const shortAlias = buildReplayShortAlias(replayHashHex)
+    const shortlink = buildIsGdShortlink(shortAlias)
+
+    const copyFullReplayUrlWithError = async (message: string) => {
+      try {
+        await navigator.clipboard.writeText(fullReplayUrl)
+        showActionErrorToast(`${message} Copied full replay URL instead.`)
+      } catch {
+        showActionErrorToast(`${message} Failed to copy fallback replay URL.`)
+      }
+    }
+
+    try {
+      const params = new URLSearchParams({
+        format: 'json',
+        url: fullReplayUrl,
+        shorturl: shortAlias,
+      })
+      const response = await fetch(`https://is.gd/create.php?${params.toString()}`)
+      const payload = (await response.json()) as IsGdCreateResponse
+
+      if (typeof payload.shorturl === 'string' && payload.shorturl.length > 0) {
+        await navigator.clipboard.writeText(payload.shorturl)
+        showActionSuccessToast('Shortlink copied to clipboard.', [])
+        return
+      }
+
+      const looksLikeExistingAlias =
+        payload.errorcode === 2 && /taken|already|in use|exists/i.test(payload.errormessage ?? '')
+      if (looksLikeExistingAlias) {
+        await navigator.clipboard.writeText(shortlink)
+        showActionSuccessToast('Existing shortlink copied to clipboard.', [])
+        return
+      }
+
+      await copyFullReplayUrlWithError(payload.errormessage ?? 'Failed to create shortlink.')
+    } catch {
+      await copyFullReplayUrlWithError('Failed to create shortlink.')
+    }
+  }
+
   const handleValidateReplayDeterminism = () => {
     if (!activeActionSnapshotId || !activeActionSnapshot) {
       showActionErrorToast('Select a snapshot before validating replay determinism.')
@@ -2241,6 +2335,14 @@ function App() {
         title="Toggle settings (S)"
       >
         Settings
+      </button>
+      <button
+        type="button"
+        className="history-button shortlink-launch-button"
+        onClick={() => void handleCopyShortlink()}
+        title="Copy shortlink"
+      >
+        Copy Shortlink
       </button>
       {autoPlayButtonsVisible ? (
         <button
