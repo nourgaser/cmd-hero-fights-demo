@@ -838,11 +838,11 @@ function App() {
     })
   }
 
-  const renderStructuredToast = (summary: string, detail: string | null) => {
+  const renderStructuredToast = (summary: string, detail: string | null, showDetail: boolean) => {
     return (
-      <span className="game-toast-body">
+      <span className={`game-toast-body ${showDetail ? 'game-toast-body-expanded' : ''}`.trim()}>
         <span className="game-toast-summary">{renderTextWithHighlightedNumbers(summary, 'game-toast-number')}</span>
-        {detail ? (
+        {showDetail && detail ? (
           <span className="game-toast-detail">{renderTextWithHighlightedNumbers(detail, 'game-toast-number')}</span>
         ) : null}
       </span>
@@ -875,7 +875,7 @@ function App() {
       detail = `Luck balance ${luckEvent.previousBalance} -> ${luckEvent.nextBalance}.`
     }
 
-    toast.success(renderStructuredToast(split.summary, detail), {
+    toast.success(renderStructuredToast(split.summary, detail, shouldShowDetailedTooltips), {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
     })
@@ -922,7 +922,7 @@ function App() {
 
     announce(summary)
 
-    toast(renderStructuredToast(summary, detail), {
+    toast(renderStructuredToast(summary, detail, shouldShowDetailedTooltips), {
       id: `battle-event-${event.sequence}`,
       duration: EVENT_TOAST_DURATION_MS,
     })
@@ -1967,7 +1967,7 @@ function App() {
     <>
       <Toaster
         position="top-center"
-        gutter={10}
+        gutter={12}
         reverseOrder
         toastOptions={{
           className: 'game-toast',
