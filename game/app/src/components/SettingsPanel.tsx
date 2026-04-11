@@ -31,7 +31,8 @@ type SettingsPanelProps = {
   deckEditorHeroIndex: 0 | 1
   onSeedChange: (seed: string) => void
   onBootstrapConfigChange: (config: GameBootstrapConfig) => boolean
-  onCopyDataLink: () => void
+  onExportSettings: () => string | null
+  onImportSettings: (rawText: string) => { ok: boolean; message: string }
   onCloseDeckEditor: () => void
   onHardReset: () => void
   autoPlayButtonsVisible: boolean
@@ -55,13 +56,14 @@ type DeckTypeFilter = 'all' | 'ability' | 'weapon' | 'totem' | 'companion'
 
 type DeckRarityFilter = 'all' | 'common' | 'rare' | 'ultimate' | 'general'
 
-type SettingsSectionKey = 'seed' | 'bootstrap' | 'runtime'
+type SettingsSectionKey = 'seed' | 'bootstrap' | 'exchange' | 'runtime'
 type SettingsSectionOpenState = Record<SettingsSectionKey, boolean>
 
-const SETTINGS_SECTION_ORDER: SettingsSectionKey[] = ['seed', 'bootstrap', 'runtime']
+const SETTINGS_SECTION_ORDER: SettingsSectionKey[] = ['seed', 'bootstrap', 'exchange', 'runtime']
 const DEFAULT_SECTION_OPEN_STATE: SettingsSectionOpenState = {
   seed: true,
   bootstrap: true,
+  exchange: false,
   runtime: true,
 }
 
@@ -160,6 +162,7 @@ const loadPersistedState = (): SettingsPanelPersistedState => {
       sectionOpen: {
         seed: parsed.sectionOpen?.seed !== false,
         bootstrap: parsed.sectionOpen?.bootstrap !== false,
+        exchange: parsed.sectionOpen?.exchange === true,
         runtime: parsed.sectionOpen?.runtime !== false,
       },
     }
@@ -189,7 +192,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
     deckEditorHeroIndex,
     onSeedChange,
     onBootstrapConfigChange,
-    onCopyDataLink,
+    onExportSettings,
+    onImportSettings,
     onCloseDeckEditor,
     onHardReset,
     autoPlayButtonsVisible,
@@ -222,6 +226,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const [savedDecksNewName, setSavedDecksNewName] = useState('')
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null)
   const [editingDeckName, setEditingDeckName] = useState('')
+  const [settingsExchangeText, setSettingsExchangeText] = useState('')
 
   const { expandAll, sectionOpen } = persistedState
 
@@ -293,6 +298,51 @@ export function SettingsPanel(props: SettingsPanelProps) {
     } catch {
       // No-op in prototype if clipboard is unavailable.
     }
+  }
+
+  const handleLoadExportSettings = () => {
+    const exported = onExportSettings()
+    if (!exported) {
+      toast.error('Failed to export settings.', { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    setSettingsExchangeText(exported)
+    toast.success('Settings exported to text area.', { id: DECK_SAVE_TOAST_ID })
+  }
+
+  const handleCopyExportSettings = async () => {
+    const exported = settingsExchangeText.trim() || onExportSettings()
+    if (!exported) {
+      toast.error('Failed to export settings.', { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    try {
+      await navigator.clipboard.writeText(exported)
+      if (!settingsExchangeText.trim()) {
+        setSettingsExchangeText(exported)
+      }
+      toast.success('Settings export copied to clipboard.', { id: DECK_SAVE_TOAST_ID })
+    } catch {
+      toast.error('Failed to copy settings export.', { id: DECK_SAVE_TOAST_ID })
+    }
+  }
+
+  const handleImportSettingsFromText = () => {
+    const text = settingsExchangeText.trim()
+    if (!text) {
+      toast.error('Paste exported settings JSON before importing.', { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    const result = onImportSettings(text)
+    if (!result.ok) {
+      toast.error(result.message, { id: DECK_SAVE_TOAST_ID })
+      return
+    }
+
+    toast.success(result.message, { id: DECK_SAVE_TOAST_ID })
   }
 
   const handleSeedApply = () => {
@@ -700,6 +750,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
       sectionOpen: {
         seed: open,
         bootstrap: open,
+        exchange: open,
         runtime: open,
       },
     }))
@@ -754,9 +805,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
               </button>
               <button type="button" onClick={handleCopy}>
                 Copy JSON
-              </button>
-              <button type="button" onClick={onCopyDataLink}>
-                Copy Data Link
               </button>
               <button type="button" onClick={onHardReset}>
                 Hard Reset
@@ -1041,6 +1089,37 @@ export function SettingsPanel(props: SettingsPanelProps) {
               )}
               {bootstrapConfigError ? <p className="settings-bootstrap-error">{bootstrapConfigError}</p> : null}
             </div>
+              ) : null}
+            </section>
+            <section id="settings-section-exchange" className={`settings-section ${sectionOpen.exchange ? 'open' : 'closed'}`.trim()}>
+              <button
+                type="button"
+                className="settings-section-toggle"
+                onClick={() => toggleSection('exchange')}
+                aria-expanded={sectionOpen.exchange}
+              >
+                <span>Export / Import Settings</span>
+                <span className="settings-section-toggle-symbol" aria-hidden="true">{sectionOpen.exchange ? '−' : '+'}</span>
+              </button>
+              {sectionOpen.exchange ? (
+                <div className="settings-bootstrap-panel">
+                  <div className="settings-bootstrap-header">
+                    <strong>Export / Import Settings</strong>
+                    <span>Includes current and saved deck settings, audio, UI settings, and auto-play settings. Game state stays in the replay fragment.</span>
+                  </div>
+                  <div className="settings-modal-head-actions">
+                    <button type="button" onClick={handleLoadExportSettings}>Load Export JSON</button>
+                    <button type="button" onClick={() => void handleCopyExportSettings()}>Copy Export JSON</button>
+                    <button type="button" onClick={handleImportSettingsFromText}>Import Settings</button>
+                  </div>
+                  <textarea
+                    className="settings-bootstrap-textarea"
+                    value={settingsExchangeText}
+                    onChange={(event) => setSettingsExchangeText(event.target.value)}
+                    spellCheck={false}
+                    placeholder="Paste exported settings JSON here, then click Import Settings"
+                  />
+                </div>
               ) : null}
             </section>
             <section id="settings-section-runtime" className={`settings-section ${sectionOpen.runtime ? 'open' : 'closed'}`.trim()}>

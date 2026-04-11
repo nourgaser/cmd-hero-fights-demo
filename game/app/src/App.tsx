@@ -24,10 +24,6 @@ import {
   readReplayPayloadFromLocation,
   writeReplayPayloadToLocation,
 } from './utils/replay-url.ts'
-import {
-  applyLoadDataFromLocation,
-  createLoadDataShareUrl,
-} from './utils/load-data-url.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 
@@ -46,13 +42,22 @@ const ACTION_TOAST_DURATION_MS = 7000
 const EVENT_TOAST_DURATION_MS = 4500
 const AUTO_PLAY_MIN_DELAY_MS = 50
 const AUTO_PLAY_DEFAULT_DELAY_MS = 200
-const LOAD_DATA_STORAGE_KEYS = [
+const SETTINGS_EXPORT_STORAGE_KEYS = [
   SETTINGS_SEED_STORAGE_KEY,
   SETTINGS_BOOTSTRAP_STORAGE_KEY,
   SETTINGS_PANEL_STORAGE_KEY,
   SAVED_DECKS_STORAGE_KEY,
   MUSIC_MUTED_STORAGE_KEY,
+  AUTO_PLAY_BUTTONS_VISIBLE_STORAGE_KEY,
+  AUTO_PLAY_DELAY_STORAGE_KEY,
+  AUTO_PLAY_AUTO_END_TURN_STORAGE_KEY,
+  AUTO_PLAY_USE_ENTITY_ACTIVES_STORAGE_KEY,
 ]
+
+type SettingsExportPayloadV1 = {
+  version: 1
+  storage: Record<string, string>
+}
 
 type AppRuntime = {
   session: AppBattleSession
@@ -290,9 +295,6 @@ function isTypingTarget(event: KeyboardEvent): boolean {
 }
 
 function App() {
-  const [loadDataImportResult] = useState(() => applyLoadDataFromLocation({
-    storageKeys: LOAD_DATA_STORAGE_KEYS,
-  }))
   const [initialReplayPayload] = useState(() => readReplayPayloadFromLocation())
   const [initialBootstrapConfig] = useState(() => initialReplayPayload?.bootstrapConfig ?? loadBootstrapConfig())
   const [bootstrapConfig, setBootstrapConfig] = useState(initialBootstrapConfig)
@@ -526,27 +528,6 @@ function App() {
 
     window.localStorage.setItem(AUTO_PLAY_USE_ENTITY_ACTIVES_STORAGE_KEY, String(autoPlayUseEntityActives))
   }, [autoPlayUseEntityActives])
-
-  useEffect(() => {
-    if (!loadDataImportResult.applied && !loadDataImportResult.error) {
-      return
-    }
-
-    if (loadDataImportResult.error) {
-      toast.error(`loadData import failed: ${loadDataImportResult.error}`, {
-        id: ACTION_TOAST_ID,
-        duration: ACTION_TOAST_DURATION_MS,
-      })
-      return
-    }
-
-    const message = `Imported shared data (${loadDataImportResult.importedKeyCount} keys).`
-    announce(message)
-    toast.success(message, {
-      id: ACTION_TOAST_ID,
-      duration: ACTION_TOAST_DURATION_MS,
-    })
-  }, [loadDataImportResult])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
@@ -1000,22 +981,65 @@ function App() {
     setAutoPlayUseEntityActives(nextValue)
   }
 
-  const handleCopyDataLink = async () => {
-    const url = createLoadDataShareUrl({
-      storageKeys: LOAD_DATA_STORAGE_KEYS,
-    })
-
-    if (!url) {
-      showActionErrorToast('Failed to generate data share URL.')
-      return
+  const handleExportSettings = (): string | null => {
+    if (typeof window === 'undefined') {
+      return null
     }
 
+    const storage: Record<string, string> = {}
+    for (const key of SETTINGS_EXPORT_STORAGE_KEYS) {
+      const value = window.localStorage.getItem(key)
+      if (value !== null) {
+        storage[key] = value
+      }
+    }
+
+    const payload: SettingsExportPayloadV1 = {
+      version: 1,
+      storage,
+    }
+
+    return JSON.stringify(payload, null, 2)
+  }
+
+  const handleImportSettings = (rawText: string): { ok: boolean; message: string } => {
+    if (typeof window === 'undefined') {
+      return { ok: false, message: 'Settings import is only available in browser mode.' }
+    }
+
+    let parsed: unknown
     try {
-      await navigator.clipboard.writeText(url)
-      showActionSuccessToast('Data share URL copied to clipboard.', [])
+      parsed = JSON.parse(rawText)
     } catch {
-      showActionErrorToast('Failed to copy data share URL.')
+      return { ok: false, message: 'Settings JSON is invalid.' }
     }
+
+    if (!parsed || typeof parsed !== 'object') {
+      return { ok: false, message: 'Settings payload must be an object.' }
+    }
+
+    const payload = parsed as Partial<SettingsExportPayloadV1>
+    if (payload.version !== 1) {
+      return { ok: false, message: 'Unsupported settings payload version.' }
+    }
+
+    if (!payload.storage || typeof payload.storage !== 'object') {
+      return { ok: false, message: 'Settings payload storage is missing.' }
+    }
+
+    for (const key of SETTINGS_EXPORT_STORAGE_KEYS) {
+      window.localStorage.removeItem(key)
+    }
+
+    for (const key of SETTINGS_EXPORT_STORAGE_KEYS) {
+      const value = (payload.storage as Record<string, unknown>)[key]
+      if (typeof value === 'string') {
+        window.localStorage.setItem(key, value)
+      }
+    }
+
+    window.location.reload()
+    return { ok: true, message: 'Settings imported. Reloading...' }
   }
 
   const runAutoPlayStep = useCallback((side: 'a' | 'b') => {
@@ -2032,7 +2056,8 @@ function App() {
           deckEditorHeroIndex={deckEditorHeroIndex}
           onSeedChange={handleSeedChange}
           onBootstrapConfigChange={handleBootstrapConfigChange}
-          onCopyDataLink={() => void handleCopyDataLink()}
+          onExportSettings={handleExportSettings}
+          onImportSettings={handleImportSettings}
           onCloseDeckEditor={handleCloseDeckEditor}
           onHardReset={handleHardReset}
           autoPlayButtonsVisible={autoPlayButtonsVisible}
