@@ -226,7 +226,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
   const [savedDecksNewName, setSavedDecksNewName] = useState('')
   const [editingDeckId, setEditingDeckId] = useState<string | null>(null)
   const [editingDeckName, setEditingDeckName] = useState('')
-  const [settingsExchangeText, setSettingsExchangeText] = useState('')
+  const [settingsExchangeText, setSettingsExchangeText] = useState(() => onExportSettings() ?? '')
 
   const { expandAll, sectionOpen } = persistedState
 
@@ -297,35 +297,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
       await navigator.clipboard.writeText(copiedState)
     } catch {
       // No-op in prototype if clipboard is unavailable.
-    }
-  }
-
-  const handleLoadExportSettings = () => {
-    const exported = onExportSettings()
-    if (!exported) {
-      toast.error('Failed to export settings.', { id: DECK_SAVE_TOAST_ID })
-      return
-    }
-
-    setSettingsExchangeText(exported)
-    toast.success('Settings exported to text area.', { id: DECK_SAVE_TOAST_ID })
-  }
-
-  const handleCopyExportSettings = async () => {
-    const exported = settingsExchangeText.trim() || onExportSettings()
-    if (!exported) {
-      toast.error('Failed to export settings.', { id: DECK_SAVE_TOAST_ID })
-      return
-    }
-
-    try {
-      await navigator.clipboard.writeText(exported)
-      if (!settingsExchangeText.trim()) {
-        setSettingsExchangeText(exported)
-      }
-      toast.success('Settings export copied to clipboard.', { id: DECK_SAVE_TOAST_ID })
-    } catch {
-      toast.error('Failed to copy settings export.', { id: DECK_SAVE_TOAST_ID })
     }
   }
 
@@ -1108,9 +1079,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
                     <span>Includes current and saved deck settings, audio, UI settings, and auto-play settings. Game state stays in the replay fragment.</span>
                   </div>
                   <div className="settings-modal-head-actions">
-                    <button type="button" onClick={handleLoadExportSettings}>Load Export JSON</button>
-                    <button type="button" onClick={() => void handleCopyExportSettings()}>Copy Export JSON</button>
-                    <button type="button" onClick={handleImportSettingsFromText}>Import Settings</button>
+                    <button type="button" onClick={handleImportSettingsFromText}>Apply</button>
                   </div>
                   <textarea
                     className="settings-bootstrap-textarea"
