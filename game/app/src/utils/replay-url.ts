@@ -83,7 +83,10 @@ export function readReplayPayloadFromLocation(): ReplayUrlPayload | null {
     return null
   }
 
-  const params = new URLSearchParams(window.location.search)
+  const hashValue = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash
+  const params = new URLSearchParams(hashValue)
   const encoded = params.get(REPLAY_PARAM_KEY)
   if (!encoded) {
     return null
@@ -97,8 +100,12 @@ export function writeReplayPayloadToLocation(payload: ReplayUrlPayload): void {
     return
   }
 
-  const params = new URLSearchParams(window.location.search)
+  const hashValue = window.location.hash.startsWith('#')
+    ? window.location.hash.slice(1)
+    : window.location.hash
+  const params = new URLSearchParams(hashValue)
   params.set(REPLAY_PARAM_KEY, encodeReplayUrlPayload(payload))
-  const nextUrl = `${window.location.pathname}?${params.toString()}`
+  const nextHash = params.toString()
+  const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ''}`
   window.history.replaceState(null, '', nextUrl)
 }
