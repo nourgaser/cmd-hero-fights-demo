@@ -110,6 +110,8 @@ function formatReplayPlaybackSpeed(speed: number): string {
   return Number.isInteger(speed) ? `${speed}x` : `${speed.toFixed(2).replace(/\.00$/, '')}x`
 }
 
+type ReplayNavigationDirection = -1 | 1
+
 function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRuntime {
   const initial = createInitialBattleSession(config)
   return {
@@ -416,6 +418,8 @@ function App() {
   })
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const replayTimelineListRef = useRef<HTMLUListElement | null>(null)
+  const replayNavigationFrameRef = useRef<number | null>(null)
+  const replayNavigationDirectionRef = useRef<ReplayNavigationDirection | 0>(0)
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
       return false
@@ -666,13 +670,13 @@ function App() {
 
       if (event.key === 'ArrowLeft' && timelineActiveSnapshotIndex > 0) {
         event.preventDefault()
-        jumpToSnapshot(timelineSnapshots[timelineActiveSnapshotIndex - 1]!.id)
+        queueReplayTimelineStep(-1)
         return
       }
 
       if (event.key === 'ArrowRight' && timelineActiveSnapshotIndex >= 0 && timelineActiveSnapshotIndex < timelineSnapshots.length - 1) {
         event.preventDefault()
-        jumpToSnapshot(timelineSnapshots[timelineActiveSnapshotIndex + 1]!.id)
+        queueReplayTimelineStep(1)
         return
       }
 
@@ -1431,6 +1435,80 @@ function App() {
     ? actionTimelineSnapshots.findIndex((snapshot) => snapshot.id === activeActionSnapshot.id)
     : -1
   const canAdvanceReplay = activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1
+
+  const stepReplayTimeline = useCallback((direction: ReplayNavigationDirection) => {
+    setRuntime((prev) => {
+      if (!prev || prev.session.snapshots.length === 0) {
+        return prev
+      }
+
+      const postSnapshots = prev.session.snapshots.filter((snapshot) => snapshot.phase === 'post')
+      const firstPreSnapshot = prev.session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
+      const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
+      const timelineLatestSnapshotId = timelineSnapshots.at(-1)?.id ?? null
+      const currentSnapshotId = prev.session.activeSnapshotId ?? timelineLatestSnapshotId
+      const currentSnapshot = currentSnapshotId
+        ? prev.session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
+        : null
+      const timelineActiveSnapshotId = currentSnapshot
+        ? currentSnapshot.phase === 'pre'
+          ? firstPreSnapshot?.id ?? null
+          : currentSnapshot.id
+        : null
+      const timelineActiveSnapshotIndex = timelineActiveSnapshotId
+        ? timelineSnapshots.findIndex((snapshot) => snapshot.id === timelineActiveSnapshotId)
+        : -1
+      const nextIndex = timelineActiveSnapshotIndex + direction
+
+      if (nextIndex < 0 || nextIndex >= timelineSnapshots.length) {
+        return prev
+      }
+
+      const result = jumpSessionToSnapshot({
+        session: prev.session,
+        snapshotId: timelineSnapshots[nextIndex]!.id,
+      })
+
+      if (!result.ok) {
+        return prev
+      }
+
+      return {
+        session: result.session,
+        preview: result.preview,
+      }
+    })
+  }, [])
+
+  const queueReplayTimelineStep = useCallback(
+    (direction: ReplayNavigationDirection) => {
+      replayNavigationDirectionRef.current = direction
+
+      if (replayNavigationFrameRef.current !== null) {
+        return
+      }
+
+      replayNavigationFrameRef.current = window.requestAnimationFrame(() => {
+        replayNavigationFrameRef.current = null
+        const queuedDirection = replayNavigationDirectionRef.current
+        replayNavigationDirectionRef.current = 0
+
+        if (queuedDirection !== 0) {
+          stepReplayTimeline(queuedDirection)
+        }
+      })
+    },
+    [stepReplayTimeline],
+  )
+
+  useEffect(() => {
+    return () => {
+      if (replayNavigationFrameRef.current !== null) {
+        window.cancelAnimationFrame(replayNavigationFrameRef.current)
+        replayNavigationFrameRef.current = null
+      }
+    }
+  }, [])
 
   useEffect(() => {
     if (!isReplayModeOpen || !activeActionSnapshotId) {
