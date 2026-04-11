@@ -1,10 +1,7 @@
 # MVP Scope Checklist (Commander X)
 
-Active-only tracker. Completed tasks, draft specs, and stale planning notes were removed.
+## Scalability / Maintainability
 
-## Remaining MVP Tasks
-
-### Scalability / Maintainability
 - [ ] Break up the largest source files first (game/app/src/App.css, game/app/src/game-client.ts, game/app/src/App.tsx, game/app/src/components/SettingsPanel.tsx, game/app/src/components/DebugStatePanel.tsx, game/engine/actions/effects/handlers/combat.ts, game/engine/actions/effects/handlers/stats.ts) so no single file keeps absorbing unrelated responsibilities.
 - [ ] Split game/app/src/game-client.ts into smaller modules for preview derivation, replay/session management, action resolution, and player-facing summary formatting.
 - [ ] Split game/app/src/App.tsx into shell state, replay/bootstrap wiring, autoplay logic, settings persistence, and action plumbing.
@@ -21,5 +18,5 @@ Active-only tracker. Completed tasks, draft specs, and stale planning notes were
 - [ ] Preserve consistent logging and player-facing information by keeping event emission, inspect surfaces, and toast/debug messaging aligned with the underlying action resolution order.
 - [ ] Split or simplify the largest app-facing preview file if it keeps accumulating formatting, tooltip, summon-preview, and cast-condition logic in one place.
 
-### Product / UX Backlog
+## Product / UX Backlog
 - [ ] Add tutorial / rulebook.
