@@ -413,6 +413,18 @@ function App() {
   const [isReplayModeOpen, setIsReplayModeOpen] = useState(false)
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const [replayPlaybackSpeedIndex, setReplayPlaybackSpeedIndex] = useState(0)
+  const [replayBarPosition, setReplayBarPosition] = useState<{ x: number; y: number }>(() => {
+    if (typeof window === 'undefined') {
+      return { x: 0, y: 0 }
+    }
+    const stored = window.localStorage.getItem('REPLAY_BAR_POSITION')
+    if (!stored) return { x: 0, y: 0 }
+    try {
+      return JSON.parse(stored)
+    } catch {
+      return { x: 0, y: 0 }
+    }
+  })
   const [autoPlayButtonsVisible, setAutoPlayButtonsVisible] = useState(() => {
     if (typeof window === 'undefined') {
       return false
@@ -450,6 +462,13 @@ function App() {
   const replayTimelineListRef = useRef<HTMLUListElement | null>(null)
   const replayNavigationFrameRef = useRef<number | null>(null)
   const replayNavigationDirectionRef = useRef<ReplayNavigationDirection | 0>(0)
+  const replayBarDragStateRef = useRef<{
+    isDragging: boolean
+    startX: number
+    startY: number
+    offsetX: number
+    offsetY: number
+  }>({ isDragging: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 })
   const [isMusicMuted, setIsMusicMuted] = useState(() => {
     if (typeof window === 'undefined') {
       return false
@@ -1573,6 +1592,58 @@ function App() {
     }
   }, [activeActionSnapshotId, isReplayModeOpen])
 
+  useEffect(() => {
+    const handleMouseMove = (e: MouseEvent) => {
+      const dragState = replayBarDragStateRef.current
+      if (!dragState.isDragging || !isReplayModeOpen) {
+        return
+      }
+
+      const deltaX = e.clientX - dragState.startX
+      const deltaY = e.clientY - dragState.startY
+
+      const newX = dragState.offsetX + deltaX
+      const newY = dragState.offsetY + deltaY
+
+      setReplayBarPosition({ x: newX, y: newY })
+    }
+
+    const handleMouseUp = () => {
+      if (replayBarDragStateRef.current.isDragging) {
+        replayBarDragStateRef.current.isDragging = false
+        window.localStorage.setItem('REPLAY_BAR_POSITION', JSON.stringify(replayBarPosition))
+      }
+    }
+
+    if (isReplayModeOpen) {
+      document.addEventListener('mousemove', handleMouseMove)
+      document.addEventListener('mouseup', handleMouseUp)
+      return () => {
+        document.removeEventListener('mousemove', handleMouseMove)
+        document.removeEventListener('mouseup', handleMouseUp)
+      }
+    }
+  }, [isReplayModeOpen, replayBarPosition])
+
+  const handleReplayBarDragStart = (e: React.MouseEvent) => {
+    if ((e.target as HTMLElement).closest('button, input, a')) {
+      return
+    }
+    replayBarDragStateRef.current = {
+      isDragging: true,
+      startX: e.clientX,
+      startY: e.clientY,
+      offsetX: replayBarPosition.x,
+      offsetY: replayBarPosition.y,
+    }
+  }
+
+  const handleReplayBarResetPosition = () => {
+    setReplayBarPosition({ x: 0, y: 0 })
+    window.localStorage.removeItem('REPLAY_BAR_POSITION')
+    replayBarDragStateRef.current = { isDragging: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 }
+  }
+
   const cardsById = runtime.session.gameApi.cardsById as Record<
     string,
     (typeof runtime.session.gameApi.cardsById)[keyof typeof runtime.session.gameApi.cardsById]
@@ -2428,11 +2499,30 @@ function App() {
         </div>
       ) : null}
       {isReplayModeOpen ? (
-        <div className="replay-bar-overlay" role="presentation">
-          <section className="replay-bar" aria-label="Replay mode timeline">
+        <div
+          className="replay-bar-overlay"
+          role="presentation"
+          style={{
+            transform: `translate(${replayBarPosition.x}px, ${replayBarPosition.y}px)`,
+          }}
+        >
+          <section
+            className="replay-bar"
+            onMouseDown={handleReplayBarDragStart}
+            style={{ cursor: replayBarDragStateRef.current.isDragging ? 'grabbing' : 'grab' }}
+            aria-label="Replay mode timeline"
+          >
             <header className="replay-bar-head">
               <strong>Replay Mode</strong>
               <div className="replay-bar-head-actions">
+                <button
+                  type="button"
+                  onClick={() => handleReplayBarResetPosition()}
+                  title="Reset replay bar to default position"
+                  aria-label="Reset replay bar position"
+                >
+                  Reset Pos
+                </button>
                 <button
                   type="button"
                   onClick={() => {
