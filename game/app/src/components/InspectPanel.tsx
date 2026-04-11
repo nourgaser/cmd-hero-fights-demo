@@ -583,7 +583,7 @@ function HandCardInspect({
             <span className="inspect-stat delta-neutral"><strong>AP</strong><em>{card.summonPreview.abilityPower}</em></span>
             <span className="inspect-stat delta-neutral"><strong>Armor</strong><em>{card.summonPreview.armor}</em></span>
             <span className="inspect-stat delta-neutral"><strong>MR</strong><em>{card.summonPreview.magicResist}</em></span>
-            <span className="inspect-stat delta-neutral"><strong>MOV</strong><em>{card.summonPreview.maxMovesPerTurn}</em></span>
+            <span className="inspect-stat delta-neutral"><strong>MOVES</strong><em>{card.summonPreview.maxMovesPerTurn}</em></span>
           </div>
           {card.summonPreview.passiveSummaryText ? (
             <AbilitySection
