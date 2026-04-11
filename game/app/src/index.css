@@ -81,6 +81,8 @@ html {
   overflow-x: hidden;
   scrollbar-color: var(--scrollbar-thumb-firefox) transparent;
   scrollbar-width: thin;
+  -webkit-tap-highlight-color: transparent;
+  touch-action: manipulation;
 }
 
 * {
