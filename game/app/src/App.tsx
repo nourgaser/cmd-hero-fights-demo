@@ -1651,8 +1651,19 @@ function App() {
     if ((e.target as HTMLElement).closest('button, input, a')) {
       return
     }
-    const clientX = 'touches' in e ? e.touches[0]?.clientX ?? 0 : e.clientX
-    const clientY = 'touches' in e ? e.touches[0]?.clientY ?? 0 : e.clientY
+    let clientX: number
+    let clientY: number
+    if ('touches' in e) {
+      const touch = e.touches[0]
+      if (!touch) {
+        return
+      }
+      clientX = touch.clientX
+      clientY = touch.clientY
+    } else {
+      clientX = e.clientX
+      clientY = e.clientY
+    }
     replayBarDragStateRef.current = {
       isDragging: true,
       startX: clientX,
