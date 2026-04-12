@@ -2,8 +2,8 @@ import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 import { KEYWORD_IDS } from "../../keywords";
 
-const MEREWEN_ADJACENT_ATTACK_BONUS = 3;
-const MEREWEN_ADJACENT_HEAL_AMOUNT = 3;
+const MEREWEN_ADJACENT_ATTACK_BONUS = 2;
+const MEREWEN_ADJACENT_HEAL_AMOUNT = 4;
 
 export const MEREWEN_THE_SHIELDMAIDEN_CARD = {
   id: "card.commander-x.merewen-the-shieldmaiden",
