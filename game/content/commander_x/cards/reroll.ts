@@ -1,6 +1,6 @@
 import type { StrongCardDefinition } from "./types";
 
-const REROLL_DRAW_AMOUNT = 1;
+const REROLL_DRAW_AMOUNT = 2;
 
 export const REROLL_CARD = {
   id: "card.general.reroll",
