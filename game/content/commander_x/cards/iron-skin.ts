@@ -9,7 +9,7 @@ export const IRON_SKIN_CARD = {
   type: "ability",
   rarity: "common",
   heroId: COMMANDER_X_HERO_ID,
-  moveCost: 7,
+  moveCost: 6,
   targeting: "none",
   tags: [],
   summaryText: {
