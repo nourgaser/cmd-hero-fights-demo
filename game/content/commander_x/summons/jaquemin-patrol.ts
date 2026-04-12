@@ -25,7 +25,7 @@ export const JAQUEMIN_PATROL_ACTIVE: EntityActiveProfile = {
   kind: "attack",
   moveCost: 1,
   minimumDamage: 2,
-  maximumDamage: 4,
+  maximumDamage: 5,
   damageType: "physical",
   attackDamageScaling: 0.50,
   abilityPowerScaling: 0,
