@@ -1,7 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 
-const GUARD_SIGIL_DEFENSE_BONUS = 1;
+const GUARD_SIGIL_DEFENSE_BONUS = 2;
 
 export const GUARD_SIGIL_CARD = {
   id: "card.commander-x.guard-sigil",
