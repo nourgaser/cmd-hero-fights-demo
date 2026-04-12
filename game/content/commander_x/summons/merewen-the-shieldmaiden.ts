@@ -5,7 +5,7 @@ import { KEYWORD_IDS } from "../../keywords";
 import { SUMMON_ENTITY_IDS } from "../constants";
 import type { CommanderXSummonedDefinition } from "./types";
 
-const MEREWEN_ADJACENT_HEAL_AMOUNT = 3;
+const MEREWEN_ADJACENT_HEAL_AMOUNT = 4;
 
 export const MEREWEN_THE_SHIELDMAIDEN_BLUEPRINT: SummonedEntityBlueprint = {
   kind: "companion",
