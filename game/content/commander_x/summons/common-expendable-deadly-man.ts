@@ -24,8 +24,8 @@ export const COMMON_EXPENDABLE_DEADLY_MAN_BLUEPRINT: SummonedEntityBlueprint = {
 export const COMMON_EXPENDABLE_DEADLY_MAN_ACTIVE: EntityActiveProfile = {
   kind: "attack",
   moveCost: 1,
-  minimumDamage: 1,
-  maximumDamage: 3,
+  minimumDamage: 2,
+  maximumDamage: 5,
   damageType: "physical",
   attackDamageScaling: 0.5,
   abilityPowerScaling: 0,
