@@ -29,8 +29,8 @@ export const SHAMANIC_TITANIUM_PUMMELER_BLUEPRINT: SummonedEntityBlueprint = {
 export const SHAMANIC_TITANIUM_PUMMELER_ACTIVE: EntityActiveProfile = {
   kind: "attack",
   moveCost: 1,
-  minimumDamage: 10,
-  maximumDamage: 20,
+  minimumDamage: 7,
+  maximumDamage: 18,
   damageType: "physical",
   attackDamageScaling: 1,
   abilityPowerScaling: 0,
