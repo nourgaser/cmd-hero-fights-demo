@@ -25,7 +25,7 @@ export const RIQUIER_THE_BEAR_ACTIVE: EntityActiveProfile = {
   kind: "attack",
   moveCost: 1,
   minimumDamage: 1,
-  maximumDamage: 5,
+  maximumDamage: 7,
   damageType: "physical",
   attackDamageScaling: 0.5,
   abilityPowerScaling: 0,
