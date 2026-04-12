@@ -3,7 +3,7 @@ import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 import { KEYWORD_IDS } from "../../keywords";
 
 const JAQUEMIN_FOLLOW_UP_MIN = 2;
-const JAQUEMIN_FOLLOW_UP_MAX = 4;
+const JAQUEMIN_FOLLOW_UP_MAX = 5;
 
 export const JAQUEMIN_PATROL_CARD = {
   id: "card.commander-x.jaquemin-patrol",
