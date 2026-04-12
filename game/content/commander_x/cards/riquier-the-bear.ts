@@ -3,7 +3,7 @@ import { COMMANDER_X_HERO_ID, SUMMON_ENTITY_IDS } from "../constants";
 import { KEYWORD_IDS } from "../../keywords";
 
 const RIQUIER_COUNTERATTACK_MIN = 1;
-const RIQUIER_COUNTERATTACK_MAX = 5;
+const RIQUIER_COUNTERATTACK_MAX = 7;
 
 export const RIQUIER_THE_BEAR_CARD = {
   id: "card.commander-x.riquier-the-bear",
