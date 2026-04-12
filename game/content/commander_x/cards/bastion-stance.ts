@@ -1,7 +1,7 @@
 import type { StrongCardDefinition } from "./types";
 import { COMMANDER_X_HERO_ID } from "../constants";
 
-const BASTION_STANCE_DEFENSE_BONUS = 2;
+const BASTION_STANCE_DEFENSE_BONUS = 3;
 
 export const BASTION_STANCE_CARD = {
   id: "card.commander-x.bastion-stance",
