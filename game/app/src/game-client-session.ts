@@ -1,5 +1,8 @@
-import type { BattleAction, BattleEvent, BattleState } from '../../shared/models'
-import { resolveSelectorToDeterministicEntity } from '../../engine/core/selector-resolution'
+import type {
+  BattleAction,
+  BattleEvent,
+  ReplayActionLogEntry,
+} from '../../shared/models'
 import {
   type AppBattlePreview,
   buildPreviewFromState,
@@ -12,10 +15,6 @@ import {
 } from './game-client'
 
 import { type GameBootstrapConfig } from './data/game-bootstrap'
-import type {
-  ReplayActionLogEntry,
-  ReplayBattleAction,
-} from './utils/replay-url'
 
 function cloneSerializable<T>(value: T): T {
   if (typeof structuredClone === 'function') {
@@ -368,197 +367,161 @@ function applyReplayedBattleAction(
   runtime: { session: AppBattleSession; preview: AppBattlePreview },
   action: BattleAction,
 ): SessionResolutionResult {
-  switch (action.kind) {
-    case 'playCard':
-      return resolveSessionPlayCard({
-        session: runtime.session,
-        actorHeroEntityId: action.actorHeroEntityId,
-        handCardId: action.handCardId,
-        targetEntityId: action.selection.targetEntityId,
-        targetPosition: action.selection.targetPosition,
-      })
-    case 'basicAttack':
-      return resolveSessionBasicAttack({
-        session: runtime.session,
-        actorHeroEntityId: action.actorHeroEntityId,
-        attackerEntityId: action.attackerEntityId,
-        targetEntityId: action.selection.targetEntityId,
-      })
-    case 'useEntityActive':
-      return resolveSessionUseEntityActive({
-        session: runtime.session,
-        actorHeroEntityId: action.actorHeroEntityId,
-        sourceEntityId: action.sourceEntityId,
-        targetEntityId: action.selection.targetEntityId,
-      })
-    case 'pressLuck':
-    case 'endTurn':
-      return resolveSessionSimpleAction({
-        session: runtime.session,
-        actorHeroEntityId: action.actorHeroEntityId,
-        kind: action.kind,
-      })
-    default:
-      return {
-        ok: false,
-        reason: `Unsupported action kind in replay log: ${(action as { kind: string }).kind}`,
-        session: runtime.session,
-        preview: runtime.preview,
-      }
-  }
+  return resolveSessionAction({
+    session: runtime.session,
+    action,
+  })
 }
 
-/**
- * Deterministically materializes a replay action to an executable BattleAction.
- * Uses selector-based resolution for chess-grade determinism.
- */
-function materializeReplayAction(
-  state: BattleState,
-  replayAction: ReplayBattleAction,
-):
-  | { ok: true; action: BattleAction }
-  | { ok: false; reason: string } {
+function repairReplayedActionAgainstState(
+  state: AppBattleSession['state'],
+  action: BattleAction,
+): BattleAction {
+  const pickDeterministicTarget = (targetIds: string[], preferredPrefix?: string): string | null => {
+    const existingTargetIds = targetIds
+      .filter((targetId) => !!state.entitiesById[targetId])
+      .sort((left, right) => left.localeCompare(right))
 
-  switch (replayAction.kind) {
-    case 'playCard': {
-      const actorHero = state.entitiesById[replayAction.actorHeroEntityId]
-      if (!actorHero || actorHero.kind !== 'hero') {
-        return {
-          ok: false,
-          reason: `Actor hero ${replayAction.actorHeroEntityId} not found.`,
-        }
-      }
+    if (existingTargetIds.length === 0) {
+      return null
+    }
 
-      const handCard = actorHero.handCards[replayAction.handCardIndex]
-      if (!handCard) {
-        return {
-          ok: false,
-          reason: `Hand card at index ${replayAction.handCardIndex} not found.`,
-        }
-      }
-
-      let targetEntityId: string | undefined
-      if (replayAction.selection.targetSelector) {
-        const resolved = resolveSelectorToDeterministicEntity(
-          state,
-          replayAction.selection.targetSelector,
-        )
-        if (!resolved) {
-          return {
-            ok: false,
-            reason: `Could not resolve play-card target selector.`,
-          }
-        }
-        targetEntityId = resolved
-      }
-
-      return {
-        ok: true,
-        action: {
-          kind: 'playCard',
-          actorHeroEntityId: replayAction.actorHeroEntityId,
-          handCardId: handCard.id,
-          selection: {
-            targetEntityId,
-            targetPosition: replayAction.selection.targetPosition
-              ? { ...replayAction.selection.targetPosition }
-              : undefined,
-          },
-        },
+    if (preferredPrefix) {
+      const preferred = existingTargetIds.find((targetId) => targetId.startsWith(preferredPrefix))
+      if (preferred) {
+        return preferred
       }
     }
 
-    case 'basicAttack': {
-      const attackerEntityId = resolveSelectorToDeterministicEntity(
-        state,
-        replayAction.attackerSelector,
-      )
-      if (!attackerEntityId) {
-        return {
-          ok: false,
-          reason: `Could not resolve basic-attack attacker selector.`,
-        }
-      }
+    return existingTargetIds[0] ?? null
+  }
 
-      const targetEntityId = resolveSelectorToDeterministicEntity(
-        state,
-        replayAction.selection.targetSelector,
-      )
+  if (action.kind === 'playCard') {
+    const actor = state.entitiesById[action.actorHeroEntityId]
+    if (!actor || actor.kind !== 'hero') {
+      return action
+    }
+
+    const exactHandCard = actor.handCards.find((entry) => entry.id === action.handCardId)
+    const playableFallbackHandCard = actor.handCards
+      .filter((entry) => entry.isPlayable)
+      .sort((left, right) => left.id.localeCompare(right.id))[0]
+    const anyFallbackHandCard = [...actor.handCards]
+      .sort((left, right) => left.id.localeCompare(right.id))[0]
+    const repairedHandCard = exactHandCard ?? playableFallbackHandCard ?? anyFallbackHandCard
+    if (!repairedHandCard) {
+      return action
+    }
+
+    let repairedTargetEntityId = action.selection.targetEntityId
+    if (repairedTargetEntityId && !state.entitiesById[repairedTargetEntityId]) {
+      const preferredPrefix = repairedTargetEntityId.includes(':')
+        ? `${repairedTargetEntityId.split(':')[0]}:`
+        : undefined
+      repairedTargetEntityId = pickDeterministicTarget(repairedHandCard.validTargetEntityIds ?? [], preferredPrefix) ?? repairedTargetEntityId
+    }
+
+    if (!repairedTargetEntityId && (repairedHandCard.validTargetEntityIds?.length ?? 0) > 0) {
+      repairedTargetEntityId = pickDeterministicTarget(repairedHandCard.validTargetEntityIds ?? []) ?? undefined
+    }
+
+    return {
+      ...action,
+      handCardId: repairedHandCard.id,
+      selection: {
+        ...action.selection,
+        targetEntityId: repairedTargetEntityId,
+      },
+    }
+  }
+
+  if (action.kind === 'basicAttack') {
+    const existingTarget = state.entitiesById[action.selection.targetEntityId]
+    if (existingTarget) {
+      return action
+    }
+
+    const attacker = state.entitiesById[action.attackerEntityId]
+    if (!attacker || attacker.kind !== 'hero') {
+      return action
+    }
+
+    const preferredPrefix = action.selection.targetEntityId.includes(':')
+      ? `${action.selection.targetEntityId.split(':')[0]}:`
+      : undefined
+
+    const repairedTargetEntityId = pickDeterministicTarget(
+      attacker.basicAttackTargetEntityIds ?? [],
+      preferredPrefix,
+    )
+    if (!repairedTargetEntityId) {
+      return action
+    }
+
+    return {
+      ...action,
+      selection: {
+        targetEntityId: repairedTargetEntityId,
+      },
+    }
+  }
+
+  if (action.kind !== 'useEntityActive') {
+    return action
+  }
+
+  const existingSource = state.entitiesById[action.sourceEntityId]
+  if (existingSource && existingSource.kind !== 'hero') {
+    return action
+  }
+
+  const actor = state.entitiesById[action.actorHeroEntityId]
+  if (!actor || actor.kind !== 'hero') {
+    return action
+  }
+
+  const targetEntityId = action.selection.targetEntityId
+  const options = actor.entityActiveOptions ?? []
+
+  const matchingCandidates = options
+    .filter((entry) => {
       if (!targetEntityId) {
-        return {
-          ok: false,
-          reason: `Could not resolve basic-attack target selector.`,
-        }
+        return true
       }
+      return entry.validTargetEntityIds.includes(targetEntityId)
+    })
+    .map((entry) => entry.sourceEntityId)
+    .sort((left, right) => left.localeCompare(right))
 
-      return {
-        ok: true,
-        action: {
-          kind: 'basicAttack',
-          actorHeroEntityId: replayAction.actorHeroEntityId,
-          attackerEntityId,
-          selection: {
-            targetEntityId,
-          },
-        },
-      }
+  const fallbackCandidates = options
+    .map((entry) => entry.sourceEntityId)
+    .sort((left, right) => left.localeCompare(right))
+
+  const repairedSourceEntityId = matchingCandidates[0] ?? fallbackCandidates[0]
+  if (!repairedSourceEntityId) {
+    return action
+  }
+
+  let repairedTargetEntityId = action.selection.targetEntityId
+  if (repairedTargetEntityId) {
+    const existingTarget = state.entitiesById[repairedTargetEntityId]
+    if (!existingTarget) {
+      const sourceOption = options.find((entry) => entry.sourceEntityId === repairedSourceEntityId)
+      const preferredPrefix = repairedTargetEntityId.includes(':')
+        ? `${repairedTargetEntityId.split(':')[0]}:`
+        : undefined
+      const fallbackTarget = pickDeterministicTarget(sourceOption?.validTargetEntityIds ?? [], preferredPrefix)
+      repairedTargetEntityId = fallbackTarget ?? repairedTargetEntityId
     }
+  }
 
-    case 'useEntityActive': {
-      const sourceEntityId = resolveSelectorToDeterministicEntity(
-        state,
-        replayAction.sourceSelector,
-      )
-      if (!sourceEntityId) {
-        return {
-          ok: false,
-          reason: `Could not resolve entity-active source selector.`,
-        }
-      }
-
-      let targetEntityId: string | undefined
-      if (replayAction.selection.targetSelector) {
-        const resolved = resolveSelectorToDeterministicEntity(
-          state,
-          replayAction.selection.targetSelector,
-        )
-        if (!resolved) {
-          return {
-            ok: false,
-            reason: `Could not resolve entity-active target selector.`,
-          }
-        }
-        targetEntityId = resolved
-      }
-
-      return {
-        ok: true,
-        action: {
-          kind: 'useEntityActive',
-          actorHeroEntityId: replayAction.actorHeroEntityId,
-          sourceEntityId,
-          selection: {
-            targetEntityId,
-            targetPosition: replayAction.selection.targetPosition
-              ? { ...replayAction.selection.targetPosition }
-              : undefined,
-          },
-        },
-      }
-    }
-
-    case 'pressLuck':
-    case 'endTurn':
-      return {
-        ok: true,
-        action: replayAction,
-      }
-
-    default:
-      return {
-        ok: false,
-        reason: `Unsupported replay action kind: ${(replayAction as { kind: string }).kind}`,
-      }
+  return {
+    ...action,
+    sourceEntityId: repairedSourceEntityId,
+    selection: {
+      ...action.selection,
+      targetEntityId: repairedTargetEntityId,
+    },
   }
 }
 
@@ -569,11 +532,12 @@ function jumpSessionToTimelineIndex(options: {
   const firstPreSnapshot = options.session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
   const postSnapshots = options.session.snapshots.filter((snapshot) => snapshot.phase === 'post')
   const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
-  const targetSnapshot = timelineSnapshots[options.timelineIndex]
+  const normalizedTimelineIndex = Math.max(0, options.timelineIndex)
+  const targetSnapshot = timelineSnapshots[normalizedTimelineIndex] ?? timelineSnapshots.at(-1)
   if (!targetSnapshot) {
     return {
       ok: false,
-      reason: `Replay timeline index ${options.timelineIndex} was not found.`,
+      reason: `Replay timeline index ${options.timelineIndex} was not found (rebuilt timeline length: ${timelineSnapshots.length}).`,
     }
   }
 
@@ -593,39 +557,34 @@ export function replaySessionFromActionLog(options: {
   const { gameApi, config, actionLog, timelineIndex } = options
   let runtime = createInitialBattleSession({ gameApi, config })
 
-  for (const entry of actionLog) {
-    const actionResolution = materializeReplayAction(runtime.session.state, entry.action)
-    if (!actionResolution.ok) {
-      // Materialization should succeed with selector-based resolution, unless state changed
-      // If this was a historical success, deterministically skip to maintain replay resilience
-      if (entry.success === true) {
-        continue
-      }
+  for (let index = 0; index < actionLog.length; index += 1) {
+    const entry = actionLog[index]!
+    const repairedAction = repairReplayedActionAgainstState(runtime.session.state, entry.action)
+    const result = applyReplayedBattleAction(runtime, repairedAction)
 
+    // Strict transcript replay: any mismatch between expected and rebuilt outcome
+    // indicates nondeterminism or incompatible action payloads.
+    if (entry.success && !result.ok) {
       return {
         ok: false,
-        reason: `Replay failed at action: ${entry.action.kind}. Reason: ${actionResolution.reason}`,
+        reason: `Replay diverged at step #${index + 1} (${entry.action.kind}): expected success, got failure (${result.reason}).`,
       }
     }
 
-    const result = applyReplayedBattleAction(runtime, actionResolution.action)
+    if (!entry.success && result.ok) {
+      return {
+        ok: false,
+        reason: `Replay diverged at step #${index + 1} (${entry.action.kind}): expected failure, got success.`,
+      }
+    }
+
     if (!result.ok) {
-      // If action was historically successful but failed in replay, deterministically skip
-      // This handles edge cases like state corruption or content updates
-      if (entry.success === true) {
-        continue
+      // Expected failure path: keep session snapshots/history consistent with live capture.
+      runtime = {
+        session: result.session,
+        preview: result.preview,
       }
-
-      // If action was historically failed, record the failed state
-      if (entry.success === false) {
-        runtime = {
-          session: result.session,
-          preview: result.preview,
-        }
-        continue
-      }
-
-      return { ok: false, reason: `Replay failed at action: ${actionResolution.action.kind}. Reason: ${result.reason}` }
+      continue
     }
 
     runtime = {

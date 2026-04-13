@@ -1,5 +1,11 @@
 import type { BattleAction, BattleEvent, BattleState } from '../../shared/models'
-import type { BattleRng, resolveAction, createBattle, resolveEffectiveNumber, GAME_CONTENT_REGISTRY } from '../../api'
+import type {
+  BattleRng,
+  resolveAction,
+  createBattle,
+  resolveEffectiveNumber,
+  GAME_CONTENT_REGISTRY,
+} from '../../api'
 
 export type {
   AppBattlePreview,

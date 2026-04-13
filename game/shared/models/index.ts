@@ -12,3 +12,4 @@ export * from "./number-explanation";
 export * from "./number-modifier";
 export * from "./passive-rule";
 export * from "./position";
+export * from "./replay-action";

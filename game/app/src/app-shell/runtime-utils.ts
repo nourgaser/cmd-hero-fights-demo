@@ -14,11 +14,8 @@ import {
   resolveEffectiveNumber,
   GAME_CONTENT_REGISTRY,
 } from '../../../api'
-import { createSelectorForEntity } from '../../../engine/core/selector-resolution'
-import type { BattleAction, BattleState } from '../../../shared/models'
+import type { ReplayActionLogEntry } from '../../../shared/models'
 import type {
-  ReplayActionLogEntry,
-  ReplayBattleAction,
   ReplayUrlPayload,
 } from '../utils/replay-url'
 
@@ -111,81 +108,25 @@ export function getReplayPayloadTimelineIndex(session: AppBattleSession): number
   return timelineIndex >= 0 ? timelineIndex : null
 }
 
-function createReplayHandCardReference(
-  state: BattleState,
-  actorHeroEntityId: string,
-  handCardId: string,
-): number {
-  const actorHero = state.entitiesById[actorHeroEntityId]
-  if (!actorHero || actorHero.kind !== 'hero') {
-    return -1
-  }
-
-  const handCardIndex = actorHero.handCards.findIndex((entry) => entry.id === handCardId)
-  return handCardIndex >= 0 ? handCardIndex : -1
-}
-
-function serializeReplayAction(state: BattleState, action: BattleAction): ReplayBattleAction {
-  switch (action.kind) {
-    case 'playCard': {
-      const handCardIndex = createReplayHandCardReference(state, action.actorHeroEntityId, action.handCardId)
-      return {
-        kind: 'playCard',
-        actorHeroEntityId: action.actorHeroEntityId,
-        handCardIndex,
-        selection: {
-          targetSelector: action.selection.targetEntityId
-            ? createSelectorForEntity(state, action.selection.targetEntityId) || undefined
-            : undefined,
-          targetPosition: action.selection.targetPosition ? { ...action.selection.targetPosition } : undefined,
-        },
-      }
-    }
-    case 'basicAttack': {
-      const attackerSelector = createSelectorForEntity(state, action.attackerEntityId)
-      const targetSelector = createSelectorForEntity(state, action.selection.targetEntityId)
-      return {
-        kind: 'basicAttack',
-        actorHeroEntityId: action.actorHeroEntityId,
-        attackerSelector: attackerSelector || { type: 'self' },
-        selection: {
-          targetSelector: targetSelector || { type: 'self' },
-        },
-      }
-    }
-    case 'useEntityActive': {
-      const sourceSelector = createSelectorForEntity(state, action.sourceEntityId)
-      return {
-        kind: 'useEntityActive',
-        actorHeroEntityId: action.actorHeroEntityId,
-        sourceSelector: sourceSelector || { type: 'self' },
-        selection: {
-          targetSelector: action.selection.targetEntityId
-            ? createSelectorForEntity(state, action.selection.targetEntityId) || undefined
-            : undefined,
-          targetPosition: action.selection.targetPosition ? { ...action.selection.targetPosition } : undefined,
-        },
-      }
-    }
-    case 'pressLuck':
-    case 'endTurn':
-      return action
-    default:
-      return action
-  }
-}
-
 export function createActionLogFromSession(
   session: AppBattleSession,
 ): ReplayActionLogEntry[] {
-  return session.history.map((entry) => {
+  return session.history.map((entry, index) => {
     const preSnapshot = session.snapshots.find((s) => s.id === entry.preSnapshotId)
     if (!preSnapshot) {
       throw new Error(`Missing pre-snapshot ${entry.preSnapshotId} while rebuilding replay log.`)
     }
 
+    // Reject malformed transcript actions before they are encoded into replay URLs.
+    if (preSnapshot.action.kind === 'useEntityActive') {
+      const source = preSnapshot.state.entitiesById[preSnapshot.action.sourceEntityId]
+      if (!source || source.kind === 'hero') {
+        throw new Error(`Invalid replay action at step #${index + 1}: useEntityActive source must be a summoned entity.`)
+      }
+    }
+
     return {
-      action: serializeReplayAction(preSnapshot.state, preSnapshot.action),
+      action: preSnapshot.action,
       success: entry.success,
     }
   })

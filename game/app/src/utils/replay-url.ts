@@ -1,62 +1,12 @@
-import type { Position, TargetSelector } from '../../../shared/models'
+import { BattleActionSchema, type ReplayActionLogEntry } from '../../../shared/models'
 import { deflateSync, inflateSync } from 'fflate'
 import type { GameBootstrapConfig } from '../data/game-bootstrap'
-
-export type ReplayActionSelection = {
-  targetSelector?: TargetSelector
-  targetPosition?: Position
-}
-
-export type ReplayPlayCardAction = {
-  kind: 'playCard'
-  actorHeroEntityId: string
-  handCardIndex: number
-  selection: ReplayActionSelection
-}
-
-export type ReplayBasicAttackAction = {
-  kind: 'basicAttack'
-  actorHeroEntityId: string
-  attackerSelector: TargetSelector
-  selection: {
-    targetSelector: TargetSelector
-  }
-}
-
-export type ReplayUseEntityActiveAction = {
-  kind: 'useEntityActive'
-  actorHeroEntityId: string
-  sourceSelector: TargetSelector
-  selection: ReplayActionSelection
-}
-
-export type ReplayPressLuckAction = {
-  kind: 'pressLuck'
-  actorHeroEntityId: string
-}
-
-export type ReplayEndTurnAction = {
-  kind: 'endTurn'
-  actorHeroEntityId: string
-}
-
-export type ReplayBattleAction =
-  | ReplayPlayCardAction
-  | ReplayBasicAttackAction
-  | ReplayUseEntityActiveAction
-  | ReplayPressLuckAction
-  | ReplayEndTurnAction
-
-export type ReplayActionLogEntry = {
-  action: ReplayBattleAction
-  success: boolean
-}
 
 const REPLAY_PARAM_KEY = 'replay'
 type ReplayHistoryMode = 'push' | 'replace'
 
 export type ReplayUrlPayload = {
-  version: 3
+  version: 4
   bootstrapConfig: GameBootstrapConfig
   actionLog: ReplayActionLogEntry[]
   timelineIndex: number | null
@@ -90,16 +40,25 @@ export function createReplayUrlPayload(options: {
   actionLog: ReplayActionLogEntry[]
   timelineIndex: number | null
 }): ReplayUrlPayload {
+  const validatedActionLog: ReplayActionLogEntry[] = options.actionLog.map((entry, index) => {
+    const parsedAction = BattleActionSchema.safeParse(entry.action)
+    if (!parsedAction.success) {
+      throw new Error(`Invalid replay action at step #${index + 1}.`)
+    }
+
+    return {
+      action: parsedAction.data,
+      success: entry.success,
+    }
+  })
+
   return {
-    version: 3,
+    version: 4,
     bootstrapConfig: {
       ...options.bootstrapConfig,
       seed: options.seed,
     },
-    actionLog: options.actionLog.map((entry) => ({
-      action: entry.action,
-      success: entry.success,
-    })),
+    actionLog: validatedActionLog,
     timelineIndex: options.timelineIndex,
   }
 }
@@ -115,10 +74,37 @@ export function decodeReplayUrlPayload(encoded: string): ReplayUrlPayload | null
     const compressed = base64UrlDecodeBytes(encoded)
     const decompressed = inflateSync(compressed)
     const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload
-    if (parsed.version !== 3 || !Array.isArray(parsed.actionLog)) {
+    if (parsed.version !== 4 || !Array.isArray(parsed.actionLog)) {
       return null
     }
-    return parsed
+
+    const validatedActionLog: ReplayActionLogEntry[] = []
+    for (let index = 0; index < parsed.actionLog.length; index += 1) {
+      const rawEntry = parsed.actionLog[index]
+      if (!rawEntry || typeof rawEntry !== 'object') {
+        return null
+      }
+
+      const entry = rawEntry as Partial<ReplayActionLogEntry>
+      if (typeof entry.success !== 'boolean') {
+        return null
+      }
+
+      const parsedAction = BattleActionSchema.safeParse(entry.action)
+      if (!parsedAction.success) {
+        return null
+      }
+
+      validatedActionLog.push({
+        action: parsedAction.data,
+        success: entry.success,
+      })
+    }
+
+    return {
+      ...parsed,
+      actionLog: validatedActionLog,
+    }
   } catch {
     return null
   }
