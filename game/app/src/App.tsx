@@ -138,6 +138,7 @@ function App() {
   const activeActionSnapshot = activeActionSnapshotId !== null ? actionTimelineSnapshots.find((s) => s.id === activeActionSnapshotId) ?? null : null
   const activeActionSnapshotIndex = activeActionSnapshotId !== null ? actionTimelineSnapshots.findIndex((s) => s.id === activeActionSnapshotId) : -1
   const canAdvanceReplay = activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1
+  const playerFacingHistoryCount = runtime?.session.history.length ?? 0
 
   const handleCopyReplayPayload = useCallback(async () => {
     if (!runtime) return
@@ -335,15 +336,15 @@ function App() {
         <button className="history-icon-button" type="button" aria-label="Branch" title="Branch (B)" onClick={() => handleBranchFromSnapshot(activeActionSnapshotId)} disabled={!activeActionSnapshotId}>{renderHistoryControlIcon('branch')}</button>
         <button className="history-icon-button" type="button" aria-label="Copy" title="Copy (C)" onClick={() => void handleCopyReplayPayload()}>{renderHistoryControlIcon('copy')}</button>
         <button className="history-icon-button" type="button" aria-label="Validate" title="Validate (V)" onClick={handleValidateReplayDeterminism}>{renderHistoryControlIcon('validate')}</button>
-        <span className="history-snapshot-active-label">Active: {activeActionSnapshot ? (activeActionSnapshot.phase === 'pre' ? 'Start' : `#${activeActionSnapshot.id}`) : 'none'}</span>
+        <span className="history-snapshot-active-label">Active: {activeActionSnapshot ? (activeActionSnapshot.phase === 'pre' ? 'Start' : `#${activeActionSnapshotIndex}`) : 'none'}</span>
       </>
     )
   }
 
   const renderTimelineSnapshotList = () => (
-    <ul ref={replayTimelineListRef} className="snapshot-list" aria-label="Action timeline">
-      {actionTimelineSnapshots.map((s) => (
-        <li key={s.id}><button type="button" className={`snapshot-chip ${s.id === activeActionSnapshotId ? 'snapshot-chip-active' : ''}`} data-snapshot-id={s.id} onClick={() => handleJumpToSnapshot(s.id)}>{s.phase === 'pre' ? `Start T${s.turnNumber}` : `#${s.id} T${s.turnNumber} ${s.actionKind}`}</button></li>
+      <ul ref={replayTimelineListRef} className="snapshot-list" aria-label="Action timeline">
+      {actionTimelineSnapshots.map((s, index) => (
+        <li key={s.id}><button type="button" className={`snapshot-chip ${s.id === activeActionSnapshotId ? 'snapshot-chip-active' : ''}`} data-snapshot-id={s.id} onClick={() => handleJumpToSnapshot(s.id)}>{s.phase === 'pre' ? `Start T${s.turnNumber}` : `#${index} T${s.turnNumber} ${s.actionKind}`}</button></li>
       ))}
     </ul>
   )
@@ -352,7 +353,7 @@ function App() {
     <>
       <Toaster position="top-center" gutter={12} reverseOrder toastOptions={{ className: 'game-toast', duration: ACTION_TOAST_DURATION_MS }} />
       <div key={`announcement-${liveAnnouncement.id}`} className="sr-only" aria-live="polite" aria-atomic="true">{liveAnnouncement.text}</div>
-      <button type="button" className="history-button" onClick={() => setIsHistoryModalOpen(true)} aria-haspopup="dialog" aria-expanded={isHistoryModalOpen || isReplayModeOpen}>History ({snapshots.length})</button>
+      <button type="button" className="history-button" onClick={() => setIsHistoryModalOpen(true)} aria-haspopup="dialog" aria-expanded={isHistoryModalOpen || isReplayModeOpen}>History ({playerFacingHistoryCount})</button>
       <button type="button" className={`history-button settings-launch-button ${isSettingsPanelOpen ? 'settings-launch-button-active' : ''}`} onClick={() => setIsSettingsPanelOpen((c) => !c)} aria-haspopup="dialog" aria-expanded={isSettingsPanelOpen} title="Toggle settings (S)">Settings</button>
       <button type="button" className="history-button shortlink-launch-button" onClick={() => void handleCopyShortlink()} title="Copy shortlink">Copy Shortlink</button>
       {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-a ${isAutoPlayAEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayAEnabled((c) => !c)} aria-pressed={isAutoPlayAEnabled} title={`Auto-play A (${autoPlayDelayMs}ms)`}>Auto Play A</button>}
@@ -427,4 +428,3 @@ function App() {
 }
 
 export default App
-

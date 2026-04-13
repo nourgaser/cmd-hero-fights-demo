@@ -149,6 +149,7 @@
 }
 
 .battle-slot.target-selected {
+  z-index: var(--layer-tooltip-popover);
   box-shadow:
     inset 0 0 0 2px color-mix(in srgb, #ffffff 72%, #ff6a6a 28%),
     0 0 0 3px color-mix(in srgb, #ff5a5a 70%, transparent),
@@ -263,6 +264,7 @@
 }
 
 .battle-slot.placement-selected {
+  z-index: var(--layer-tooltip-popover);
   box-shadow:
     inset 0 0 0 2px color-mix(in srgb, #8c7a4a 80%, transparent),
     0 0 0 3px color-mix(in srgb, #f0cb58 65%, transparent);

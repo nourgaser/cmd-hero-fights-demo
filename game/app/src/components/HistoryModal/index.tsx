@@ -30,7 +30,14 @@ export function HistoryModal(props: HistoryModalProps) {
 
   if (!isOpen) return null
 
-  const renderHistoryRow = (entry: AppActionHistoryEntry) => {
+  const activeHistoryLength = history.filter((entry) => {
+    if (activeActionSnapshotId === null) {
+      return true
+    }
+    return entry.postSnapshotId <= activeActionSnapshotId
+  }).length
+
+  const renderHistoryRow = (entry: AppActionHistoryEntry, index: number) => {
     return (
       <li key={entry.id} className={`history-entry ${entry.success ? 'history-entry-success' : 'history-entry-failure'}`}>
         <div className="history-entry-head">
@@ -40,9 +47,9 @@ export function HistoryModal(props: HistoryModalProps) {
         </div>
         <p className="history-entry-message">{entry.resultMessage}</p>
         <div className="history-entry-meta">
+          <span>Step: #{activeHistoryLength - index}</span>
           <span>Actor: {entry.actorHeroEntityId}</span>
           <span>Events: {entry.eventCount}</span>
-          <span>Checkpoint: #{entry.postSnapshotId}</span>
         </div>
       </li>
     )
