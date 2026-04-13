@@ -81,6 +81,25 @@ export function getReplayModeActiveSnapshot(session: AppBattleSession): AppBattl
   return session.snapshots.find((s) => s.id === session.activeSnapshotId) ?? null
 }
 
+export function getReplayPayloadSnapshotId(session: AppBattleSession): number | null {
+  const postSnapshots = session.snapshots.filter((snapshot) => snapshot.phase === 'post')
+  const firstPreSnapshot = session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
+  const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
+  const latestActionSnapshotId = timelineSnapshots.at(-1)?.id ?? null
+  const currentSnapshotId = session.activeSnapshotId ?? latestActionSnapshotId
+  const currentSnapshot = currentSnapshotId !== null
+    ? session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
+    : null
+
+  if (!currentSnapshot) {
+    return null
+  }
+
+  return currentSnapshot.phase === 'pre'
+    ? timelineSnapshots[0]?.id ?? null
+    : currentSnapshot.id
+}
+
 export function createActionLogFromSession(
   session: AppBattleSession,
 ): Array<{ action: BattleAction; success: boolean }> {

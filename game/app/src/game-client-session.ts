@@ -414,7 +414,7 @@ export function replaySessionFromActionLog(options: {
     }
 
     if (!result.ok) {
-      if (!entry.success) {
+      if (entry.success === false) {
         runtime = {
           session: result.session,
           preview: result.preview,

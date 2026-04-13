@@ -9,6 +9,7 @@ import {
   createActionLogFromSession,
   createRuntimeFromConfig,
   createRuntimeFromReplayPayload,
+  getReplayPayloadSnapshotId,
   getReplayModeActiveSnapshot,
 } from './runtime-utils'
 import {
@@ -87,7 +88,7 @@ export function useReplayHistory(options: {
       bootstrapConfig,
       seed: runtime.session.state.seed,
       actionLog,
-      snapshotId: runtime.session.activeSnapshotId,
+      snapshotId: getReplayPayloadSnapshotId(runtime.session),
     })
     if (!hasSyncedReplayHistoryRef.current) {
       const baseState = createReplayHistoryState('base')
@@ -167,7 +168,7 @@ export function useReplayHistory(options: {
             bootstrapConfig,
             seed: nextRuntime.session.state.seed,
             actionLog: createActionLogFromSession(nextRuntime.session),
-            snapshotId: nextRuntime.session.activeSnapshotId,
+            snapshotId: getReplayPayloadSnapshotId(nextRuntime.session),
           }), {
             historyMode: 'push',
             historyState: guardState,

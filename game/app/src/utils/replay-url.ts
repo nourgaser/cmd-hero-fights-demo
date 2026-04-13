@@ -1,7 +1,7 @@
 import type { BattleAction } from '../../../shared/models'
 import { deflateSync, inflateSync } from 'fflate'
 import type { GameBootstrapConfig } from '../data/game-bootstrap'
-export type AppReplayActionLogEntry = { action: BattleAction }
+export type AppReplayActionLogEntry = { action: BattleAction; success?: boolean }
 
 
 const REPLAY_PARAM_KEY = 'replay'
@@ -52,6 +52,7 @@ export function createReplayUrlPayload(options: {
     },
     actionLog: options.actionLog.map((entry) => ({
       action: entry.action as BattleAction,
+      success: entry.success,
     })),
     snapshotId: options.snapshotId,
   }
