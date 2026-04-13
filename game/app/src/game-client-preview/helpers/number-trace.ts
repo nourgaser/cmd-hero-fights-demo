@@ -24,14 +24,18 @@ export function resolveNumberTrace(options: {
     const delta = modifier.operation === 'add' ? modifier.value : -modifier.value
     bonusValue += delta
     contributions.push({
-      sourceId: (modifier as any).modifierId ?? modifier.id,
+      sourceId: modifier.id,
       label: modifier.label,
       delta,
     })
   }
 
   for (const rule of state.activePassiveRules) {
-    const isTarget = (rule.targetSelector as any) === 'sourceEntity' ? (rule.source as any).sourceEntityId === targetEntityId : false
+    if (rule.targetSelector !== 'sourceEntity' || rule.source.kind !== 'sourceEntity') {
+      continue
+    }
+
+    const isTarget = rule.source.sourceEntityId === targetEntityId
     if (!isTarget) continue
 
     for (const op of rule.operations) {

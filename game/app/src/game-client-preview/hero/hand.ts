@@ -10,7 +10,7 @@ import {
   resolveSummonPreviewForCard,
 } from '../helpers'
 import type { AppBattleApi } from '../../game-client'
-import type { BattleState, HeroEntityState } from '../../../../shared/models'
+import type { BattleState } from '../../../../shared/models'
 
 export function buildHeroHandCounts(options: {
   gameApi: AppBattleApi
@@ -19,7 +19,7 @@ export function buildHeroHandCounts(options: {
   const { gameApi, state } = options
 
   return (state.heroEntityIds as string[]).map((heroEntityId) => {
-    const entity = state.entitiesById[heroEntityId] as HeroEntityState
+    const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
@@ -55,7 +55,7 @@ export function buildHeroHands(options: {
   const cardsById = gameApi.GAME_CONTENT_REGISTRY.cardsById
 
   return (state.heroEntityIds as string[]).map((heroEntityId) => {
-    const entity = state.entitiesById[heroEntityId] as HeroEntityState
+    const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
@@ -139,7 +139,7 @@ export function buildHeroHands(options: {
           rarity: cardDef.rarity,
           keywords,
           ...describeNumericCardText({
-            card: cardDef as any,
+            card: cardDef,
             actorHero: entity,
             actorNumberTraces: {
               attackDamage: actorAttackDamageTrace,

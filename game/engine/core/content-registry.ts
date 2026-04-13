@@ -1,6 +1,7 @@
 import type {
   CardDefinition,
   HeroDefinition,
+  KeywordDefinition,
   ListenerDefinition,
   EntityFootprint,
 } from "../../shared/models";
@@ -10,7 +11,7 @@ import type { EntityActiveProfile } from "../actions/resolve-use-entity-active";
 export interface ContentRegistry {
   readonly heroesById: Readonly<Record<string, HeroDefinition>>;
   readonly cardsById: Readonly<Record<string, CardDefinition>>;
-  readonly keywordsById: Readonly<Record<string, any>>;
+  readonly keywordsById: Readonly<Record<string, KeywordDefinition>>;
 
   resolveSummonedEntityBlueprint(
     entityDefinitionId: string,

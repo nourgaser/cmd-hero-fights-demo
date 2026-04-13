@@ -13,25 +13,12 @@ import {
 } from './number-trace'
 import { summarizeLuckAdjustedRange } from './attack-summary'
 import type { AppBattleApi } from '../../game-client'
-import type { BattleState } from '../../../../shared/models'
+import type { BattleState, CardDefinition } from '../../../../shared/models'
 
 type PreviewBattleState = BattleState;
 
 export function describeNumericCardText(options: {
-  card: {
-    name: string
-    summaryText?: {
-      template?: string
-      params?: Record<string, string | number | boolean | undefined>
-    }
-    effects: Array<{
-      payload: { kind: string } & Record<string, unknown>
-      displayText: {
-        template?: string
-        params?: Record<string, string | number | boolean | undefined>
-      }
-    }>
-  }
+  card: Pick<CardDefinition, 'name' | 'summaryText' | 'effects'>
   actorHero: {
     entityId: string
     attackDamage: number

@@ -4,7 +4,7 @@ import {
 } from './card-summary'
 import { resolveNumberTrace } from './number-trace'
 import type { AppBattleApi } from '../../game-client'
-import type { BattleState } from '../../../../shared/models'
+import type { BattleState, CardDefinition } from '../../../../shared/models'
 
 export function buildSummonPreview(options: {
   gameApi: AppBattleApi
@@ -54,8 +54,8 @@ export function buildSummonPreview(options: {
   const passiveText = describeNumericCardText({
     card: {
       name: summonedBlueprint.definitionCardId,
-      effects: [], // Summary doesn't need full effects here
-    },
+      effects: [],
+    } satisfies Pick<CardDefinition, 'name' | 'effects'>,
     actorHero: {
       entityId: tempEntityId,
       attackDamage: attackDamageTrace.effective,

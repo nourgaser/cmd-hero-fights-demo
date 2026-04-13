@@ -13,6 +13,7 @@ import {
   resolveAction,
   GAME_CONTENT_REGISTRY,
 } from '../../../api'
+import type { BattleAction } from '../../../shared/models'
 
 import type { GameBootstrapConfig } from '../data/game-bootstrap'
 
@@ -25,7 +26,7 @@ export type ReplayNavigationDirection = -1 | 1
 
 export function createRuntimeFromReplayPayload(replayPayload: {
   bootstrapConfig: GameBootstrapConfig
-  actionLog: Array<{ action: any; success?: boolean }>
+  actionLog: Array<{ action: BattleAction; success?: boolean }>
   snapshotId: number | null
 }): AppRuntime {
   const gameApi = {
@@ -79,11 +80,15 @@ export function getReplayModeActiveSnapshot(session: AppBattleSession): AppBattl
 
 export function createActionLogFromSession(
   session: AppBattleSession,
-): Array<{ action: any; success: boolean }> {
+): Array<{ action: BattleAction; success: boolean }> {
   return session.history.map((entry) => {
     const preSnapshot = session.snapshots.find((s) => s.id === entry.preSnapshotId)
+    if (!preSnapshot) {
+      throw new Error(`Missing pre-snapshot ${entry.preSnapshotId} while rebuilding replay log.`)
+    }
+
     return {
-      action: preSnapshot?.action ?? { kind: entry.actionKind } as any,
+      action: preSnapshot.action,
       success: entry.success,
     }
   })

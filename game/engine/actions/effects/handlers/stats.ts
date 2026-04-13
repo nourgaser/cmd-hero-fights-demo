@@ -70,7 +70,13 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
   const sourceEntityId: string = resolvedSourceEntityId;
 
   if (duration === "untilSourceRemoved") {
-    const operation: any = {
+    const operation: {
+      propertyPath: string;
+      operation: "add";
+      value?: number;
+      valueFromSourceStat?: string;
+      valueFromSourceSelector?: "sourceEntity" | "sourceOwnerHero" | "selfHero";
+    } = {
       propertyPath,
       operation: "add" as const,
     };
@@ -109,7 +115,9 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
           state,
           targetEntityId: sourceEntityId,
           propertyPath: payload.amountFromSourceStat,
-          baseValue: (sourceEntity as any)[payload.amountFromSourceStat] ?? 0,
+          baseValue: typeof (sourceEntity as Record<string, unknown>)[payload.amountFromSourceStat] === 'number'
+            ? (sourceEntity as Record<string, unknown>)[payload.amountFromSourceStat] as number
+            : 0,
           clampMin: 0,
         }).effectiveValue;
 

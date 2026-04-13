@@ -63,7 +63,7 @@ export function executePlayCardEffects(options: {
     if (!actorResolution.ok) {
       return {
         ok: false,
-        reason: (actorResolution as any).reason,
+        reason: actorResolution.reason,
       };
     }
 

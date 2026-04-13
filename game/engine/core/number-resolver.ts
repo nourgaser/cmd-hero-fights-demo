@@ -333,12 +333,14 @@ function applyNumericOperation(
         if (!selectedSourceEntity) {
           operandValue = 0;
         } else {
-        // Resolve the source entity's stat value
+          // Resolve the source entity's stat value.
+          const sourceEntityRecord = selectedSourceEntity as Record<string, unknown>;
+          const sourceStatValue = sourceEntityRecord[op.valueFromSourceStat]
           const resolved = resolveEffectiveNumber({
             state: context.state,
             targetEntityId: selectedSourceEntityId,
             propertyPath: op.valueFromSourceStat,
-            baseValue: (selectedSourceEntity as any)[op.valueFromSourceStat] ?? 0,
+            baseValue: typeof sourceStatValue === 'number' ? sourceStatValue : 0,
             clampMin: 0,
           });
           operandValue = resolved.effectiveValue;

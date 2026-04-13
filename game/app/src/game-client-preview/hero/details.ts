@@ -3,7 +3,7 @@ import { buildAuraGroups } from './details/auras'
 import { buildHeroBasicAttackContext } from './details/basic-attack'
 import { buildHeroPassivePackage } from './details/passives'
 import type { AppBattleApi } from '../../game-client'
-import type { BattleState, HeroEntityState } from '../../../../shared/models'
+import type { BattleState } from '../../../../shared/models'
 
 export function buildHeroDetailsByEntityId(options: {
   gameApi: AppBattleApi
@@ -17,7 +17,7 @@ export function buildHeroDetailsByEntityId(options: {
   const heroDetailsByEntityId: AppBattlePreview['heroDetailsByEntityId'] = {}
 
   for (const heroEntityId of state.heroEntityIds as string[]) {
-    const entity = state.entitiesById[heroEntityId] as HeroEntityState
+    const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)

@@ -20,9 +20,7 @@ import {
   resolvePermanentLayerValue,
 } from './helpers'
 import type { AppBattleApi } from '../game-client'
-import type { BattleState, HeroEntityState } from '../../../shared/models'
-
-type NonHeroEntityState = { kind: 'companion' | 'weapon' | 'totem'; entityId: string; ownerHeroEntityId: string; definitionCardId: string; currentHealth: number; maxHealth: number; armor: number; magicResist: number; attackDamage: number; abilityPower: number; criticalChance: number; criticalMultiplier: number; remainingMoves?: number; maxMovesPerTurn?: number; keywordIds?: string[]; dodgeChance: number; sourceCardDefinitionId?: string }
+import type { BattleState } from '../../../shared/models'
 
 
 export function buildBattlefieldPreview(options: {
@@ -117,7 +115,7 @@ export function buildBattlefieldPreview(options: {
       state,
       targetEntityId: entity.entityId,
       propertyPath: 'moveCapacity',
-      baseValue: entity.kind === 'hero' ? (entity as HeroEntityState).maxMovePoints : (entity as NonHeroEntityState).maxMovesPerTurn ?? 0,
+      baseValue: entity.kind === 'hero' ? entity.maxMovePoints : entity.maxMovesPerTurn,
       clampMin: 0,
     })
     const attackDamagePermanent = resolvePermanentLayerValue({
@@ -159,7 +157,7 @@ export function buildBattlefieldPreview(options: {
       state,
       targetEntityId: entity.entityId,
       propertyPath: 'moveCapacity',
-      baseValue: entity.kind === 'hero' ? (entity as HeroEntityState).maxMovePoints : (entity as NonHeroEntityState).maxMovesPerTurn ?? 0,
+      baseValue: entity.kind === 'hero' ? entity.maxMovePoints : entity.maxMovesPerTurn,
       clampMin: 0,
     })
     const statLayers = {
@@ -192,13 +190,12 @@ export function buildBattlefieldPreview(options: {
     const effectiveDodgeChance = Math.max(0, Math.min(1, dodgeChanceTrace.effective + dodgeChanceLuckDelta))
 
     if (entity.kind === 'hero') {
-      const hero = entity as HeroEntityState
-      const heroDef = heroesById[hero.heroDefinitionId]
-      battlefieldEntities[hero.entityId] = {
-        entityId: hero.entityId,
+      const heroDef = heroesById[entity.heroDefinitionId]
+      battlefieldEntities[entity.entityId] = {
+        entityId: entity.entityId,
         kind: 'hero',
-        ownerHeroEntityId: hero.entityId,
-        displayName: heroDef?.name ?? hero.heroDefinitionId,
+        ownerHeroEntityId: entity.entityId,
+        displayName: heroDef?.name ?? entity.heroDefinitionId,
         sourceCardDefinitionId: null,
         sourceCardName: null,
         sourceCardSummary: null,
@@ -207,8 +204,8 @@ export function buildBattlefieldPreview(options: {
         sourceCardKeywords: [],
         activeListeners: [],
         isTaunt: false,
-        currentHealth: hero.currentHealth,
-        maxHealth: hero.maxHealth,
+        currentHealth: entity.currentHealth,
+        maxHealth: entity.maxHealth,
         armor: armorTrace.effective,
         magicResist: magicResistTrace.effective,
         attackDamage: attackDamageTrace.effective,
@@ -225,20 +222,20 @@ export function buildBattlefieldPreview(options: {
           dodgeChance: dodgeChanceTrace,
           moveCapacity: moveCapacityTrace,
         },
-        criticalChance: hero.criticalChance,
+        criticalChance: entity.criticalChance,
         effectiveCriticalChance,
         criticalChanceLuckDelta,
-        criticalMultiplier: hero.criticalMultiplier,
+        criticalMultiplier: entity.criticalMultiplier,
         dodgeChance: dodgeChanceTrace.effective,
         effectiveDodgeChance,
         dodgeChanceLuckDelta,
-        movePoints: hero.movePoints,
-        maxMovePoints: hero.maxMovePoints,
+        movePoints: entity.movePoints,
+        maxMovePoints: entity.maxMovePoints,
       }
       continue
     }
 
-    const summoned = entity as NonHeroEntityState
+    const summoned = entity
     const sourceCard = cardsById[summoned.definitionCardId]
     const sourceCardKeywordReferences = (sourceCard as {
       keywords?: Array<{
@@ -276,7 +273,7 @@ export function buildBattlefieldPreview(options: {
       )
     const sourceCardText = sourceCard
       ? describeNumericCardText({
-          card: sourceCard as any,
+          card: sourceCard,
           actorHero: summoned,
           actorNumberTraces: {
             attackDamage: attackDamageTrace,
@@ -360,8 +357,8 @@ export function buildBattlefieldPreview(options: {
       dodgeChance: dodgeChanceTrace.effective,
       effectiveDodgeChance,
       dodgeChanceLuckDelta,
-      movePoints: (summoned as NonHeroEntityState).remainingMoves ?? 0,
-      maxMovePoints: (summoned as NonHeroEntityState).maxMovesPerTurn ?? 0,
+      movePoints: summoned.remainingMoves ?? 0,
+      maxMovePoints: summoned.maxMovesPerTurn,
       activeAbility: activeProfile
         ? activeProfile.kind === 'attack'
           ? buildEntityActiveSummary({

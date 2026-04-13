@@ -1,5 +1,5 @@
 import type { AppBattlePreview } from '../types'
-import type { BattleState, HeroEntityState } from '../../../../shared/models'
+import type { BattleState } from '../../../../shared/models'
 
 export function buildHeroActionTargets(options: {
   state: BattleState
@@ -7,7 +7,7 @@ export function buildHeroActionTargets(options: {
   const { state } = options
 
   return (state.heroEntityIds as string[]).map((heroEntityId) => {
-    const entity = state.entitiesById[heroEntityId] as HeroEntityState
+    const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
