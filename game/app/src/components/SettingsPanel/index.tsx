@@ -1,4 +1,4 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import { toast } from 'react-hot-toast'
 import 'react-json-view-lite/dist/index.css'
@@ -13,7 +13,6 @@ type SettingsPanelProps = {
   onBootstrapConfigChange: (config: GameBootstrapConfig) => boolean
   onExportSettings: () => string | null
   onImportSettings: (rawText: string) => { ok: boolean; message: string }
-  onHardReset: () => void
   autoPlayButtonsVisible: boolean
   autoPlayDelayMs: number
   autoPlayAutoEndTurnWhenNoLegalMoves: boolean
@@ -100,7 +99,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
     onBootstrapConfigChange,
     onExportSettings,
     onImportSettings,
-    onHardReset,
     autoPlayButtonsVisible,
     autoPlayDelayMs,
     autoPlayAutoEndTurnWhenNoLegalMoves,
@@ -123,8 +121,13 @@ export function SettingsPanel(props: SettingsPanelProps) {
   )
   const [bootstrapConfigError, setBootstrapConfigError] = useState<string | null>(null)
   const [settingsExchangeText, setSettingsExchangeText] = useState(() => onExportSettings() ?? '')
+  const [runtimeStateText, setRuntimeStateText] = useState(() => JSON.stringify(state, null, 2))
 
   const { expandAll, sectionOpen } = persistedState
+
+  useEffect(() => {
+    setRuntimeStateText(JSON.stringify(state, null, 2))
+  }, [state])
 
   function updateState(updater: (current: SettingsPanelPersistedState) => SettingsPanelPersistedState) {
     setPersistedState((current) => {
@@ -132,15 +135,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
       persistState(next)
       return next
     })
-  }
-
-  const handleCopyState = async () => {
-    try {
-      await navigator.clipboard.writeText(JSON.stringify(state, null, 2))
-      toast.success('State JSON copied to clipboard.', { id: DECK_SAVE_TOAST_ID })
-    } catch {
-      // No-op
-    }
   }
 
   const handleImportSettingsFromText = () => {
@@ -157,6 +151,52 @@ export function SettingsPanel(props: SettingsPanelProps) {
     }
 
     toast.success(result.message, { id: DECK_SAVE_TOAST_ID })
+  }
+
+  const handleCopySettingsExchange = async () => {
+    try {
+      await navigator.clipboard.writeText(settingsExchangeText)
+      toast.success('Settings JSON copied to clipboard.', { id: DECK_SAVE_TOAST_ID })
+    } catch {
+      toast.error('Failed to copy settings JSON.', { id: DECK_SAVE_TOAST_ID })
+    }
+  }
+
+  const handlePasteSettingsExchange = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (!text.trim()) {
+        toast.error('Clipboard is empty.', { id: DECK_SAVE_TOAST_ID })
+        return
+      }
+      setSettingsExchangeText(text)
+      toast.success('Settings JSON pasted from clipboard.', { id: DECK_SAVE_TOAST_ID })
+    } catch {
+      toast.error('Failed to paste settings JSON.', { id: DECK_SAVE_TOAST_ID })
+    }
+  }
+
+  const handleCopyRuntimeState = async () => {
+    try {
+      await navigator.clipboard.writeText(runtimeStateText)
+      toast.success('Game data JSON copied to clipboard.', { id: DECK_SAVE_TOAST_ID })
+    } catch {
+      toast.error('Failed to copy game data JSON.', { id: DECK_SAVE_TOAST_ID })
+    }
+  }
+
+  const handlePasteRuntimeState = async () => {
+    try {
+      const text = await navigator.clipboard.readText()
+      if (!text.trim()) {
+        toast.error('Clipboard is empty.', { id: DECK_SAVE_TOAST_ID })
+        return
+      }
+      setRuntimeStateText(text)
+      toast.success('Game data JSON pasted from clipboard.', { id: DECK_SAVE_TOAST_ID })
+    } catch {
+      toast.error('Failed to paste from clipboard.', { id: DECK_SAVE_TOAST_ID })
+    }
   }
 
   const handleSeedApply = () => {
@@ -290,12 +330,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
               onClick={() => setAllSectionsOpen(!isAllSectionsOpen)}
             >
               {isAllSectionsOpen ? 'Collapse All' : 'Expand All'}
-            </button>
-            <button type="button" onClick={handleCopyState}>
-              Copy JSON
-            </button>
-            <button type="button" onClick={onHardReset}>
-              Hard Reset
             </button>
             <button
               type="button"
@@ -625,6 +659,8 @@ export function SettingsPanel(props: SettingsPanelProps) {
                   <span>Includes current and saved deck settings, audio, UI settings, and auto-play settings. Game state stays in the replay fragment.</span>
                 </div>
                 <div className="settings-modal-head-actions">
+                  <button type="button" onClick={() => void handleCopySettingsExchange()}>Copy</button>
+                  <button type="button" onClick={() => void handlePasteSettingsExchange()}>Paste</button>
                   <button type="button" onClick={handleImportSettingsFromText}>Apply</button>
                 </div>
                 <textarea
@@ -649,15 +685,30 @@ export function SettingsPanel(props: SettingsPanelProps) {
             </button>
             {sectionOpen.runtime ? (
               <div className="settings-runtime-panel">
-          <JsonView
-            data={state}
-            style={defaultStyles}
-            shouldExpandNode={
-              expandAll
-                ? allExpanded
-                : (level) => level < 2
-            }
-          />
+                <div className="settings-runtime-actions">
+                  <button type="button" onClick={() => void handleCopyRuntimeState()}>
+                    Copy
+                  </button>
+                  <button type="button" onClick={() => void handlePasteRuntimeState()}>
+                    Paste
+                  </button>
+                </div>
+                <textarea
+                  className="settings-bootstrap-textarea settings-runtime-textarea"
+                  value={runtimeStateText}
+                  onChange={(event) => setRuntimeStateText(event.target.value)}
+                  spellCheck={false}
+                  placeholder="Runtime game data JSON"
+                />
+                <JsonView
+                  data={state}
+                  style={defaultStyles}
+                  shouldExpandNode={
+                    expandAll
+                      ? allExpanded
+                      : (level) => level < 2
+                  }
+                />
               </div>
             ) : null}
           </section>

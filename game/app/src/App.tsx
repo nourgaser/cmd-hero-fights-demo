@@ -259,7 +259,6 @@ function App() {
   const handleBootstrapConfigChange = (nextConfig: GameBootstrapConfig) => { const fail = resetRuntime(nextConfig); if (fail) { showActionErrorToast(fail); return false }; setBootstrapConfig(nextConfig); if (typeof window !== 'undefined') { window.localStorage.setItem(SETTINGS_SEED_STORAGE_KEY, nextConfig.seed); window.localStorage.setItem(SETTINGS_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig)) }; return true }
   const handleOpenDeckEditor = (idx: 0 | 1) => { setDeckEditorHeroIndex(idx); setIsDeckEditorOpen(true) }
   const handleCloseDeckEditor = () => { setIsDeckEditorOpen(false); setIsSettingsPanelOpen(false) }
-  const handleHardReset = () => { const fail = resetRuntime(bootstrapConfig); if (fail) showActionErrorToast(fail) }
   const handleHardReroll = () => { const nextSeed = incrementSeed(bootstrapConfig.seed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed); const next = { ...bootstrapConfig, seed: nextSeed }; if (handleBootstrapConfigChange(next)) showActionSuccessToast(`Hard reroll complete. New seed: ${nextSeed}.`, []) }
   const handleExportSettings = () => { if (typeof window === 'undefined') return null; const storage: Record<string, string> = {}; for (const key of SETTINGS_EXPORT_STORAGE_KEYS) { const val = window.localStorage.getItem(key); if (val !== null) storage[key] = val }; return JSON.stringify({ version: 1, storage }, null, 2) }
   const handleImportSettings = (raw: string) => { if (typeof window === 'undefined') return { ok: false, message: 'Settings import is only available in browser mode.' }; try { const payload = JSON.parse(raw); if (!payload || payload.version !== 1 || !payload.storage) return { ok: false, message: 'Invalid settings payload.' }; for (const key of SETTINGS_EXPORT_STORAGE_KEYS) window.localStorage.removeItem(key); for (const key of SETTINGS_EXPORT_STORAGE_KEYS) { const val = payload.storage[key]; if (typeof val === 'string') window.localStorage.setItem(key, val) }; window.location.reload(); return { ok: true, message: 'Settings imported. Reloading...' } } catch { return { ok: false, message: 'Settings JSON is invalid.' } } }
@@ -392,7 +391,6 @@ function App() {
         onBootstrapConfigChange={handleBootstrapConfigChange}
         onExportSettings={handleExportSettings}
         onImportSettings={handleImportSettings}
-        onHardReset={handleHardReset}
         autoPlayButtonsVisible={autoPlayButtonsVisible}
         autoPlayDelayMs={autoPlayDelayMs}
         autoPlayAutoEndTurnWhenNoLegalMoves={autoPlayAutoEndTurnWhenNoLegalMoves}
