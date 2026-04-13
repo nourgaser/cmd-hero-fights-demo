@@ -114,7 +114,7 @@ export function resolveTriggeredListeners(options: {
         if (!execution.ok) {
           return {
             ok: false,
-            reason: `Listener ${listener.listenerId} failed: ${(execution as { reason: string }).reason}`,
+            reason: `Listener ${listener.listenerId} failed: ${execution.reason}`,
           };
         }
 

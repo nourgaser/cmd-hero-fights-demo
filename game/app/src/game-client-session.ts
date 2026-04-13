@@ -131,9 +131,9 @@ export function resolveSessionAction(options: {
     turnNumber,
     actorHeroEntityId: action.actorHeroEntityId,
     actionKind: action.kind,
-    resultMessage: result.ok ? result.resultMessage : (result as { reason: string }).reason,
+    resultMessage: result.ok ? result.resultMessage : result.reason,
     success: result.ok,
-    failureReason: !result.ok ? (result as { reason: string }).reason : undefined,
+    failureReason: !result.ok ? result.reason : undefined,
     eventCount: result.ok ? result.events.length : 0,
     preSnapshotId,
     postSnapshotId,
@@ -168,9 +168,9 @@ export function resolveSessionAction(options: {
       action: cloneSerializable(action),
       state: cloneSerializable(result.state),
       nextSequence: session.nextSequence,
-      resultMessage: !result.ok ? (result as { reason: string }).reason : '',
+      resultMessage: !result.ok ? result.reason : '',
       success: false,
-      failureReason: !result.ok ? (result as { reason: string }).reason : undefined,
+      failureReason: !result.ok ? result.reason : undefined,
       events: [],
       rngCheckpoint: {
         seed: session.battleRng.seed,
@@ -188,7 +188,7 @@ export function resolveSessionAction(options: {
 
     return {
       ok: false,
-      reason: !result.ok ? (result as { reason: string }).reason : 'Unknown error',
+      reason: !result.ok ? result.reason : 'Unknown error',
       session: nextSession,
       preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
     }
@@ -421,7 +421,7 @@ export function replaySessionFromActionLog(options: {
         }
         continue
       }
-      return { ok: false, reason: `Replay failed at action: ${action.kind}. Reason: ${(result as { reason: string }).reason}` }
+      return { ok: false, reason: `Replay failed at action: ${action.kind}. Reason: ${result.reason}` }
     }
 
     runtime = {

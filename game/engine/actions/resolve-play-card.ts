@@ -52,7 +52,7 @@ export function resolvePlayCardAction(options: {
     return {
       ok: false,
       state,
-      reason: (validation as { reason: string }).reason,
+      reason: validation.reason,
     };
   }
 
@@ -109,7 +109,7 @@ export function resolvePlayCardAction(options: {
     return {
       ok: false,
       state,
-      reason: (effectsExecution as { reason: string }).reason,
+      reason: effectsExecution.reason,
     };
   }
 

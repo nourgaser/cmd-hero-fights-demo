@@ -80,7 +80,7 @@ export function useAutoplay(options: {
 
       const branchPrep = ensureSessionReadyForAction(prev.session)
       if (!branchPrep.ok) {
-        failureReason = (branchPrep as { reason: string }).reason
+        failureReason = branchPrep.reason
         return prev
       }
 
@@ -231,7 +231,7 @@ export function useAutoplay(options: {
           }
         }
 
-        failureReason = (result as { reason: string }).reason
+        failureReason = result.reason
         return prev
       }
 

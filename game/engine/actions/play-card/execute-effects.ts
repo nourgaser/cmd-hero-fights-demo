@@ -85,7 +85,7 @@ export function executePlayCardEffects(options: {
     if (!execution.ok) {
       return {
         ok: false,
-        reason: (execution as { reason: string }).reason,
+        reason: execution.reason,
       };
     }
 

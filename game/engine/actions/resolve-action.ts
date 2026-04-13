@@ -168,7 +168,7 @@ export function resolveAction(options: {
     return {
       ok: false,
       state,
-      reason: (listenerResolution as { reason: string }).reason,
+      reason: listenerResolution.reason,
     };
   }
 

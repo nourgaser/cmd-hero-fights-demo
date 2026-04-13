@@ -88,7 +88,7 @@ export function resolveUseEntityActiveAction(options: {
     return {
       ok: false,
       state,
-      reason: (actorResolution as { reason: string }).reason,
+      reason: actorResolution.reason,
     };
   }
   const actorHero = actorResolution.actorHero;
@@ -173,7 +173,7 @@ export function resolveUseEntityActiveAction(options: {
         return {
           ok: false,
           state,
-          reason: (execution as { reason: string }).reason,
+          reason: execution.reason,
         };
       }
 

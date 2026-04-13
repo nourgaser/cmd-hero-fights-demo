@@ -27,7 +27,7 @@ export function validatePlayCardAction(options: {
         inactiveReason: "Only the active hero can play a card.",
     });
     if (!actorResolution.ok) {
-        return { ok: false, reason: (actorResolution as { reason: string }).reason };
+        return { ok: false, reason: actorResolution.reason };
     }
     const actor = actorResolution.actorHero;
 
@@ -90,7 +90,7 @@ export function validatePlayCardAction(options: {
         });
 
         if (!placementResult.ok) {
-            return { ok: false, reason: (placementResult as { reason: string }).reason };
+            return { ok: false, reason: placementResult.reason };
         }
     }
 

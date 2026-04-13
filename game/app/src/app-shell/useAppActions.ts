@@ -40,7 +40,7 @@ export function useAppActions(options: {
         if (!prev) return prev
         const branchPrep = ensureSessionReadyForAction(prev.session)
         if (!branchPrep.ok) {
-          failureReason = (branchPrep as { reason: string }).reason
+          failureReason = branchPrep.reason
           return prev
         }
         if (branchPrep.branchedFromSnapshotId !== null) {
@@ -55,7 +55,7 @@ export function useAppActions(options: {
         })
 
         if (!result.ok) {
-          failureReason = (result as { reason: string }).reason
+          failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
           events = result.events
@@ -85,7 +85,7 @@ export function useAppActions(options: {
         if (!prev) return prev
         const branchPrep = ensureSessionReadyForAction(prev.session)
         if (!branchPrep.ok) {
-          failureReason = (branchPrep as { reason: string }).reason
+          failureReason = branchPrep.reason
           return prev
         }
         if (branchPrep.branchedFromSnapshotId !== null) {
@@ -100,7 +100,7 @@ export function useAppActions(options: {
         })
 
         if (!result.ok) {
-          failureReason = (result as { reason: string }).reason
+          failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
           events = result.events
@@ -134,7 +134,7 @@ export function useAppActions(options: {
         if (!prev) return prev
         const branchPrep = ensureSessionReadyForAction(prev.session)
         if (!branchPrep.ok) {
-          failureReason = (branchPrep as { reason: string }).reason
+          failureReason = branchPrep.reason
           return prev
         }
         if (branchPrep.branchedFromSnapshotId !== null) {
@@ -150,7 +150,7 @@ export function useAppActions(options: {
         })
 
         if (!result.ok) {
-          failureReason = (result as { reason: string }).reason
+          failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
           events = result.events
@@ -180,7 +180,7 @@ export function useAppActions(options: {
         if (!prev) return prev
         const branchPrep = ensureSessionReadyForAction(prev.session)
         if (!branchPrep.ok) {
-          failureReason = (branchPrep as { reason: string }).reason
+          failureReason = branchPrep.reason
           return prev
         }
         if (branchPrep.branchedFromSnapshotId !== null) {
@@ -194,7 +194,7 @@ export function useAppActions(options: {
         })
 
         if (!result.ok) {
-          failureReason = (result as { reason: string }).reason
+          failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
           events = result.events
@@ -219,7 +219,7 @@ export function useAppActions(options: {
       if (!prev) return prev
       const result = jumpSessionToSnapshot({ session: prev.session, snapshotId })
       if (!result.ok) {
-        failureReason = (result as { reason: string }).reason
+        failureReason = result.reason
         return prev
       }
       return { session: result.session, preview: result.preview }
@@ -236,7 +236,7 @@ export function useAppActions(options: {
       if (!prev) return prev
       const result = branchSessionFromSnapshot({ session: prev.session, snapshotId })
       if (!result.ok) {
-        failureReason = (result as { reason: string }).reason
+        failureReason = result.reason
         return prev
       }
       branchMessage = `Branch resumed from snapshot ${snapshotId}.`

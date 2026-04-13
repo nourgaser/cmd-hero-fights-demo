@@ -55,7 +55,7 @@ export function resolveEndTurnAction(options: {
     return {
       ok: false,
       state,
-      reason: (endingHeroResolution as { reason: string }).reason,
+      reason: endingHeroResolution.reason,
     };
   }
   const endingHero = endingHeroResolution.actorHero;

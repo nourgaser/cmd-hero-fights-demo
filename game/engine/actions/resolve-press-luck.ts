@@ -45,7 +45,7 @@ export function resolvePressLuckAction(options: {
     return {
       ok: false,
       state,
-      reason: (actorResolution as { reason: string }).reason,
+      reason: actorResolution.reason,
     };
   }
   const actor = actorResolution.actorHero;

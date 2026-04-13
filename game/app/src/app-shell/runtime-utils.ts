@@ -42,7 +42,7 @@ export function createRuntimeFromReplayPayload(replayPayload: {
   })
 
   if (!replayResult.ok) {
-    throw new Error((replayResult as { reason: string }).reason)
+    throw new Error(replayResult.reason)
   }
 
   return {
@@ -104,7 +104,7 @@ export function ensureSessionReadyForAction(session: AppBattleSession):
   if (!branchResult.ok) {
     return {
       ok: false as const,
-      reason: (branchResult as { reason: string }).reason,
+      reason: branchResult.reason,
     }
   }
 

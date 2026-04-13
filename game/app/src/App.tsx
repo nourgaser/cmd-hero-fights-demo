@@ -145,7 +145,7 @@ function App() {
   const handleValidateReplayDeterminism = useCallback(() => {
     if (!activeActionSnapshotId || !activeActionSnapshot || !runtime) { showActionErrorToast('Select a snapshot before validating replay determinism.'); return }
     const res = replaySessionFromActionLog({ gameApi: runtime.session.gameApi, config: { ...bootstrapConfig, seed: runtime.session.state.seed }, actionLog: createActionLogFromSession(runtime.session), snapshotId: activeActionSnapshotId ?? null })
-    if (!res.ok) { showActionErrorToast(`Replay validation failed: ${(res as { reason: string }).reason}`); return }
+    if (!res.ok) { showActionErrorToast(`Replay validation failed: ${res.reason}`); return }
     const rebuilt = res.session.snapshots.find((s) => s.id === activeActionSnapshotId)
     if (!rebuilt) { showActionErrorToast(`Replay validation failed: snapshot ${activeActionSnapshotId} was not rebuilt.`); return }
     const sameS = JSON.stringify(rebuilt.state) === JSON.stringify(activeActionSnapshot.state); const sameE = JSON.stringify(rebuilt.events) === JSON.stringify(activeActionSnapshot.events); const sameSeq = rebuilt.nextSequence === activeActionSnapshot.nextSequence; const sameRng = rebuilt.rngCheckpoint.stepCount === activeActionSnapshot.rngCheckpoint.stepCount
