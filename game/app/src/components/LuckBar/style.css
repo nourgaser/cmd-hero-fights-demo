@@ -1,0 +1,52 @@
+.luck-bar {
+  display: grid;
+  grid-template-columns: 1fr auto 1fr;
+  align-items: center;
+  gap: 10px;
+}
+
+.luck-side {
+  display: flex;
+  gap: 6px;
+}
+
+.side-a {
+  justify-content: flex-end;
+}
+
+.side-b {
+  justify-content: flex-start;
+}
+
+.luck-divider {
+  width: 3px;
+  height: 22px;
+  border-radius: 4px;
+  background: var(--text-h);
+}
+
+.luck-pip {
+  width: 18px;
+  height: 18px;
+  display: grid;
+  place-items: center;
+  color: var(--luck-off);
+  opacity: 0.95;
+}
+
+.luck-pip.self.on {
+  color: var(--self-side-color);
+}
+
+.luck-pip.enemy.on {
+  color: var(--enemy-side-color);
+}
+
+.luck-pip-icon {
+  width: 18px;
+  height: 18px;
+}
+
+.luck-wrap {
+  margin-top: 0;
+}

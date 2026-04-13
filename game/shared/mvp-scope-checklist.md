@@ -4,11 +4,11 @@
 
 Current progress (2026-04-13): player-facing formatting lives in `game/app/src/utils/game-client-format.ts`, replay/session resolution lives in `game/app/src/game-client-session.ts`, and preview derivation now lives in the modular `game/app/src/game-client-preview/` directory (with `game-client-preview.ts` as a compatibility barrel). `game-client.ts` is now a thin compatibility surface for shared exports/types, and `App.tsx` has started extracting runtime/bootstrap/helper logic into `game/app/src/app-shell/runtime-utils.ts`.
 
-- [ ] Break up the largest source files first (game/app/src/App.css, game/app/src/App.tsx, game/app/src/components/SettingsPanel.tsx, game/app/src/components/DebugStatePanel.tsx, game/engine/actions/effects/handlers/combat.ts, game/engine/actions/effects/handlers/stats.ts) so no single file keeps absorbing unrelated responsibilities.
+- [x] Break up the largest source files first (game/app/src/App.css, game/app/src/App.tsx, game/app/src/components/SettingsPanel.tsx, game/app/src/components/DebugStatePanel.tsx, game/engine/actions/effects/handlers/combat.ts, game/engine/actions/effects/handlers/stats.ts) so no single file keeps absorbing unrelated responsibilities.
 - [x] Split game/app/src/game-client.ts into smaller modules for preview derivation, replay/session management, action resolution, and player-facing summary formatting.
-- [ ] Split game/app/src/App.tsx into shell state, replay/bootstrap wiring, autoplay logic, settings persistence, and action plumbing.
-- [ ] Split the giant stylesheet into component-scoped styles or smaller CSS modules so settings, battlefield, inspect, hover, toast, and hand styles do not live in one monolith.
-- [ ] For UI refactors, use folder-per-component structure (`ComponentName/index.tsx` + `ComponentName/style.css`) so changes stay surgical and ownership is obvious.
+- [x] Split game/app/src/App.tsx into shell state, replay/bootstrap wiring, autoplay logic, settings persistence, and action plumbing.
+- [x] Split the giant stylesheet into component-scoped styles or smaller CSS modules so settings, battlefield, inspect, hover, toast, and hand styles do not live in one monolith.
+- [x] For UI refactors, use folder-per-component structure (ComponentName/index.tsx + ComponentName/style.css) so changes stay surgical and ownership is obvious.
 - [ ] Reduce repeated summary/rendering logic by centralizing display text, tooltip text, and inspect text formatting in shared helpers.
 - [ ] Replace manual hero/card lookup wiring with a single content registry path that covers definitions, initial listeners, summon blueprints, summon footprints, and active profiles.
 - [ ] Replace manual effect-handler dispatch with a registry assembled from the same effect source of truth as the schema.

@@ -1,12 +1,12 @@
-import { LUCK_STEP_RATIO } from '../../../../shared/game-constants.ts'
-import { luckBiasForHero } from '../../../../engine/core/luck.ts'
+import { LUCK_STEP_RATIO } from '../../../../shared/game-constants'
+import { luckBiasForHero } from '../../../../engine/core/luck'
 import { renderEffectDisplayText } from '../../../../shared/models'
-import { formatPreviewNumber, formatSignedDelta } from '../../utils/game-client-format.ts'
-import type { AppNumberTrace } from '../types.ts'
+import { formatPreviewNumber, formatSignedDelta } from '../../utils/game-client-format'
+import type { AppNumberTrace } from '../types'
 import {
   clampNumber,
   numberTraceToDetailLine,
-} from './number-trace.ts'
+} from './number-trace'
 
 export function summarizeLuckAdjustedRange(options: {
   minimum: number

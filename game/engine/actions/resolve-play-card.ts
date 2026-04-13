@@ -63,7 +63,7 @@ export function resolvePlayCardAction(options: {
     return {
       ok: false,
       state,
-      reason: validation.reason,
+      reason: (validation as any).reason,
     };
   }
 

@@ -592,8 +592,8 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
     stat: "armor",
   });
 
-  const enemyHeroId = state.heroEntityIds.find((heroEntityId) => {
-    const hero = state.entitiesById[heroEntityId];
+  const enemyHeroId = (state.heroEntityIds as string[]).find((heroEntityId) => {
+    const hero = state.entitiesById[heroEntityId as string];
     return hero?.kind === "hero" && hero.battlefieldSide !== actorHero.battlefieldSide;
   });
 
@@ -601,7 +601,7 @@ export function handleDestroyArmorAndDealPerArmorToEnemyHeroEffect(
     return { ok: false, reason: "Enemy hero was not found for Warcry damage." };
   }
 
-  const enemyHero = state.entitiesById[enemyHeroId];
+  const enemyHero = state.entitiesById[enemyHeroId as string];
   if (!enemyHero || enemyHero.kind !== "hero") {
     return { ok: false, reason: "Enemy hero was invalid for Warcry damage." };
   }

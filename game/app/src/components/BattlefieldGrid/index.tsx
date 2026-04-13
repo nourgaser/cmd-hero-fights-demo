@@ -1,6 +1,7 @@
 import { Icon } from '@iconify/react/offline'
-import type { AppBattlePreview } from '../game-client.ts'
-import { CARD_ICON_META, ENTITY_ICON_META, LUCK_VISUALS } from '../data/visual-metadata.ts'
+import './style.css'
+import type { AppBattlePreview } from '../../game-client'
+import { CARD_ICON_META, ENTITY_ICON_META, LUCK_VISUALS } from '../../data/visual-metadata'
 
 function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
   if (delta > 0) return 'delta-positive'

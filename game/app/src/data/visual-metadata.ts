@@ -1,4 +1,4 @@
-import { CARD_IDS } from './game-bootstrap.ts'
+import { CARD_IDS } from './game-bootstrap'
 
 export type VisualIconMeta = {
   id: string

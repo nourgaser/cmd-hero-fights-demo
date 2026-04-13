@@ -5,17 +5,17 @@ export {
   combineNumberTraces,
   resolvePermanentLayerValue,
   clampNumber,
-} from './helpers/number-trace.ts'
+} from './helpers/number-trace'
 
 export {
   summarizeLuckAdjustedRange,
   buildHeroBasicAttackSummary,
   buildEntityActiveSummary,
-} from './helpers/attack-summary.ts'
+} from './helpers/attack-summary'
 
 export {
   describeNumericCardText,
   describeCardCastCondition,
-} from './helpers/card-summary.ts'
+} from './helpers/card-summary'
 
-export { resolveSummonPreviewForCard } from './helpers/summon-preview.ts'
+export { resolveSummonPreviewForCard } from './helpers/summon-preview'

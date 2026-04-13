@@ -2,8 +2,8 @@ import {
   buildHeroBasicAttackSummary,
   combineNumberTraces,
   resolveNumberTrace,
-} from '../../helpers.ts'
-import type { PreviewBattleState, PreviewGameApi, HeroEntity } from './types.ts'
+} from '../../helpers'
+import type { PreviewBattleState, PreviewGameApi, HeroEntity } from './types'
 
 export function buildHeroBasicAttackContext(options: {
   gameApi: PreviewGameApi

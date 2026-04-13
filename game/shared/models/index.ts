@@ -3,7 +3,7 @@ export * from "./aura";
 export * from "./battle-state";
 export * from "./battlefield-occupancy";
 export * from "./card";
-export * from "./effects/index.ts";
+export * from "./effects/index";
 export * from "./event";
 export * from "./footprint";
 export * from "./hero";

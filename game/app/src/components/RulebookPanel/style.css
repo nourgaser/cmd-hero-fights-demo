@@ -1,0 +1,698 @@
+.rulebook-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: var(--layer-modal);
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background:
+    radial-gradient(circle at top left, rgba(116, 160, 232, 0.2), transparent 34%),
+    radial-gradient(circle at bottom right, rgba(126, 202, 170, 0.14), transparent 38%),
+    rgba(7, 10, 16, 0.78);
+  backdrop-filter: blur(4px);
+}
+
+.rulebook-modal {
+  width: min(1280px, 100%);
+  height: min(94vh, 980px);
+  border-radius: 18px;
+  border: 1px solid #4c6798;
+  background: linear-gradient(180deg, rgba(17, 26, 44, 0.98), rgba(13, 20, 36, 0.99));
+  color: #e4efff;
+  display: grid;
+  grid-template-rows: auto minmax(0, 1fr);
+  overflow: hidden;
+  overscroll-behavior: contain;
+  box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
+}
+
+.rulebook-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 16px;
+  padding: 14px 16px;
+  border-bottom: 1px solid color-mix(in srgb, #8fa9db 26%, transparent);
+  background: linear-gradient(180deg, rgba(24, 35, 59, 0.98), rgba(17, 26, 44, 0.98));
+}
+
+.rulebook-title-wrap {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  min-width: 0;
+}
+
+.rulebook-title-icon {
+  width: 42px;
+  height: 42px;
+  border-radius: 12px;
+  display: grid;
+  place-items: center;
+  background: linear-gradient(180deg, #ebf2ff, #c8dbff);
+  color: #12233d;
+  flex: none;
+}
+
+.rulebook-title-wrap strong {
+  display: block;
+  font-family: var(--heading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 13px;
+}
+
+.rulebook-title-wrap p {
+  margin: 3px 0 0;
+  color: #bfd0ea;
+  font-size: 12px;
+}
+
+.rulebook-header-actions {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  flex-wrap: wrap;
+  justify-content: flex-end;
+}
+
+.rulebook-header-actions button {
+  border: 1px solid #5c78ac;
+  border-radius: 999px;
+  min-height: 30px;
+  padding: 4px 12px;
+  color: #e4efff;
+  font-size: 11px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+  background: color-mix(in srgb, #24395f 82%, #ffffff 18%);
+  cursor: pointer;
+}
+
+.rulebook-shell {
+  min-height: 0;
+  display: grid;
+  grid-template-columns: 256px minmax(0, 1fr);
+}
+
+.rulebook-toc {
+  min-height: 0;
+  display: grid;
+  gap: 12px;
+  padding: 16px;
+  border-right: 1px solid color-mix(in srgb, #8fa9db 20%, transparent);
+  background: linear-gradient(180deg, rgba(15, 23, 38, 0.9), rgba(12, 18, 32, 0.92));
+}
+
+.rulebook-toc-intro strong {
+  display: block;
+  font-family: var(--heading);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  font-size: 12px;
+}
+
+.rulebook-toc-intro span {
+  display: block;
+  margin-top: 4px;
+  color: #b8cbe5;
+  font-size: 12px;
+}
+
+.rulebook-toc-head {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 10px;
+}
+
+.rulebook-toc-toggle {
+  border: 1px solid #5c78ac;
+  border-radius: 999px;
+  min-height: 26px;
+  padding: 3px 10px;
+  font-size: 11px;
+  font-weight: 700;
+  color: #dce8ff;
+  background: color-mix(in srgb, #24395f 82%, #ffffff 18%);
+  cursor: pointer;
+}
+
+.rulebook-toc-list {
+  display: grid;
+  gap: 8px;
+  align-content: start;
+}
+
+.rulebook-toc-item {
+  border: 1px solid #355079;
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  text-align: left;
+  background: rgba(28, 40, 64, 0.9);
+  color: #dce8ff;
+  cursor: pointer;
+}
+
+.rulebook-toc-item svg {
+  width: 16px;
+  height: 16px;
+  flex: none;
+}
+
+.rulebook-toc-item span {
+  font-size: 12px;
+  font-weight: 600;
+}
+
+.rulebook-toc-item-active {
+  border-color: #7ea4d7;
+  background: linear-gradient(180deg, rgba(50, 70, 112, 0.98), rgba(34, 49, 82, 0.98));
+}
+
+.rulebook-content {
+  min-height: 0;
+  overflow: auto;
+  overscroll-behavior: contain;
+  padding: 18px;
+  display: grid;
+  gap: 16px;
+}
+
+.rulebook-hero {
+  display: grid;
+  grid-template-columns: minmax(0, 1.05fr) minmax(0, 1.2fr);
+  gap: 14px;
+  align-items: start;
+}
+
+.rulebook-hero-copy {
+  border: 1px solid #3a527f;
+  border-radius: 16px;
+  padding: 16px;
+  background: linear-gradient(180deg, rgba(31, 45, 72, 0.92), rgba(20, 30, 50, 0.92));
+}
+
+.rulebook-hero-copy strong {
+  display: block;
+  font-size: 18px;
+  line-height: 1.15;
+}
+
+.rulebook-hero-copy p {
+  margin: 8px 0 0;
+  color: #bfd0ea;
+  line-height: 1.55;
+}
+
+.rulebook-facts {
+  display: grid;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rulebook-fact-card {
+  border: 1px solid #3b547f;
+  border-radius: 16px;
+  padding: 12px;
+  background: linear-gradient(180deg, rgba(28, 39, 61, 0.95), rgba(20, 28, 44, 0.95));
+}
+
+.rulebook-fact-card svg {
+  width: 18px;
+  height: 18px;
+  color: #8fc0ff;
+}
+
+.rulebook-fact-card strong {
+  display: block;
+  margin-top: 8px;
+  font-size: 12px;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+.rulebook-fact-card span {
+  display: block;
+  margin-top: 5px;
+  color: #c5d7ee;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rulebook-sections {
+  display: grid;
+  gap: 12px;
+}
+
+.rulebook-section {
+  border: 1px solid #3a537d;
+  border-radius: 16px;
+  background: linear-gradient(180deg, rgba(24, 34, 53, 0.94), rgba(18, 27, 43, 0.96));
+  overflow: hidden;
+}
+
+.rulebook-section-header {
+  width: 100%;
+  border: 0;
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  padding: 14px 16px;
+  color: inherit;
+  background: transparent;
+  cursor: pointer;
+  text-align: left;
+}
+
+.rulebook-section-title-wrap {
+  min-width: 0;
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+.rulebook-section-icon {
+  width: 34px;
+  height: 34px;
+  border-radius: 10px;
+  display: grid;
+  place-items: center;
+  flex: none;
+  background: linear-gradient(180deg, rgba(220, 232, 255, 0.96), rgba(166, 194, 230, 0.96));
+  color: #10213a;
+}
+
+.rulebook-section-icon svg {
+  width: 17px;
+  height: 17px;
+}
+
+.rulebook-section-title-wrap strong {
+  display: block;
+  font-size: 14px;
+  letter-spacing: 0.02em;
+}
+
+.rulebook-section-title-wrap em {
+  display: block;
+  margin-top: 3px;
+  color: #b8cbe5;
+  font-style: normal;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rulebook-section-toggle {
+  width: 28px;
+  height: 28px;
+  border-radius: 999px;
+  display: grid;
+  place-items: center;
+  background: rgba(255, 255, 255, 0.06);
+  color: #e4efff;
+  flex: none;
+  font-size: 18px;
+}
+
+.rulebook-section-body {
+  border-top: 1px solid color-mix(in srgb, #8ea4d2 20%, transparent);
+  padding: 16px;
+  display: grid;
+  gap: 14px;
+}
+
+.rulebook-section-body ul {
+  margin: 0;
+  padding-left: 20px;
+  display: grid;
+  gap: 8px;
+  color: #d9e6f8;
+  line-height: 1.55;
+}
+
+.rulebook-diagram {
+  border: 1px solid #3c5480;
+  border-radius: 16px;
+  padding: 14px;
+  background: linear-gradient(180deg, rgba(37, 50, 79, 0.96), rgba(24, 34, 53, 0.96));
+}
+
+.rulebook-diagram-start {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto minmax(0, 1fr) auto minmax(0, 1fr);
+  gap: 10px;
+  align-items: center;
+}
+
+.rulebook-diagram-card {
+  border-radius: 14px;
+  padding: 12px;
+  min-height: 94px;
+  display: grid;
+  justify-items: center;
+  align-content: center;
+  gap: 6px;
+  text-align: center;
+}
+
+.rulebook-diagram-card svg {
+  width: 26px;
+  height: 26px;
+}
+
+.rulebook-diagram-card span {
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rulebook-diagram-card-hero {
+  background: linear-gradient(180deg, rgba(130, 170, 224, 0.24), rgba(130, 170, 224, 0.1));
+}
+
+.rulebook-diagram-card-deck {
+  background: linear-gradient(180deg, rgba(150, 201, 160, 0.22), rgba(150, 201, 160, 0.09));
+}
+
+.rulebook-diagram-card-board {
+  background: linear-gradient(180deg, rgba(233, 194, 120, 0.22), rgba(233, 194, 120, 0.09));
+}
+
+.rulebook-diagram-arrow {
+  font-size: 22px;
+  color: #8eb1de;
+}
+
+.rulebook-diagram-steps {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rulebook-step-pill,
+.rulebook-card-type,
+.rulebook-glossary-chip,
+.rulebook-fact-card,
+.rulebook-deck-rules > div {
+  border: 1px solid color-mix(in srgb, #91aad8 22%, transparent);
+}
+
+.rulebook-step-pill {
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  gap: 6px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rulebook-step-pill strong {
+  width: 28px;
+  height: 28px;
+  display: grid;
+  place-items: center;
+  border-radius: 999px;
+  background: linear-gradient(180deg, #ebf2ff, #c3d7f5);
+  color: #10213a;
+}
+
+.rulebook-step-pill span {
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rulebook-diagram-card-types {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rulebook-card-type {
+  border-radius: 14px;
+  padding: 12px;
+  display: grid;
+  justify-items: center;
+  gap: 6px;
+  text-align: center;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rulebook-card-type svg {
+  width: 24px;
+  height: 24px;
+  color: #b5d2ff;
+}
+
+.rulebook-card-type strong {
+  font-size: 12px;
+}
+
+.rulebook-card-type span {
+  color: #bfd0ea;
+  font-size: 11px;
+  line-height: 1.45;
+}
+
+.rulebook-diagram-grid {
+  display: grid;
+  gap: 10px;
+}
+
+.rulebook-grid-row {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 8px;
+}
+
+.rulebook-grid-cell {
+  min-height: 64px;
+  border-radius: 14px;
+  display: grid;
+  place-items: center;
+  font-size: 12px;
+  font-weight: 700;
+  letter-spacing: 0.03em;
+}
+
+.rulebook-grid-hero {
+  background: linear-gradient(180deg, rgba(120, 164, 230, 0.34), rgba(120, 164, 230, 0.14));
+}
+
+.rulebook-grid-ally {
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rulebook-grid-neutral {
+  background: rgba(255, 255, 255, 0.05);
+}
+
+.rulebook-grid-highlight {
+  background: linear-gradient(180deg, rgba(243, 208, 111, 0.34), rgba(243, 208, 111, 0.14));
+}
+
+.rulebook-grid-enemy {
+  background: linear-gradient(180deg, rgba(241, 146, 146, 0.3), rgba(241, 146, 146, 0.12));
+}
+
+.rulebook-diagram-caption {
+  margin: 0;
+  color: #c5d7ee;
+  font-size: 12px;
+  line-height: 1.45;
+}
+
+.rulebook-diagram-luck {
+  display: grid;
+  gap: 10px;
+}
+
+.rulebook-luck-track {
+  display: grid;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+  gap: 10px;
+}
+
+.rulebook-luck-track span {
+  height: 16px;
+  border-radius: 999px;
+  background: rgba(255, 255, 255, 0.08);
+}
+
+.rulebook-luck-active {
+  background: linear-gradient(90deg, #9dd6ae, #eef2ff) !important;
+}
+
+.rulebook-luck-labels {
+  display: flex;
+  justify-content: space-between;
+  gap: 12px;
+  color: #bfd0ea;
+  font-size: 12px;
+}
+
+.rulebook-diagram-deck {
+  display: grid;
+  grid-template-columns: minmax(0, 0.8fr) minmax(0, 1.2fr);
+  gap: 12px;
+  align-items: center;
+}
+
+.rulebook-deck-stack {
+  position: relative;
+  min-height: 108px;
+}
+
+.rulebook-deck-stack span {
+  position: absolute;
+  inset: 0;
+  border-radius: 16px;
+  border: 1px solid #6f89b7;
+  background: linear-gradient(180deg, rgba(229, 238, 255, 0.85), rgba(175, 201, 235, 0.8));
+  box-shadow: 0 8px 20px rgba(0, 0, 0, 0.18);
+}
+
+.rulebook-deck-stack span:nth-child(2) {
+  transform: translate(10px, 10px);
+  opacity: 0.75;
+}
+
+.rulebook-deck-stack span:nth-child(3) {
+  transform: translate(20px, 20px);
+  opacity: 0.5;
+}
+
+.rulebook-deck-rules {
+  display: grid;
+  gap: 8px;
+}
+
+.rulebook-deck-rules > div {
+  border-radius: 14px;
+  padding: 10px 12px;
+  display: grid;
+  gap: 2px;
+  background: rgba(255, 255, 255, 0.04);
+}
+
+.rulebook-deck-rules strong {
+  font-size: 12px;
+}
+
+.rulebook-deck-rules span {
+  color: #bfd0ea;
+  font-size: 11px;
+}
+
+.rulebook-diagram-glossary {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 10px;
+}
+
+.rulebook-glossary-chip {
+  border-radius: 999px;
+  padding: 10px 12px;
+  display: inline-flex;
+  align-items: center;
+  gap: 8px;
+  background: rgba(255, 255, 255, 0.04);
+  font-size: 12px;
+  font-weight: 700;
+}
+
+.rulebook-glossary-chip svg {
+  width: 16px;
+  height: 16px;
+  color: #b5d2ff;
+}
+
+@media (pointer: coarse), (max-width: 1080px) {
+  .rulebook-shell {
+    grid-template-columns: 1fr;
+    grid-template-rows: auto minmax(0, 1fr);
+  }
+
+  .rulebook-toc {
+    border-right: 0;
+    border-bottom: 1px solid color-mix(in srgb, #8fa9db 20%, transparent);
+    max-height: min(44vh, 460px);
+    overflow: auto;
+  }
+
+  .rulebook-toc.rulebook-toc-collapsed {
+    max-height: none;
+    overflow: visible;
+  }
+
+  .rulebook-toc-list {
+    grid-template-columns: repeat(auto-fit, minmax(180px, 1fr));
+  }
+
+  .rulebook-hero {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (pointer: coarse), (max-width: 760px) {
+  .rulebook-overlay {
+    padding: 8px;
+  }
+
+  .rulebook-modal {
+    width: 100%;
+    height: 96vh;
+    border-radius: 14px;
+  }
+
+  .rulebook-header {
+    flex-direction: column;
+    align-items: stretch;
+    gap: 10px;
+  }
+
+  .rulebook-title-wrap {
+    align-items: flex-start;
+  }
+
+  .rulebook-header-actions {
+    justify-content: flex-start;
+  }
+
+  .rulebook-header,
+  .rulebook-content,
+  .rulebook-toc {
+    padding-left: 12px;
+    padding-right: 12px;
+  }
+
+  .rulebook-facts,
+  .rulebook-diagram-steps,
+  .rulebook-diagram-card-types {
+    grid-template-columns: 1fr;
+  }
+
+  .rulebook-content {
+    overflow: auto;
+  }
+
+  .rulebook-diagram-start,
+  .rulebook-diagram-deck {
+    grid-template-columns: 1fr;
+  }
+
+  .rulebook-diagram-arrow {
+    transform: rotate(90deg);
+    justify-self: center;
+  }
+
+  .rulebook-grid-row {
+    grid-template-columns: 1fr;
+  }
+
+  .rulebook-section-title-wrap em {
+    margin-top: 6px;
+  }
+}

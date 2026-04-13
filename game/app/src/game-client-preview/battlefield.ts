@@ -1,17 +1,17 @@
-import { createGameApi } from '../../../index.ts'
+import { createGameApi } from '../../../index'
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
-} from '../../../shared/game-constants.ts'
-import { luckBiasForHero } from '../../../engine/core/luck.ts'
+} from '../../../shared/game-constants'
+import { luckBiasForHero } from '../../../engine/core/luck'
 import {
   describeLifetime,
   formatKeywordLabel,
   formatListenerLabel,
   prettifyEventOrConditionKind,
   renderTemplatedText,
-} from '../utils/game-client-format.ts'
-import type { AppBattlePreview } from './types.ts'
+} from '../utils/game-client-format'
+import type { AppBattlePreview } from './types'
 import {
   buildEntityActiveSummary,
   combineNumberTraces,
@@ -19,7 +19,7 @@ import {
   makeStaticNumberTrace,
   resolveNumberTrace,
   resolvePermanentLayerValue,
-} from './helpers.ts'
+} from './helpers'
 
 type PreviewGameApi = ReturnType<typeof createGameApi>
 type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']

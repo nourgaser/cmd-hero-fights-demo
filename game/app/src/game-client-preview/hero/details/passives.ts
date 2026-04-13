@@ -8,18 +8,18 @@ import {
   summarizeNumericOperation,
   STAT_METADATA,
   type StatKey,
-} from '../../../utils/game-client-format.ts'
+} from '../../../utils/game-client-format'
 import {
   numberTraceToDetailLine,
   resolveNumberTrace,
-} from '../../helpers.ts'
-import { buildAuraPassiveEffects } from './auras.ts'
+} from '../../helpers'
+import { buildAuraPassiveEffects } from './auras'
 import type {
   AuraGroup,
   HeroPassiveEffect,
   PreviewBattleState,
   PreviewGameApi,
-} from './types.ts'
+} from './types'
 
 export function buildHeroPassivePackage(options: {
   gameApi: PreviewGameApi

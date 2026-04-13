@@ -28,7 +28,7 @@ export function validatePlayCardAction(options: {
         inactiveReason: "Only the active hero can play a card.",
     });
     if (!actorResolution.ok) {
-        return { ok: false, reason: actorResolution.reason };
+        return { ok: false, reason: (actorResolution as any).reason };
     }
     const actor = actorResolution.actorHero;
 

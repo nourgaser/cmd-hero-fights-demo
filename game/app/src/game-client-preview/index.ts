@@ -1,13 +1,13 @@
-import { createGameApi } from '../../../index.ts'
-import { buildBattlefieldPreview } from './battlefield.ts'
-import { buildHeroPreviewData } from './hero.ts'
-import type { AppBattlePreview } from './types.ts'
+import { createGameApi } from '../../../index'
+import { buildBattlefieldPreview } from './battlefield'
+import { buildHeroPreviewData } from './hero'
+import type { AppBattlePreview } from './types'
 
 export type {
   AppBattlePreview,
   AppNumberContributionPreview,
   AppNumberTrace,
-} from './types.ts'
+} from './types'
 
 type CreatedBattle = ReturnType<ReturnType<typeof createGameApi>['createBattle']>
 type BattleState = CreatedBattle['state']
@@ -24,7 +24,7 @@ export function buildPreviewFromState(options: {
   return {
     battleId: state.battleId,
     seed: state.seed,
-    heroEntityIds: state.heroEntityIds,
+    heroEntityIds: state.heroEntityIds as [string, string],
     activeHeroEntityId: state.turn.activeHeroEntityId,
     turn: {
       turnNumber: state.turn.turnNumber,

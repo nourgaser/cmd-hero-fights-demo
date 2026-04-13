@@ -1,14 +1,14 @@
-import { createGameApi } from '../../../../index.ts'
-import type { AppBattlePreview } from '../types.ts'
+import { createGameApi } from '../../../../index'
+import type { AppBattlePreview } from '../types'
 import {
   buildEntityActiveSummary,
-} from './attack-summary.ts'
-import { describeNumericCardText } from './card-summary.ts'
+} from './attack-summary'
+import { describeNumericCardText } from './card-summary'
 import {
   combineNumberTraces,
   makeStaticNumberTrace,
   resolveNumberTrace,
-} from './number-trace.ts'
+} from './number-trace'
 export function resolveSummonPreviewForCard(options: {
   cardDef: {
     effects: Array<{

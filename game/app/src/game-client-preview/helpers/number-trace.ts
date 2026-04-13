@@ -1,13 +1,13 @@
-import { createGameApi } from '../../../../index.ts'
+import { createGameApi } from '../../../../index'
 import type { NumberExplanation } from '../../../../shared/models'
 import {
   formatPreviewNumber,
   formatSignedDelta,
-} from '../../utils/game-client-format.ts'
+} from '../../utils/game-client-format'
 import type {
   AppNumberContributionPreview,
   AppNumberTrace,
-} from '../types.ts'
+} from '../types'
 
 type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
 

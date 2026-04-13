@@ -1,18 +1,18 @@
-import { createGameApi } from '../../../../index.ts'
+import { createGameApi } from '../../../../index'
 import {
   type StatKey,
   STAT_METADATA,
   formatPreviewNumber,
   formatSignedDelta,
   renderTemplatedText,
-} from '../../utils/game-client-format.ts'
-import type { AppNumberTrace } from '../types.ts'
+} from '../../utils/game-client-format'
+import type { AppNumberTrace } from '../types'
 import {
   makeStaticNumberTrace,
   numberTraceToDetailLine,
   resolveNumberTrace,
-} from './number-trace.ts'
-import { summarizeLuckAdjustedRange } from './attack-summary.ts'
+} from './number-trace'
+import { summarizeLuckAdjustedRange } from './attack-summary'
 
 type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
 export function describeNumericCardText(options: {

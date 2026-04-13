@@ -1,0 +1,115 @@
+:root {
+  --layer-behind: -1;
+  --layer-inline: 1;
+  --layer-check: 2;
+  --layer-badge: 3;
+  --layer-card-hover: 8;
+  --layer-screen-base: 10;
+  --layer-screen-active: 30;
+  --layer-board: 20;
+  --layer-controls: 40;
+  --layer-hand: 120;
+  --layer-hand-focus: 260;
+  --layer-settings-panel: 1000;
+  --layer-toast: 1100;
+  --layer-modal: 2400;
+  --layer-deck-editor-tooltip: 2350;
+  --layer-tooltip-shell: 1800;
+  --layer-tooltip: 1900;
+  --layer-tooltip-popover: 2000;
+}
+
+html {
+  user-select: none;
+  -webkit-user-select: none;
+}
+
+* {
+  -webkit-tap-highlight-color: transparent;
+}
+
+*:focus:not(:focus-visible) {
+  outline: none;
+}
+
+#__react-hot-toast {
+  z-index: var(--layer-toast) !important;
+}
+
+.dual-screens {
+  display: grid;
+  gap: 36px;
+  grid-template-columns: repeat(2, minmax(0, 1fr));
+  align-items: start;
+  padding: 24px;
+  width: 100%;
+  box-sizing: border-box;
+}
+
+.settings-button {
+  margin-left: 10px;
+  width: 44px;
+  height: 44px;
+  border-radius: 999px;
+  border: 1px solid var(--border);
+  background: color-mix(in srgb, var(--code-bg) 70%, #ffffff 30%);
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  cursor: pointer;
+  transition: transform 150ms ease, background 150ms ease, border-color 150ms ease, color 150ms ease;
+}
+
+.settings-button:hover,
+.settings-button:focus-visible {
+  background: color-mix(in srgb, var(--code-bg) 55%, #ffffff 45%);
+  border-color: var(--text-h);
+  transform: translateY(-1px);
+}
+
+.settings-button:focus-visible {
+  outline: 2px solid var(--text-h);
+  outline-offset: 2px;
+}
+
+.settings-button-active {
+  background: color-mix(in srgb, var(--code-bg) 60%, #eef2ff 40%);
+  border-color: color-mix(in srgb, var(--text-h) 60%, var(--border) 40%);
+}
+
+.rulebook-chip-active {
+  border-color: #7caad9;
+  color: #12233d;
+  background: linear-gradient(180deg, #dcecff, #a8c8eb);
+}
+
+.mute-music-control {
+  border: 2px solid color-mix(in srgb, #241d14 40%, var(--border));
+  background: linear-gradient(180deg, #f7e99b 0%, #f0d469 100%);
+  color: #241d14;
+  border-radius: 999px;
+  width: 42px;
+  height: 42px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  padding: 0;
+  cursor: pointer;
+}
+
+.mute-music-control:hover,
+.mute-music-control:focus-visible {
+  background: linear-gradient(180deg, #f8ecb8 0%, #f2d774 100%);
+}
+
+.card {
+  border: 2px solid color-mix(in srgb, #5d4c30 24%, var(--border));
+  border-radius: 12px;
+  padding: 14px;
+  text-align: left;
+  background: color-mix(in srgb, var(--panel) 94%, #ffffff 6%);
+}
+
+.card h2 {
+  margin: 0 0 8px;
+}

@@ -1,8 +1,8 @@
 import {
   iconForAuraKind,
   labelForAuraKind,
-} from '../../../utils/game-client-format.ts'
-import type { AuraGroup, HeroPassiveEffect, PreviewBattleState } from './types.ts'
+} from '../../../utils/game-client-format'
+import type { AuraGroup, HeroPassiveEffect, PreviewBattleState } from './types'
 
 export function buildAuraGroups(options: {
   state: PreviewBattleState

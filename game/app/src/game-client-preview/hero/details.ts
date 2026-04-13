@@ -1,8 +1,8 @@
-import { createGameApi } from '../../../../index.ts'
-import type { AppBattlePreview } from '../types.ts'
-import { buildAuraGroups } from './details/auras.ts'
-import { buildHeroBasicAttackContext } from './details/basic-attack.ts'
-import { buildHeroPassivePackage } from './details/passives.ts'
+import { createGameApi } from '../../../../index'
+import type { AppBattlePreview } from '../types'
+import { buildAuraGroups } from './details/auras'
+import { buildHeroBasicAttackContext } from './details/basic-attack'
+import { buildHeroPassivePackage } from './details/passives'
 
 type PreviewGameApi = ReturnType<typeof createGameApi>
 type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
@@ -24,7 +24,7 @@ export function buildHeroDetailsByEntityId(options: {
 
   const heroDetailsByEntityId: AppBattlePreview['heroDetailsByEntityId'] = {}
 
-  for (const heroEntityId of state.heroEntityIds) {
+  for (const heroEntityId of state.heroEntityIds as string[]) {
     const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {

@@ -1,7 +1,7 @@
 import { StrictMode } from 'react'
 import { createRoot } from 'react-dom/client'
 import './index.css'
-import App from './App.tsx'
+import App from './App'
 import './icons.ts'
 
 if (import.meta.env.DEV && typeof window !== 'undefined' && 'serviceWorker' in navigator) {

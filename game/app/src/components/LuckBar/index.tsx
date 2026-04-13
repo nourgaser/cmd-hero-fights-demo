@@ -1,4 +1,5 @@
 import { Icon } from '@iconify/react/offline'
+import './style.css'
 
 type LuckBarProps = {
   selfLuck: number

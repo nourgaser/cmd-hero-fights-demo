@@ -1,13 +1,14 @@
 import { useEffect, useMemo, useRef, useState } from 'react'
 import { createPortal } from 'react-dom'
 import { Icon } from '@iconify/react/offline'
+import './style.css'
 import {
   RULEBOOK_QUICK_FACTS,
   RULEBOOK_SECTIONS,
   RULEBOOK_SUBTITLE,
   RULEBOOK_TITLE,
   type RulebookDiagramKind,
-} from '../data/rulebook-content.ts'
+} from '../../data/rulebook-content'
 
 type RulebookPanelProps = {
   isOpen: boolean

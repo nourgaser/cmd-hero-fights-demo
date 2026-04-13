@@ -1,7 +1,8 @@
 import { useRef, type MouseEvent } from 'react'
 import { Icon } from '@iconify/react/offline'
-import { CARD_ICON_META } from '../data/visual-metadata.ts'
-import type { AppBattlePreview } from '../game-client.ts'
+import { CARD_ICON_META } from '../../data/visual-metadata'
+import './style.css'
+import type { AppBattlePreview } from '../../game-client'
 
 type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 

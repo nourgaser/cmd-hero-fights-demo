@@ -1,15 +1,15 @@
-import { createGameApi } from '../../../../index.ts'
+import { createGameApi } from '../../../../index'
 import {
   formatKeywordLabel,
   renderTemplatedText,
-} from '../../utils/game-client-format.ts'
-import type { AppBattlePreview } from '../types.ts'
+} from '../../utils/game-client-format'
+import type { AppBattlePreview } from '../types'
 import {
   describeCardCastCondition,
   describeNumericCardText,
   resolveNumberTrace,
   resolveSummonPreviewForCard,
-} from '../helpers.ts'
+} from '../helpers'
 
 type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
 
@@ -21,7 +21,7 @@ export function buildHeroHandCounts(options: {
 }): AppBattlePreview['heroHandCounts'] {
   const { gameApi, state } = options
 
-  return state.heroEntityIds.map((heroEntityId) => {
+  return (state.heroEntityIds as string[]).map((heroEntityId) => {
     const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {
@@ -60,7 +60,7 @@ export function buildHeroHands(options: {
     (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]
   >
 
-  return state.heroEntityIds.map((heroEntityId) => {
+  return (state.heroEntityIds as string[]).map((heroEntityId) => {
     const entity = state.entitiesById[heroEntityId]
 
     if (!entity || entity.kind !== 'hero') {

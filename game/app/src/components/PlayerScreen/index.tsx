@@ -1,13 +1,14 @@
 import { useCallback, useEffect, useMemo, useRef, useState, type CSSProperties } from 'react'
 import { Icon } from '@iconify/react/offline'
-import type { AppBattlePreview } from '../game-client.ts'
-import { LUCK_BALANCE_LIMIT } from '../../../shared/game-constants.ts'
-import { SIDE_VISUALS } from '../data/visual-metadata.ts'
-import { KEYBOARD_SHORTCUT_HINT_ROWS, resolveKeyboardShortcutAction } from '../config/keyboard-shortcuts.ts'
-import { BattlefieldGrid } from './BattlefieldGrid.tsx'
-import { HandBar } from './HandBar.tsx'
-import { InspectPanel } from './InspectPanel.tsx'
-import type { InspectTarget } from '../inspectable.ts'
+import type { AppBattlePreview } from '../../game-client'
+import { LUCK_BALANCE_LIMIT } from '../../../../shared/game-constants'
+import { SIDE_VISUALS } from '../../data/visual-metadata'
+import { KEYBOARD_SHORTCUT_HINT_ROWS, resolveKeyboardShortcutAction } from '../../config/keyboard-shortcuts'
+import { BattlefieldGrid } from '../BattlefieldGrid/index'
+import { HandBar } from '../HandBar/index'
+import { InspectPanel } from '../InspectPanel/index'
+import './style.css'
+import type { InspectTarget } from '../../inspectable'
 
 type PlayerScreenProps = {
   title: string

@@ -1,13 +1,14 @@
 import { Icon } from '@iconify/react/offline'
-import type { AppBattlePreview } from '../game-client.ts'
-import { CARD_ICON_META, ENTITY_ICON_META } from '../data/visual-metadata.ts'
+import './style.css'
+import type { AppBattlePreview } from '../../game-client'
+import { CARD_ICON_META, ENTITY_ICON_META } from '../../data/visual-metadata'
 import {
   renderTextWithHighlightedNumbers,
   simplifyTooltipSummaryText,
   splitTooltipDetailLabel,
   splitDetailTextIntoLines,
-} from '../utils/render-numeric-text.tsx'
-import type { InspectTarget } from '../inspectable.ts'
+} from '../../utils/render-numeric-text'
+import type { InspectTarget } from '../../inspectable'
 
 type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 type EntityStats = AppBattlePreview['battlefield']['entitiesById'][string]

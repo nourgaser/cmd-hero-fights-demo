@@ -1,5 +1,5 @@
-import { createGameApi } from '../../../../../index.ts'
-import type { AppBattlePreview } from '../../types.ts'
+import { createGameApi } from '../../../../../index'
+import type { AppBattlePreview } from '../../types'
 
 export type PreviewGameApi = ReturnType<typeof createGameApi>
 export type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']

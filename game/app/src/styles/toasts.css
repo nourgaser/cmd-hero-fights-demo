@@ -1,0 +1,40 @@
+.game-toast {
+  border: 2px solid #241d14;
+  border-radius: 10px;
+  background: #f2cc59;
+  color: #241d14;
+  box-shadow: 0 8px 18px rgba(0, 0, 0, 0.22);
+  font-weight: 600;
+}
+
+.game-toast-body {
+  display: grid;
+  gap: 4px;
+  min-width: 0;
+}
+
+.game-toast-summary {
+  display: block;
+  line-height: 1.2;
+  color: #241d14;
+}
+
+.game-toast-detail {
+  display: block;
+  min-height: 2.4em;
+  max-height: 2.4em;
+  overflow: hidden;
+  font-size: 12px;
+  line-height: 1.25;
+  color: color-mix(in srgb, #241d14 84%, #ffffff 16%);
+  opacity: 0.9;
+}
+
+ .game-toast-body-expanded .game-toast-detail {
+  opacity: 1;
+  border: 2px solid color-mix(in srgb, var(--tooltip-border) 82%, #ffffff 18%);
+  background: linear-gradient(180deg, var(--tooltip-surface-start) 0%, var(--tooltip-surface-end) 100%);
+  color: var(--tooltip-text);
+  color: #734f00;
+  font-weight: 800;
+}

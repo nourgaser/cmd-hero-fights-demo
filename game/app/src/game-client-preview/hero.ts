@@ -1,8 +1,8 @@
-import { createGameApi } from '../../../index.ts'
-import type { AppBattlePreview } from './types.ts'
-import { buildHeroActionTargets } from './hero/actions.ts'
-import { buildHeroDetailsByEntityId } from './hero/details.ts'
-import { buildHeroHandCounts, buildHeroHands } from './hero/hand.ts'
+import { createGameApi } from '../../../index'
+import type { AppBattlePreview } from './types'
+import { buildHeroActionTargets } from './hero/actions'
+import { buildHeroDetailsByEntityId } from './hero/details'
+import { buildHeroHandCounts, buildHeroHands } from './hero/hand'
 
 type PreviewGameApi = ReturnType<typeof createGameApi>
 type PreviewHeroData = Pick<AppBattlePreview, 'heroHandCounts' | 'heroHands' | 'heroDetailsByEntityId' | 'heroActionTargets'>

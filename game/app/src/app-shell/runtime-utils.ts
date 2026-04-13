@@ -2,15 +2,15 @@ import type {
   AppBattlePreview,
   AppBattleSession,
   AppBattleSnapshot,
-} from '../game-client.ts'
+} from '../game-client'
 import {
   type AppReplayActionLogEntry,
   branchSessionFromSnapshot,
   createInitialBattleSession,
   replaySessionFromActionLog,
-} from '../game-client-session.ts'
-import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from '../data/game-bootstrap.ts'
-import type { ReplayUrlPayload } from '../utils/replay-url.ts'
+} from '../game-client-session'
+import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from '../data/game-bootstrap'
+import type { ReplayUrlPayload } from '../utils/replay-url'
 
 export type AppRuntime = {
   session: AppBattleSession

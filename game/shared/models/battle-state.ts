@@ -6,7 +6,7 @@ import { EntityIdSchema, HandCardIdSchema } from "./action";
 import { AuraInstanceSchema } from "./aura";
 import { EntityFootprintSchema } from "./footprint";
 import { HeroIdSchema } from "./hero";
-import { ListenerDefinitionSchema } from "./effects/index.ts";
+import { ListenerDefinitionSchema } from "./effects/index";
 import { NumberModifierSchema } from "./number-modifier";
 import { PassiveRuleSchema } from "./passive-rule";
 import { PositionSchema } from "./position";

@@ -1,17 +1,17 @@
-import { createGameApi } from '../../index.ts'
+import { createGameApi } from '../../index'
 import type { BattleAction, BattleEvent } from '../../shared/models'
 import {
   DEFAULT_GAME_BOOTSTRAP_CONFIG,
   type GameBootstrapConfig,
   type HeroBootstrapConfig,
-} from './data/game-bootstrap.ts'
+} from './data/game-bootstrap'
 import {
   type AppActionHistoryEntry,
   type AppBattlePreview,
   type AppBattleSession,
   type AppBattleSnapshot,
   buildPreviewFromState,
-} from './game-client.ts'
+} from './game-client'
 
 function resolveHeroSetup(
   gameApi: ReturnType<typeof createGameApi>,
@@ -201,9 +201,9 @@ function resolveSessionAction(options: {
       action: cloneSerializable(action),
       state: cloneSerializable(result.state),
       nextSequence: session.nextSequence,
-      resultMessage: result.reason,
+      resultMessage: !result.ok ? result.reason : '',
       success: false,
-      failureReason: result.reason,
+      failureReason: !result.ok ? result.reason : undefined,
       events: [],
       rngCheckpoint: session.battleRng.getCheckpoint(),
     }
@@ -213,9 +213,9 @@ function resolveSessionAction(options: {
       turnNumber,
       actorHeroEntityId: action.actorHeroEntityId,
       actionKind: action.kind,
-      resultMessage: result.reason,
+      resultMessage: !result.ok ? result.reason : '',
       success: false,
-      failureReason: result.reason,
+      failureReason: !result.ok ? result.reason : undefined,
       eventCount: 0,
       preSnapshotId,
       postSnapshotId,
@@ -233,7 +233,7 @@ function resolveSessionAction(options: {
 
     return {
       ok: false,
-      reason: result.reason,
+      reason: !result.ok ? result.reason : 'Unknown error',
       session: nextSession,
       preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
     }

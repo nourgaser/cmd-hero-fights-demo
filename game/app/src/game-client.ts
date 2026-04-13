@@ -1,12 +1,12 @@
-import { createGameApi } from '../../index.ts'
+import { createGameApi } from '../../index'
 import type { BattleAction, BattleEvent } from '../../shared/models'
 
 export type {
   AppBattlePreview,
   AppNumberContributionPreview,
   AppNumberTrace,
-} from './game-client-preview.ts'
-export { buildPreviewFromState } from './game-client-preview.ts'
+} from './game-client-preview'
+export { buildPreviewFromState } from './game-client-preview'
 
 type CreatedBattle = ReturnType<ReturnType<typeof createGameApi>['createBattle']>
 type BattleState = CreatedBattle['state']
