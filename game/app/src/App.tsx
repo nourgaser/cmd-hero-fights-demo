@@ -10,6 +10,8 @@ import {
   createRuntimeFromReplayPayload,
   describeCardCastCondition,
   formatReplayPlaybackSpeed,
+  getActionTimelineSnapshots,
+  getReplayPayloadTimelineIndex,
   getReplayModeActiveSnapshot,
   incrementSeed,
   isTypingTarget,
@@ -142,22 +144,33 @@ function App() {
 
   const handleCopyReplayPayload = useCallback(async () => {
     if (!runtime) return
-    const p = createReplayUrlPayload({ bootstrapConfig, seed: runtime.session.state.seed, actionLog: createActionLogFromSession(runtime.session), snapshotId: activeActionSnapshotId ?? null })
+    const p = createReplayUrlPayload({
+      bootstrapConfig,
+      seed: runtime.session.state.seed,
+      actionLog: createActionLogFromSession(runtime.session),
+      timelineIndex: getReplayPayloadTimelineIndex(runtime.session),
+    })
     try { await navigator.clipboard.writeText(JSON.stringify(p, null, 2)); showActionSuccessToast('Replay payload copied to clipboard.', []) }
     catch { showActionErrorToast('Failed to copy replay payload.') }
-  }, [runtime, bootstrapConfig, activeActionSnapshotId, showActionSuccessToast, showActionErrorToast])
+  }, [runtime, bootstrapConfig, showActionSuccessToast, showActionErrorToast])
 
   const handleValidateReplayDeterminism = useCallback(() => {
-    if (!activeActionSnapshotId || !activeActionSnapshot || !runtime) { showActionErrorToast('Select a snapshot before validating replay determinism.'); return }
-    const res = replaySessionFromActionLog({ gameApi: runtime.session.gameApi, config: { ...bootstrapConfig, seed: runtime.session.state.seed }, actionLog: createActionLogFromSession(runtime.session), snapshotId: activeActionSnapshotId ?? null })
+    if (activeActionSnapshotIndex < 0 || !activeActionSnapshot || !runtime) { showActionErrorToast('Select a snapshot before validating replay determinism.'); return }
+    const res = replaySessionFromActionLog({
+      gameApi: runtime.session.gameApi,
+      config: { ...bootstrapConfig, seed: runtime.session.state.seed },
+      actionLog: createActionLogFromSession(runtime.session),
+      timelineIndex: activeActionSnapshotIndex,
+    })
     if (!res.ok) { showActionErrorToast(`Replay validation failed: ${res.reason}`); return }
-    const rebuilt = res.session.snapshots.find((s) => s.id === activeActionSnapshotId)
-    if (!rebuilt) { showActionErrorToast(`Replay validation failed: snapshot ${activeActionSnapshotId} was not rebuilt.`); return }
+    const rebuiltTimelineSnapshots = getActionTimelineSnapshots(res.session)
+    const rebuilt = rebuiltTimelineSnapshots[activeActionSnapshotIndex]
+    if (!rebuilt) { showActionErrorToast(`Replay validation failed: step #${activeActionSnapshotIndex} was not rebuilt.`); return }
     const sameS = JSON.stringify(rebuilt.state) === JSON.stringify(activeActionSnapshot.state); const sameE = JSON.stringify(rebuilt.events) === JSON.stringify(activeActionSnapshot.events); const sameSeq = rebuilt.nextSequence === activeActionSnapshot.nextSequence; const sameRng = rebuilt.rngCheckpoint.stepCount === activeActionSnapshot.rngCheckpoint.stepCount
-    if (sameS && sameE && sameSeq && sameRng) { showActionSuccessToast(`Replay validation passed at snapshot ${activeActionSnapshotId}.`, []); return }
+    if (sameS && sameE && sameSeq && sameRng) { showActionSuccessToast(`Replay validation passed at step #${activeActionSnapshotIndex}.`, []); return }
     let m = 'state mismatch'; if (!sameE) m = 'event mismatch'; else if (!sameSeq) m = 'nextSequence mismatch'; else if (!sameRng) m = 'RNG step mismatch'
-    showActionErrorToast(`Replay validation failed at snapshot ${activeActionSnapshotId}: ${m}.`)
-  }, [activeActionSnapshotId, activeActionSnapshot, runtime, bootstrapConfig, showActionErrorToast, showActionSuccessToast])
+    showActionErrorToast(`Replay validation failed at step #${activeActionSnapshotIndex}: ${m}.`)
+  }, [activeActionSnapshotIndex, activeActionSnapshot, runtime, bootstrapConfig, showActionErrorToast, showActionSuccessToast])
 
   const { isAutoPlayAEnabled, setIsAutoPlayAEnabled, isAutoPlayBEnabled, setIsAutoPlayBEnabled } = useAutoplay({
     runtime, setRuntime, autoPlayButtonsVisible, autoPlayDelayMs, autoPlayAutoEndTurnWhenNoLegalMoves, autoPlayUseEntityActives, showActionSuccessToast, showBattleEventToast,

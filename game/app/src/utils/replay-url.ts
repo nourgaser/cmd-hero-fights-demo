@@ -1,20 +1,66 @@
-import type { BattleAction } from '../../../shared/models'
+import type { Position, TargetSelector } from '../../../shared/models'
 import { deflateSync, inflateSync } from 'fflate'
 import type { GameBootstrapConfig } from '../data/game-bootstrap'
-export type AppReplayActionLogEntry = { action: BattleAction; success?: boolean }
 
+export type ReplayActionSelection = {
+  targetSelector?: TargetSelector
+  targetPosition?: Position
+}
+
+export type ReplayPlayCardAction = {
+  kind: 'playCard'
+  actorHeroEntityId: string
+  handCardIndex: number
+  selection: ReplayActionSelection
+}
+
+export type ReplayBasicAttackAction = {
+  kind: 'basicAttack'
+  actorHeroEntityId: string
+  attackerSelector: TargetSelector
+  selection: {
+    targetSelector: TargetSelector
+  }
+}
+
+export type ReplayUseEntityActiveAction = {
+  kind: 'useEntityActive'
+  actorHeroEntityId: string
+  sourceSelector: TargetSelector
+  selection: ReplayActionSelection
+}
+
+export type ReplayPressLuckAction = {
+  kind: 'pressLuck'
+  actorHeroEntityId: string
+}
+
+export type ReplayEndTurnAction = {
+  kind: 'endTurn'
+  actorHeroEntityId: string
+}
+
+export type ReplayBattleAction =
+  | ReplayPlayCardAction
+  | ReplayBasicAttackAction
+  | ReplayUseEntityActiveAction
+  | ReplayPressLuckAction
+  | ReplayEndTurnAction
+
+export type ReplayActionLogEntry = {
+  action: ReplayBattleAction
+  success: boolean
+}
 
 const REPLAY_PARAM_KEY = 'replay'
 type ReplayHistoryMode = 'push' | 'replace'
 
-type ReplayUrlPayloadV2 = {
-  version: 2
+export type ReplayUrlPayload = {
+  version: 3
   bootstrapConfig: GameBootstrapConfig
-  actionLog: AppReplayActionLogEntry[]
-  snapshotId: number | null
+  actionLog: ReplayActionLogEntry[]
+  timelineIndex: number | null
 }
-
-export type ReplayUrlPayload = ReplayUrlPayloadV2
 
 function base64UrlEncodeBytes(bytes: Uint8Array): string {
   let binary = ''
@@ -41,20 +87,20 @@ function base64UrlDecodeBytes(value: string): Uint8Array {
 export function createReplayUrlPayload(options: {
   bootstrapConfig: GameBootstrapConfig
   seed: string
-  actionLog: AppReplayActionLogEntry[]
-  snapshotId: number | null
+  actionLog: ReplayActionLogEntry[]
+  timelineIndex: number | null
 }): ReplayUrlPayload {
   return {
-    version: 2,
+    version: 3,
     bootstrapConfig: {
       ...options.bootstrapConfig,
       seed: options.seed,
     },
     actionLog: options.actionLog.map((entry) => ({
-      action: entry.action as BattleAction,
+      action: entry.action,
       success: entry.success,
     })),
-    snapshotId: options.snapshotId,
+    timelineIndex: options.timelineIndex,
   }
 }
 
@@ -69,13 +115,9 @@ export function decodeReplayUrlPayload(encoded: string): ReplayUrlPayload | null
     const compressed = base64UrlDecodeBytes(encoded)
     const decompressed = inflateSync(compressed)
     const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload
-    if (parsed.version !== 2) {
+    if (parsed.version !== 3 || !Array.isArray(parsed.actionLog)) {
       return null
     }
-    if (!Array.isArray(parsed.actionLog)) {
-      return null
-    }
-
     return parsed
   } catch {
     return null

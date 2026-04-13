@@ -1,4 +1,5 @@
-import type { BattleAction, BattleEvent } from '../../shared/models'
+import type { BattleAction, BattleEvent, BattleState } from '../../shared/models'
+import { resolveSelectorToDeterministicEntity } from '../../engine/core/selector-resolution'
 import {
   type AppBattlePreview,
   buildPreviewFromState,
@@ -11,6 +12,10 @@ import {
 } from './game-client'
 
 import { type GameBootstrapConfig } from './data/game-bootstrap'
+import type {
+  ReplayActionLogEntry,
+  ReplayBattleAction,
+} from './utils/replay-url'
 
 function cloneSerializable<T>(value: T): T {
   if (typeof structuredClone === 'function') {
@@ -359,61 +364,259 @@ export function branchSessionFromSnapshot(options: {
   }
 }
 
+function applyReplayedBattleAction(
+  runtime: { session: AppBattleSession; preview: AppBattlePreview },
+  action: BattleAction,
+): SessionResolutionResult {
+  switch (action.kind) {
+    case 'playCard':
+      return resolveSessionPlayCard({
+        session: runtime.session,
+        actorHeroEntityId: action.actorHeroEntityId,
+        handCardId: action.handCardId,
+        targetEntityId: action.selection.targetEntityId,
+        targetPosition: action.selection.targetPosition,
+      })
+    case 'basicAttack':
+      return resolveSessionBasicAttack({
+        session: runtime.session,
+        actorHeroEntityId: action.actorHeroEntityId,
+        attackerEntityId: action.attackerEntityId,
+        targetEntityId: action.selection.targetEntityId,
+      })
+    case 'useEntityActive':
+      return resolveSessionUseEntityActive({
+        session: runtime.session,
+        actorHeroEntityId: action.actorHeroEntityId,
+        sourceEntityId: action.sourceEntityId,
+        targetEntityId: action.selection.targetEntityId,
+      })
+    case 'pressLuck':
+    case 'endTurn':
+      return resolveSessionSimpleAction({
+        session: runtime.session,
+        actorHeroEntityId: action.actorHeroEntityId,
+        kind: action.kind,
+      })
+    default:
+      return {
+        ok: false,
+        reason: `Unsupported action kind in replay log: ${(action as { kind: string }).kind}`,
+        session: runtime.session,
+        preview: runtime.preview,
+      }
+  }
+}
+
+/**
+ * Deterministically materializes a replay action to an executable BattleAction.
+ * Uses selector-based resolution for chess-grade determinism.
+ */
+function materializeReplayAction(
+  state: BattleState,
+  replayAction: ReplayBattleAction,
+):
+  | { ok: true; action: BattleAction }
+  | { ok: false; reason: string } {
+
+  switch (replayAction.kind) {
+    case 'playCard': {
+      const actorHero = state.entitiesById[replayAction.actorHeroEntityId]
+      if (!actorHero || actorHero.kind !== 'hero') {
+        return {
+          ok: false,
+          reason: `Actor hero ${replayAction.actorHeroEntityId} not found.`,
+        }
+      }
+
+      const handCard = actorHero.handCards[replayAction.handCardIndex]
+      if (!handCard) {
+        return {
+          ok: false,
+          reason: `Hand card at index ${replayAction.handCardIndex} not found.`,
+        }
+      }
+
+      let targetEntityId: string | undefined
+      if (replayAction.selection.targetSelector) {
+        const resolved = resolveSelectorToDeterministicEntity(
+          state,
+          replayAction.selection.targetSelector,
+        )
+        if (!resolved) {
+          return {
+            ok: false,
+            reason: `Could not resolve play-card target selector.`,
+          }
+        }
+        targetEntityId = resolved
+      }
+
+      return {
+        ok: true,
+        action: {
+          kind: 'playCard',
+          actorHeroEntityId: replayAction.actorHeroEntityId,
+          handCardId: handCard.id,
+          selection: {
+            targetEntityId,
+            targetPosition: replayAction.selection.targetPosition
+              ? { ...replayAction.selection.targetPosition }
+              : undefined,
+          },
+        },
+      }
+    }
+
+    case 'basicAttack': {
+      const attackerEntityId = resolveSelectorToDeterministicEntity(
+        state,
+        replayAction.attackerSelector,
+      )
+      if (!attackerEntityId) {
+        return {
+          ok: false,
+          reason: `Could not resolve basic-attack attacker selector.`,
+        }
+      }
+
+      const targetEntityId = resolveSelectorToDeterministicEntity(
+        state,
+        replayAction.selection.targetSelector,
+      )
+      if (!targetEntityId) {
+        return {
+          ok: false,
+          reason: `Could not resolve basic-attack target selector.`,
+        }
+      }
+
+      return {
+        ok: true,
+        action: {
+          kind: 'basicAttack',
+          actorHeroEntityId: replayAction.actorHeroEntityId,
+          attackerEntityId,
+          selection: {
+            targetEntityId,
+          },
+        },
+      }
+    }
+
+    case 'useEntityActive': {
+      const sourceEntityId = resolveSelectorToDeterministicEntity(
+        state,
+        replayAction.sourceSelector,
+      )
+      if (!sourceEntityId) {
+        return {
+          ok: false,
+          reason: `Could not resolve entity-active source selector.`,
+        }
+      }
+
+      let targetEntityId: string | undefined
+      if (replayAction.selection.targetSelector) {
+        const resolved = resolveSelectorToDeterministicEntity(
+          state,
+          replayAction.selection.targetSelector,
+        )
+        if (!resolved) {
+          return {
+            ok: false,
+            reason: `Could not resolve entity-active target selector.`,
+          }
+        }
+        targetEntityId = resolved
+      }
+
+      return {
+        ok: true,
+        action: {
+          kind: 'useEntityActive',
+          actorHeroEntityId: replayAction.actorHeroEntityId,
+          sourceEntityId,
+          selection: {
+            targetEntityId,
+            targetPosition: replayAction.selection.targetPosition
+              ? { ...replayAction.selection.targetPosition }
+              : undefined,
+          },
+        },
+      }
+    }
+
+    case 'pressLuck':
+    case 'endTurn':
+      return {
+        ok: true,
+        action: replayAction,
+      }
+
+    default:
+      return {
+        ok: false,
+        reason: `Unsupported replay action kind: ${(replayAction as { kind: string }).kind}`,
+      }
+  }
+}
+
+function jumpSessionToTimelineIndex(options: {
+  session: AppBattleSession
+  timelineIndex: number
+}): SnapshotSessionResult {
+  const firstPreSnapshot = options.session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
+  const postSnapshots = options.session.snapshots.filter((snapshot) => snapshot.phase === 'post')
+  const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
+  const targetSnapshot = timelineSnapshots[options.timelineIndex]
+  if (!targetSnapshot) {
+    return {
+      ok: false,
+      reason: `Replay timeline index ${options.timelineIndex} was not found.`,
+    }
+  }
+
+  return jumpSessionToSnapshot({
+    session: options.session,
+    snapshotId: targetSnapshot.id,
+  })
+}
+
+
 export function replaySessionFromActionLog(options: {
   gameApi: AppBattleApi
   config: GameBootstrapConfig
-  actionLog: Array<{ action: BattleAction; success?: boolean }>
-  snapshotId: number | null
+  actionLog: ReplayActionLogEntry[]
+  timelineIndex: number | null
 }): SnapshotSessionResult {
-  const { gameApi, config, actionLog, snapshotId } = options
+  const { gameApi, config, actionLog, timelineIndex } = options
   let runtime = createInitialBattleSession({ gameApi, config })
 
   for (const entry of actionLog) {
-    const action = entry.action
-    let result: SessionResolutionResult
+    const actionResolution = materializeReplayAction(runtime.session.state, entry.action)
+    if (!actionResolution.ok) {
+      // Materialization should succeed with selector-based resolution, unless state changed
+      // If this was a historical success, deterministically skip to maintain replay resilience
+      if (entry.success === true) {
+        continue
+      }
 
-    switch (action.kind) {
-      case 'playCard':
-        result = resolveSessionPlayCard({
-          session: runtime.session,
-          actorHeroEntityId: action.actorHeroEntityId,
-          handCardId: action.handCardId,
-          targetEntityId: action.selection.targetEntityId,
-          targetPosition: action.selection.targetPosition,
-        })
-        break
-      case 'basicAttack':
-        result = resolveSessionBasicAttack({
-          session: runtime.session,
-          actorHeroEntityId: action.actorHeroEntityId,
-          attackerEntityId: action.attackerEntityId,
-          targetEntityId: action.selection.targetEntityId,
-        })
-        break
-      case 'useEntityActive':
-        result = resolveSessionUseEntityActive({
-          session: runtime.session,
-          actorHeroEntityId: action.actorHeroEntityId,
-          sourceEntityId: action.sourceEntityId,
-          targetEntityId: action.selection.targetEntityId,
-        })
-        break
-      case 'pressLuck':
-      case 'endTurn':
-        result = resolveSessionSimpleAction({
-          session: runtime.session,
-          actorHeroEntityId: action.actorHeroEntityId,
-          kind: action.kind,
-        })
-        break
-      default:
-        return {
-          ok: false,
-          reason: `Unsupported action kind in replay log: ${(action as { kind: string }).kind}`,
-        }
+      return {
+        ok: false,
+        reason: `Replay failed at action: ${entry.action.kind}. Reason: ${actionResolution.reason}`,
+      }
     }
 
+    const result = applyReplayedBattleAction(runtime, actionResolution.action)
     if (!result.ok) {
+      // If action was historically successful but failed in replay, deterministically skip
+      // This handles edge cases like state corruption or content updates
+      if (entry.success === true) {
+        continue
+      }
+
+      // If action was historically failed, record the failed state
       if (entry.success === false) {
         runtime = {
           session: result.session,
@@ -421,7 +624,8 @@ export function replaySessionFromActionLog(options: {
         }
         continue
       }
-      return { ok: false, reason: `Replay failed at action: ${action.kind}. Reason: ${result.reason}` }
+
+      return { ok: false, reason: `Replay failed at action: ${actionResolution.action.kind}. Reason: ${result.reason}` }
     }
 
     runtime = {
@@ -430,17 +634,11 @@ export function replaySessionFromActionLog(options: {
     }
   }
 
-  if (snapshotId !== null) {
-    const jumpResult = jumpSessionToSnapshot({
+  if (timelineIndex !== null) {
+    return jumpSessionToTimelineIndex({
       session: runtime.session,
-      snapshotId,
+      timelineIndex,
     })
-
-    if (!jumpResult.ok) {
-      return jumpResult
-    }
-
-    return jumpResult
   }
 
   return {

@@ -5,6 +5,21 @@ import { PositionSchema } from "./position";
 export const EntityIdSchema = z.string().min(1);
 export type EntityId = z.infer<typeof EntityIdSchema>;
 
+// Target selectors: declarative descriptions for deterministic entity resolution at replay time
+export const TargetSelectorSchema = z.discriminatedUnion("type", [
+  z.object({ type: z.literal("hero"), heroDefinitionId: z.string() }),
+  z.object({
+    type: z.literal("summoned"),
+    ownerHeroDefinitionId: z.string(),
+    kind: z.enum(["weapon", "totem", "companion"]),
+    definitionCardId: z.string(),
+    anchorPosition: PositionSchema,
+  }),
+  z.object({ type: z.literal("self") }),
+  z.object({ type: z.literal("source") }),
+]);
+export type TargetSelector = z.infer<typeof TargetSelectorSchema>;
+
 export const HandCardIdSchema = z.string().min(1);
 export type HandCardId = z.infer<typeof HandCardIdSchema>;
 

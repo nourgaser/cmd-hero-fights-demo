@@ -14,7 +14,13 @@ import {
   resolveEffectiveNumber,
   GAME_CONTENT_REGISTRY,
 } from '../../../api'
-import type { BattleAction } from '../../../shared/models'
+import { createSelectorForEntity } from '../../../engine/core/selector-resolution'
+import type { BattleAction, BattleState } from '../../../shared/models'
+import type {
+  ReplayActionLogEntry,
+  ReplayBattleAction,
+  ReplayUrlPayload,
+} from '../utils/replay-url'
 
 import type { GameBootstrapConfig } from '../data/game-bootstrap'
 
@@ -25,11 +31,7 @@ export type AppRuntime = {
 
 export type ReplayNavigationDirection = -1 | 1
 
-export function createRuntimeFromReplayPayload(replayPayload: {
-  bootstrapConfig: GameBootstrapConfig
-  actionLog: Array<{ action: BattleAction; success?: boolean }>
-  snapshotId: number | null
-}): AppRuntime {
+export function createRuntimeFromReplayPayload(replayPayload: ReplayUrlPayload): AppRuntime {
   const gameApi = {
     createBattle,
     resolveAction,
@@ -41,7 +43,7 @@ export function createRuntimeFromReplayPayload(replayPayload: {
     gameApi,
     config: replayPayload.bootstrapConfig,
     actionLog: replayPayload.actionLog,
-    snapshotId: replayPayload.snapshotId,
+    timelineIndex: replayPayload.timelineIndex,
   })
 
   if (!replayResult.ok) {
@@ -81,28 +83,101 @@ export function getReplayModeActiveSnapshot(session: AppBattleSession): AppBattl
   return session.snapshots.find((s) => s.id === session.activeSnapshotId) ?? null
 }
 
-export function getReplayPayloadSnapshotId(session: AppBattleSession): number | null {
+export function getActionTimelineSnapshots(session: AppBattleSession): AppBattleSnapshot[] {
   const postSnapshots = session.snapshots.filter((snapshot) => snapshot.phase === 'post')
   const firstPreSnapshot = session.snapshots.find((snapshot) => snapshot.phase === 'pre') ?? null
-  const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
-  const latestActionSnapshotId = timelineSnapshots.at(-1)?.id ?? null
-  const currentSnapshotId = session.activeSnapshotId ?? latestActionSnapshotId
-  const currentSnapshot = currentSnapshotId !== null
-    ? session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
-    : null
+  return firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
+}
+
+export function getReplayPayloadTimelineIndex(session: AppBattleSession): number | null {
+  if (session.activeSnapshotId === null) {
+    // Live mode — no paused position to encode. Reconstruction will replay all
+    // actions and leave activeSnapshotId null, restoring live mode correctly.
+    return null
+  }
+
+  const currentSnapshot = session.snapshots.find((snapshot) => snapshot.id === session.activeSnapshotId) ?? null
 
   if (!currentSnapshot) {
     return null
   }
 
-  return currentSnapshot.phase === 'pre'
-    ? timelineSnapshots[0]?.id ?? null
-    : currentSnapshot.id
+  if (currentSnapshot.phase === 'pre') {
+    return 0
+  }
+
+  const timelineSnapshots = getActionTimelineSnapshots(session)
+  const timelineIndex = timelineSnapshots.findIndex((snapshot) => snapshot.id === currentSnapshot.id)
+  return timelineIndex >= 0 ? timelineIndex : null
+}
+
+function createReplayHandCardReference(
+  state: BattleState,
+  actorHeroEntityId: string,
+  handCardId: string,
+): number {
+  const actorHero = state.entitiesById[actorHeroEntityId]
+  if (!actorHero || actorHero.kind !== 'hero') {
+    return -1
+  }
+
+  const handCardIndex = actorHero.handCards.findIndex((entry) => entry.id === handCardId)
+  return handCardIndex >= 0 ? handCardIndex : -1
+}
+
+function serializeReplayAction(state: BattleState, action: BattleAction): ReplayBattleAction {
+  switch (action.kind) {
+    case 'playCard': {
+      const handCardIndex = createReplayHandCardReference(state, action.actorHeroEntityId, action.handCardId)
+      return {
+        kind: 'playCard',
+        actorHeroEntityId: action.actorHeroEntityId,
+        handCardIndex,
+        selection: {
+          targetSelector: action.selection.targetEntityId
+            ? createSelectorForEntity(state, action.selection.targetEntityId) || undefined
+            : undefined,
+          targetPosition: action.selection.targetPosition ? { ...action.selection.targetPosition } : undefined,
+        },
+      }
+    }
+    case 'basicAttack': {
+      const attackerSelector = createSelectorForEntity(state, action.attackerEntityId)
+      const targetSelector = createSelectorForEntity(state, action.selection.targetEntityId)
+      return {
+        kind: 'basicAttack',
+        actorHeroEntityId: action.actorHeroEntityId,
+        attackerSelector: attackerSelector || { type: 'self' },
+        selection: {
+          targetSelector: targetSelector || { type: 'self' },
+        },
+      }
+    }
+    case 'useEntityActive': {
+      const sourceSelector = createSelectorForEntity(state, action.sourceEntityId)
+      return {
+        kind: 'useEntityActive',
+        actorHeroEntityId: action.actorHeroEntityId,
+        sourceSelector: sourceSelector || { type: 'self' },
+        selection: {
+          targetSelector: action.selection.targetEntityId
+            ? createSelectorForEntity(state, action.selection.targetEntityId) || undefined
+            : undefined,
+          targetPosition: action.selection.targetPosition ? { ...action.selection.targetPosition } : undefined,
+        },
+      }
+    }
+    case 'pressLuck':
+    case 'endTurn':
+      return action
+    default:
+      return action
+  }
 }
 
 export function createActionLogFromSession(
   session: AppBattleSession,
-): Array<{ action: BattleAction; success: boolean }> {
+): ReplayActionLogEntry[] {
   return session.history.map((entry) => {
     const preSnapshot = session.snapshots.find((s) => s.id === entry.preSnapshotId)
     if (!preSnapshot) {
@@ -110,7 +185,7 @@ export function createActionLogFromSession(
     }
 
     return {
-      action: preSnapshot.action,
+      action: serializeReplayAction(preSnapshot.state, preSnapshot.action),
       success: entry.success,
     }
   })
