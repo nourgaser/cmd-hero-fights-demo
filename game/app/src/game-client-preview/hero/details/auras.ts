@@ -2,10 +2,11 @@ import {
   iconForAuraKind,
   labelForAuraKind,
 } from '../../../utils/game-client-format'
-import type { AuraGroup, HeroPassiveEffect, PreviewBattleState } from './types'
+import type { AuraGroup, HeroPassiveEffect } from './types'
+import type { BattleState } from '../../../../../shared/models'
 
 export function buildAuraGroups(options: {
-  state: PreviewBattleState
+  state: BattleState
   heroEntityId: string
 }): AuraGroup[] {
   const { state, heroEntityId } = options
@@ -15,42 +16,42 @@ export function buildAuraGroups(options: {
     .filter((aura) => aura.ownerHeroEntityId === heroEntityId && aura.expiresOnTurnNumber > state.turn.turnNumber)
     .sort((left, right) => left.expiresOnTurnNumber - right.expiresOnTurnNumber)
 
-  return Object.values(
-    heroActiveAuras.reduce(
-      (map, aura) => {
-        const existing = map[aura.kind]
-        if (existing) {
-          existing.instances.push({
+  const auraMap = heroActiveAuras.reduce(
+    (map, aura) => {
+      const existing = map[aura.kind]
+      if (existing) {
+        existing.instances.push({
+          auraId: aura.id,
+          turnsRemaining: aura.expiresOnTurnNumber - state.turn.turnNumber,
+          expiresOnTurnNumber: aura.expiresOnTurnNumber,
+        })
+        return map
+      }
+
+      map[aura.kind] = {
+        auraKind: aura.kind,
+        label: labelForAuraKind(aura.kind),
+        stackCount: 1,
+        turnsUntilAmplifiedEnds: 0,
+        isAmplified: false,
+        baseResistanceBonus: aura.baseResistanceBonus,
+        amplifiedResistanceBonus: aura.amplifiedResistanceBonus,
+        currentResistanceBonus: 0,
+        triggeredThisTurn,
+        instances: [
+          {
             auraId: aura.id,
             turnsRemaining: aura.expiresOnTurnNumber - state.turn.turnNumber,
             expiresOnTurnNumber: aura.expiresOnTurnNumber,
-          })
-          return map
-        }
+          },
+        ],
+      }
+      return map
+    },
+    {} as Record<string, AuraGroup>,
+  )
 
-        map[aura.kind] = {
-          auraKind: aura.kind,
-          label: labelForAuraKind(aura.kind),
-          stackCount: 1,
-          turnsUntilAmplifiedEnds: 0,
-          isAmplified: false,
-          baseResistanceBonus: aura.baseResistanceBonus,
-          amplifiedResistanceBonus: aura.amplifiedResistanceBonus,
-          currentResistanceBonus: 0,
-          triggeredThisTurn,
-          instances: [
-            {
-              auraId: aura.id,
-              turnsRemaining: aura.expiresOnTurnNumber - state.turn.turnNumber,
-              expiresOnTurnNumber: aura.expiresOnTurnNumber,
-            },
-          ],
-        }
-        return map
-      },
-      {} as Record<string, AuraGroup>,
-    ),
-  ).map((group) => {
+  return Object.values(auraMap).map((group) => {
     const instances = [...group.instances].sort((left, right) => left.expiresOnTurnNumber - right.expiresOnTurnNumber)
     const stackCount = instances.length
     const isAmplified = stackCount >= 2

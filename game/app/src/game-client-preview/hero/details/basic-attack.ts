@@ -4,12 +4,13 @@ import {
   resolveNumberTrace,
 } from '../../helpers'
 import type { PreviewBattleState, PreviewGameApi, HeroEntity } from './types'
+import type { HeroDefinition } from '../../../../../shared/models'
 
 export function buildHeroBasicAttackContext(options: {
   gameApi: PreviewGameApi
   state: PreviewBattleState
   entity: HeroEntity
-  heroDef: (PreviewGameApi['heroesById'])[keyof PreviewGameApi['heroesById']]
+  heroDef: HeroDefinition
 }) {
   const { gameApi, state, entity, heroDef } = options
 

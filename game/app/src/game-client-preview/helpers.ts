@@ -4,7 +4,6 @@ export {
   makeStaticNumberTrace,
   combineNumberTraces,
   resolvePermanentLayerValue,
-  clampNumber,
 } from './helpers/number-trace'
 
 export {
@@ -18,4 +17,4 @@ export {
   describeCardCastCondition,
 } from './helpers/card-summary'
 
-export { resolveSummonPreviewForCard } from './helpers/summon-preview'
+export { buildSummonPreview as resolveSummonPreviewForCard } from './helpers/summon-preview'

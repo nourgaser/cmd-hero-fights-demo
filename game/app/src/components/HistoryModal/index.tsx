@@ -90,7 +90,7 @@ export function HistoryModal(props: HistoryModalProps) {
                 {(() => {
                   const filteredHistoryEntries = history
                     .filter((entry) => {
-                      if (!activeActionSnapshotId) {
+                      if (activeActionSnapshotId === null) {
                         return true
                       }
                       return entry.postSnapshotId <= activeActionSnapshotId

@@ -1,31 +1,23 @@
-import { createGameApi } from '../../../../index'
 import type { AppBattlePreview } from '../types'
 import { buildAuraGroups } from './details/auras'
 import { buildHeroBasicAttackContext } from './details/basic-attack'
 import { buildHeroPassivePackage } from './details/passives'
-
-type PreviewGameApi = ReturnType<typeof createGameApi>
-type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+import type { AppBattleApi } from '../../game-client'
+import type { BattleState, HeroEntityState } from '../../../../shared/models'
 
 export function buildHeroDetailsByEntityId(options: {
-  gameApi: PreviewGameApi
-  state: PreviewBattleState
+  gameApi: AppBattleApi
+  state: BattleState
 }): AppBattlePreview['heroDetailsByEntityId'] {
   const { gameApi, state } = options
 
-  const heroesById = gameApi.heroesById as Record<
-    string,
-    (typeof gameApi.heroesById)[keyof typeof gameApi.heroesById]
-  >
-  const cardsById = gameApi.cardsById as Record<
-    string,
-    (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]
-  >
+  const heroesById = gameApi.GAME_CONTENT_REGISTRY.heroesById
+  const cardsById = gameApi.GAME_CONTENT_REGISTRY.cardsById
 
   const heroDetailsByEntityId: AppBattlePreview['heroDetailsByEntityId'] = {}
 
   for (const heroEntityId of state.heroEntityIds as string[]) {
-    const entity = state.entitiesById[heroEntityId]
+    const entity = state.entitiesById[heroEntityId] as HeroEntityState
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)

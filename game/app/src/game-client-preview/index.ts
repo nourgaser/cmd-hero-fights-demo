@@ -1,7 +1,8 @@
-import { createGameApi } from '../../../index'
 import { buildBattlefieldPreview } from './battlefield'
 import { buildHeroPreviewData } from './hero'
 import type { AppBattlePreview } from './types'
+import type { AppBattleApi } from '../game-client'
+import type { BattleState } from '../../../shared/models'
 
 export type {
   AppBattlePreview,
@@ -9,11 +10,8 @@ export type {
   AppNumberTrace,
 } from './types'
 
-type CreatedBattle = ReturnType<ReturnType<typeof createGameApi>['createBattle']>
-type BattleState = CreatedBattle['state']
-
 export function buildPreviewFromState(options: {
-  gameApi: ReturnType<typeof createGameApi>
+  gameApi: AppBattleApi
   state: BattleState
 }): AppBattlePreview {
   const { gameApi, state } = options

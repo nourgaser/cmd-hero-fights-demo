@@ -1,17 +1,17 @@
 import {
   type BattleState,
   type CardDefinition,
-  type EntityFootprint,
   type Position,
   SingleCellFootprint,
 } from "../../../shared/models";
 import { validatePlacementForHeroSide } from "../../battlefield/placement";
+import { type ContentRegistry } from "../../core/content-registry";
 
 export function resolveValidPlacementPositions(options: {
   state: BattleState;
   cardDef: CardDefinition;
   actorHeroEntityId: string;
-  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
+  registry: ContentRegistry;
 }): Position[] {
   const summonEffects = options.cardDef.effects.filter(
     (effect) => effect.payload.kind === "summonEntity",
@@ -27,7 +27,7 @@ export function resolveValidPlacementPositions(options: {
   }
 
   const footprint =
-    options.resolveSummonFootprint?.(summonEffect.payload.entityDefinitionId) ?? SingleCellFootprint;
+    options.registry.resolveSummonFootprint(summonEffect.payload.entityDefinitionId) ?? SingleCellFootprint;
 
   const { rows, columns } = options.state.battlefieldOccupancy.dimensions;
   const validPositions: Position[] = [];

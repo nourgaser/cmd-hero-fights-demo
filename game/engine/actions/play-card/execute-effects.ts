@@ -9,8 +9,8 @@ import { type BattleRng } from "../../core/rng";
 import {
   executeCardEffect,
   resolveActorHeroForEffect,
-  type SummonedEntityBlueprint,
 } from "../effects/execute-card-effect";
+import { type ContentRegistry } from "../../core/content-registry";
 
 export type ExecutePlayCardEffectsResult =
   | {
@@ -31,15 +31,12 @@ export function executePlayCardEffects(options: {
   actorHeroEntityId: string;
   nextSequence: number;
   battleRng: BattleRng;
+  registry: ContentRegistry;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonedEntityBlueprint: (
-    entityDefinitionId: string,
-    kind: "weapon" | "totem" | "companion",
-  ) => SummonedEntityBlueprint | undefined;
 }): ExecutePlayCardEffectsResult {
   const {
     state,
@@ -48,8 +45,8 @@ export function executePlayCardEffects(options: {
     actorHeroEntityId,
     nextSequence,
     battleRng,
+    registry,
     createSummonedEntityId,
-    resolveSummonedEntityBlueprint,
   } = options;
 
   let nextState = state;
@@ -81,14 +78,14 @@ export function executePlayCardEffects(options: {
       lastDamageWasDodged,
       lastSummonedEntityId,
       effectSourceEntityId: actorHeroEntityId,
+      registry,
       createSummonedEntityId,
-      resolveSummonedEntityBlueprint,
     });
 
     if (!execution.ok) {
       return {
         ok: false,
-        reason: execution.reason,
+        reason: (execution as { reason: string }).reason,
       };
     }
 

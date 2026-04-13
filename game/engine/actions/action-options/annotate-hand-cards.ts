@@ -1,21 +1,19 @@
 import {
   type BattleState,
-  type CardDefinition,
-  type EntityFootprint,
   type HeroEntityState,
   isCardCastConditionMet,
 } from "../../../shared/models";
 import { computeValidTargetsForCard } from "../compute-valid-targets";
 import { resolveValidPlacementPositions } from "./resolve-valid-placement-positions";
+import { type ContentRegistry } from "../../core/content-registry";
 
 export function annotateHeroHandCards(options: {
   state: BattleState;
   actorHero: HeroEntityState;
   isActiveHero: boolean;
-  cardDefinitionsById: Record<string, CardDefinition>;
-  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
+  registry: ContentRegistry;
 }): HeroEntityState["handCards"] {
-  const { state, actorHero, isActiveHero, cardDefinitionsById, resolveSummonFootprint } = options;
+  const { state, actorHero, isActiveHero, registry } = options;
 
   return actorHero.handCards.map((handCard) => {
     const baseHandCard = {
@@ -27,7 +25,7 @@ export function annotateHeroHandCards(options: {
       return baseHandCard;
     }
 
-    const cardDef = cardDefinitionsById[handCard.cardDefinitionId];
+    const cardDef = registry.cardsById[handCard.cardDefinitionId];
     if (!cardDef) {
       return baseHandCard;
     }
@@ -45,7 +43,7 @@ export function annotateHeroHandCards(options: {
       state,
       cardDef,
       actorHeroEntityId: actorHero.entityId,
-      resolveSummonFootprint,
+      registry,
     });
 
     const hasTargetingRequirement = cardDef.targeting !== "none";

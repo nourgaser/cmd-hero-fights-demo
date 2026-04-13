@@ -129,10 +129,10 @@ function App() {
 
   const latestActionSnapshotId = actionTimelineSnapshots.at(-1)?.id ?? null
   const activeSnapshotId = runtime?.session.activeSnapshotId ?? latestActionSnapshotId
-  const activeSnapshot = activeSnapshotId ? snapshots.find((s) => s.id === activeSnapshotId) ?? null : null
+  const activeSnapshot = activeSnapshotId !== null ? snapshots.find((s) => s.id === activeSnapshotId) ?? null : null
   const activeActionSnapshotId = activeSnapshot ? (activeSnapshot.phase === 'pre' ? actionTimelineSnapshots[0]?.id ?? null : activeSnapshot.id) : null
-  const activeActionSnapshot = activeActionSnapshotId ? actionTimelineSnapshots.find((s) => s.id === activeActionSnapshotId) ?? null : null
-  const activeActionSnapshotIndex = activeActionSnapshotId ? actionTimelineSnapshots.findIndex((s) => s.id === activeActionSnapshotId) : -1
+  const activeActionSnapshot = activeActionSnapshotId !== null ? actionTimelineSnapshots.find((s) => s.id === activeActionSnapshotId) ?? null : null
+  const activeActionSnapshotIndex = activeActionSnapshotId !== null ? actionTimelineSnapshots.findIndex((s) => s.id === activeActionSnapshotId) : -1
   const canAdvanceReplay = activeActionSnapshotIndex >= 0 && activeActionSnapshotIndex < actionTimelineSnapshots.length - 1
 
   const handleCopyReplayPayload = useCallback(async () => {
@@ -144,7 +144,7 @@ function App() {
 
   const handleValidateReplayDeterminism = useCallback(() => {
     if (!activeActionSnapshotId || !activeActionSnapshot || !runtime) { showActionErrorToast('Select a snapshot before validating replay determinism.'); return }
-    const res = replaySessionFromActionLog({ config: { ...bootstrapConfig, seed: runtime.session.state.seed }, actionLog: createActionLogFromSession(runtime.session), snapshotId: activeActionSnapshotId ?? null })
+    const res = replaySessionFromActionLog({ gameApi: runtime.session.gameApi, config: { ...bootstrapConfig, seed: runtime.session.state.seed }, actionLog: createActionLogFromSession(runtime.session), snapshotId: activeActionSnapshotId ?? null })
     if (!res.ok) { showActionErrorToast(`Replay validation failed: ${(res as { reason: string }).reason}`); return }
     const rebuilt = res.session.snapshots.find((s) => s.id === activeActionSnapshotId)
     if (!rebuilt) { showActionErrorToast(`Replay validation failed: snapshot ${activeActionSnapshotId} was not rebuilt.`); return }
@@ -168,8 +168,9 @@ function App() {
 
   const deckEditorCards = useMemo(() => {
     if (!runtime) return []
-    const cardsById = runtime.session.gameApi.cardsById as Record<string, { id: string; name: string; moveCost: number; type: string; rarity: string; heroId?: string; summaryText: { template: string; params?: Record<string, string | number | boolean | undefined> }; effects: Array<{ displayText: { template: string; params?: Record<string, string | number | boolean | undefined> } }>; keywords?: Array<{ keywordId: string; params?: Record<string, string | number | boolean | undefined> }> }>
-    const keywordsById = runtime.session.gameApi.keywordsById as Record<string, { id: string; name: string; summaryText: { template: string; params?: Record<string, string | number | boolean | undefined> } }>
+    const registry = runtime.session.gameApi.GAME_CONTENT_REGISTRY
+    const cardsById = registry.cardsById as Record<string, { id: string; name: string; moveCost: number; type: string; rarity: string; heroId?: string; summaryText: { template: string; params?: Record<string, string | number | boolean | undefined> }; effects: Array<{ displayText: { template: string; params?: Record<string, string | number | boolean | undefined> } }>; keywords?: Array<{ keywordId: string; params?: Record<string, string | number | boolean | undefined> }> }>
+    const keywordsById = registry.keywordsById as Record<string, { id: string; name: string; summaryText: { template: string; params?: Record<string, string | number | boolean | undefined> } }>
     return Object.values(cardsById).map((card) => ({
       id: card.id,
       name: card.name,
@@ -276,7 +277,7 @@ function App() {
 
   useEffect(() => {
     if (!isReplayModeOpen || !runtime) return
-    const list = replayTimelineListRef.current; if (!list || !activeActionSnapshotId) return
+    const list = replayTimelineListRef.current; if (!list || activeActionSnapshotId === null) return
     const btn = list.querySelector<HTMLButtonElement>(`[data-snapshot-id="${activeActionSnapshotId}"]`); if (!btn) return
     const listRect = list.getBoundingClientRect(); const btnRect = btn.getBoundingClientRect(); const padding = 16
     if (btnRect.left < listRect.left + padding || btnRect.right > listRect.right - padding) { const frame = window.requestAnimationFrame(() => btn.scrollIntoView({ behavior: 'smooth', block: 'nearest', inline: 'nearest' })); return () => window.cancelAnimationFrame(frame) }
@@ -420,3 +421,4 @@ function App() {
 }
 
 export default App
+

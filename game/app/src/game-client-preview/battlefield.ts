@@ -1,4 +1,3 @@
-import { createGameApi } from '../../../index'
 import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
@@ -20,23 +19,19 @@ import {
   resolveNumberTrace,
   resolvePermanentLayerValue,
 } from './helpers'
+import type { AppBattleApi } from '../game-client'
+import type { BattleState, HeroEntityState } from '../../../shared/models'
 
-type PreviewGameApi = ReturnType<typeof createGameApi>
-type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+type NonHeroEntityState = { kind: 'companion' | 'weapon' | 'totem'; entityId: string; ownerHeroEntityId: string; definitionCardId: string; currentHealth: number; maxHealth: number; armor: number; magicResist: number; attackDamage: number; abilityPower: number; criticalChance: number; criticalMultiplier: number; remainingMoves?: number; maxMovesPerTurn?: number; keywordIds?: string[]; dodgeChance: number; sourceCardDefinitionId?: string }
+
 
 export function buildBattlefieldPreview(options: {
-  gameApi: PreviewGameApi
-  state: PreviewBattleState
+  gameApi: AppBattleApi
+  state: BattleState
 }): AppBattlePreview['battlefield'] {
   const { gameApi, state } = options
-  const heroesById = gameApi.heroesById as Record<
-    string,
-    (typeof gameApi.heroesById)[keyof typeof gameApi.heroesById]
-  >
-  const cardsById = gameApi.cardsById as Record<
-    string,
-    (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]
-  >
+  const heroesById = gameApi.GAME_CONTENT_REGISTRY.heroesById
+  const cardsById = gameApi.GAME_CONTENT_REGISTRY.cardsById
   const { rows, columns } = state.battlefieldOccupancy.dimensions
   const cells: AppBattlePreview['battlefield']['cells'] = []
 
@@ -122,7 +117,7 @@ export function buildBattlefieldPreview(options: {
       state,
       targetEntityId: entity.entityId,
       propertyPath: 'moveCapacity',
-      baseValue: entity.kind === 'hero' ? entity.maxMovePoints : entity.maxMovesPerTurn,
+      baseValue: entity.kind === 'hero' ? (entity as HeroEntityState).maxMovePoints : (entity as NonHeroEntityState).maxMovesPerTurn ?? 0,
       clampMin: 0,
     })
     const attackDamagePermanent = resolvePermanentLayerValue({
@@ -164,7 +159,7 @@ export function buildBattlefieldPreview(options: {
       state,
       targetEntityId: entity.entityId,
       propertyPath: 'moveCapacity',
-      baseValue: entity.kind === 'hero' ? entity.maxMovePoints : entity.maxMovesPerTurn,
+      baseValue: entity.kind === 'hero' ? (entity as HeroEntityState).maxMovePoints : (entity as NonHeroEntityState).maxMovesPerTurn ?? 0,
       clampMin: 0,
     })
     const statLayers = {
@@ -197,12 +192,13 @@ export function buildBattlefieldPreview(options: {
     const effectiveDodgeChance = Math.max(0, Math.min(1, dodgeChanceTrace.effective + dodgeChanceLuckDelta))
 
     if (entity.kind === 'hero') {
-      const heroDef = heroesById[entity.heroDefinitionId]
-      battlefieldEntities[entity.entityId] = {
-        entityId: entity.entityId,
+      const hero = entity as HeroEntityState
+      const heroDef = heroesById[hero.heroDefinitionId]
+      battlefieldEntities[hero.entityId] = {
+        entityId: hero.entityId,
         kind: 'hero',
-        ownerHeroEntityId: entity.entityId,
-        displayName: heroDef?.name ?? entity.heroDefinitionId,
+        ownerHeroEntityId: hero.entityId,
+        displayName: heroDef?.name ?? hero.heroDefinitionId,
         sourceCardDefinitionId: null,
         sourceCardName: null,
         sourceCardSummary: null,
@@ -211,8 +207,8 @@ export function buildBattlefieldPreview(options: {
         sourceCardKeywords: [],
         activeListeners: [],
         isTaunt: false,
-        currentHealth: entity.currentHealth,
-        maxHealth: entity.maxHealth,
+        currentHealth: hero.currentHealth,
+        maxHealth: hero.maxHealth,
         armor: armorTrace.effective,
         magicResist: magicResistTrace.effective,
         attackDamage: attackDamageTrace.effective,
@@ -229,20 +225,21 @@ export function buildBattlefieldPreview(options: {
           dodgeChance: dodgeChanceTrace,
           moveCapacity: moveCapacityTrace,
         },
-        criticalChance: entity.criticalChance,
+        criticalChance: hero.criticalChance,
         effectiveCriticalChance,
         criticalChanceLuckDelta,
-        criticalMultiplier: entity.criticalMultiplier,
+        criticalMultiplier: hero.criticalMultiplier,
         dodgeChance: dodgeChanceTrace.effective,
         effectiveDodgeChance,
         dodgeChanceLuckDelta,
-        movePoints: entity.movePoints,
-        maxMovePoints: entity.maxMovePoints,
+        movePoints: hero.movePoints,
+        maxMovePoints: hero.maxMovePoints,
       }
       continue
     }
 
-    const sourceCard = cardsById[entity.definitionCardId]
+    const summoned = entity as NonHeroEntityState
+    const sourceCard = cardsById[summoned.definitionCardId]
     const sourceCardKeywordReferences = (sourceCard as {
       keywords?: Array<{
         keywordId: string
@@ -251,7 +248,7 @@ export function buildBattlefieldPreview(options: {
     } | undefined)?.keywords ?? []
     const sourceCardKeywords = sourceCardKeywordReferences
       .map((keywordReference) => {
-        const keywordDefinition = gameApi.keywordsById[keywordReference.keywordId]
+        const keywordDefinition = gameApi.GAME_CONTENT_REGISTRY.keywordsById[keywordReference.keywordId]
         if (!keywordDefinition) {
           return null
         }
@@ -279,8 +276,8 @@ export function buildBattlefieldPreview(options: {
       )
     const sourceCardText = sourceCard
       ? describeNumericCardText({
-          card: sourceCard,
-          actorHero: entity,
+          card: sourceCard as any,
+          actorHero: summoned,
           actorNumberTraces: {
             attackDamage: attackDamageTrace,
             abilityPower: abilityPowerTrace,
@@ -288,22 +285,22 @@ export function buildBattlefieldPreview(options: {
           },
           state,
           gameApi,
-          sourceEntityId: entity.entityId,
+          sourceEntityId: summoned.entityId,
           viewMode: 'entity',
           luck: state.luck,
         })
       : null
 
     const activeProfile =
-      entity.kind === 'weapon' || entity.kind === 'companion'
-        ? gameApi.resolveEntityActiveProfile({
-            sourceDefinitionCardId: entity.definitionCardId,
-            sourceKind: entity.kind,
+      summoned.kind === 'weapon' || summoned.kind === 'companion'
+        ? gameApi.GAME_CONTENT_REGISTRY.resolveEntityActiveProfile({
+            sourceDefinitionCardId: summoned.definitionCardId,
+            sourceKind: summoned.kind,
           })
         : undefined
-    const ownerHeroEntity = state.entitiesById[entity.ownerHeroEntityId]
+    const ownerHeroEntity = state.entitiesById[summoned.ownerHeroEntityId]
     const entityActiveListeners = state.activeListeners
-      .filter((listener) => listener.sourceEntityId === entity.entityId)
+      .filter((listener) => listener.sourceEntityId === summoned.entityId)
       .map((listener) => ({
         listenerId: listener.listenerId,
         label: formatListenerLabel(listener.listenerId),
@@ -311,13 +308,13 @@ export function buildBattlefieldPreview(options: {
         statusLabel: describeLifetime(listener.lifetime),
       }))
 
-    const activeAttackDamageTrace = entity.kind === 'weapon'
+    const activeAttackDamageTrace = summoned.kind === 'weapon'
       ? combineNumberTraces(
           attackDamageTrace,
           resolveNumberTrace({
             gameApi,
             state,
-            targetEntityId: entity.ownerHeroEntityId,
+            targetEntityId: summoned.ownerHeroEntityId,
             propertyPath: 'attackDamage',
             baseValue: ownerHeroEntity && ownerHeroEntity.kind === 'hero' ? ownerHeroEntity.attackDamage : 0,
             clampMin: 0,
@@ -325,21 +322,21 @@ export function buildBattlefieldPreview(options: {
         )
       : attackDamageTrace
 
-    battlefieldEntities[entity.entityId] = {
-      entityId: entity.entityId,
-      kind: entity.kind,
-      ownerHeroEntityId: entity.ownerHeroEntityId,
-      displayName: sourceCard?.name ?? entity.definitionCardId,
-      sourceCardDefinitionId: entity.definitionCardId,
-      sourceCardName: sourceCard?.name ?? entity.definitionCardId,
+    battlefieldEntities[summoned.entityId] = {
+      entityId: summoned.entityId,
+      kind: summoned.kind,
+      ownerHeroEntityId: summoned.ownerHeroEntityId,
+      displayName: sourceCard?.name ?? summoned.definitionCardId,
+      sourceCardDefinitionId: summoned.definitionCardId,
+      sourceCardName: sourceCard?.name ?? summoned.definitionCardId,
       sourceCardSummary: sourceCardText?.summaryText ?? null,
       sourceCardSummaryDetailText: sourceCardText?.summaryDetailText ?? null,
       sourceCardSummaryTone: sourceCardText?.summaryTone ?? 'neutral',
       sourceCardKeywords,
       activeListeners: entityActiveListeners,
-      isTaunt: entity.keywordIds.includes('keyword.taunt'),
-      currentHealth: entity.currentHealth,
-      maxHealth: entity.maxHealth,
+      isTaunt: (summoned.keywordIds ?? []).includes('keyword.taunt'),
+      currentHealth: summoned.currentHealth,
+      maxHealth: summoned.maxHealth,
       armor: armorTrace.effective,
       magicResist: magicResistTrace.effective,
       attackDamage: attackDamageTrace.effective,
@@ -356,24 +353,24 @@ export function buildBattlefieldPreview(options: {
         dodgeChance: dodgeChanceTrace,
         moveCapacity: moveCapacityTrace,
       },
-      criticalChance: entity.criticalChance,
+      criticalChance: summoned.criticalChance,
       effectiveCriticalChance,
       criticalChanceLuckDelta,
-      criticalMultiplier: entity.criticalMultiplier,
+      criticalMultiplier: summoned.criticalMultiplier,
       dodgeChance: dodgeChanceTrace.effective,
       effectiveDodgeChance,
       dodgeChanceLuckDelta,
-      movePoints: entity.remainingMoves,
-      maxMovePoints: entity.maxMovesPerTurn,
+      movePoints: (summoned as NonHeroEntityState).remainingMoves ?? 0,
+      maxMovePoints: (summoned as NonHeroEntityState).maxMovesPerTurn ?? 0,
       activeAbility: activeProfile
         ? activeProfile.kind === 'attack'
           ? buildEntityActiveSummary({
-              rollingHeroEntityId: entity.ownerHeroEntityId,
+              rollingHeroEntityId: summoned.ownerHeroEntityId,
               active: activeProfile,
               minimumTrace: resolveNumberTrace({
                 gameApi,
                 state,
-                targetEntityId: entity.entityId,
+                targetEntityId: summoned.entityId,
                 propertyPath: 'useEntityActive.minimum',
                 baseValue: activeProfile.minimumDamage,
                 clampMin: 0,
@@ -381,18 +378,18 @@ export function buildBattlefieldPreview(options: {
               maximumTrace: resolveNumberTrace({
                 gameApi,
                 state,
-                targetEntityId: entity.entityId,
+                targetEntityId: summoned.entityId,
                 propertyPath: 'useEntityActive.maximum',
                 baseValue: activeProfile.maximumDamage,
                 clampMin: 0,
               }),
               attackDamageTrace: activeAttackDamageTrace,
               attackFlatBonusDamageTrace:
-                entity.kind === 'weapon'
+                summoned.kind === 'weapon'
                   ? resolveNumberTrace({
                       gameApi,
                       state,
-                      targetEntityId: entity.ownerHeroEntityId,
+                      targetEntityId: summoned.ownerHeroEntityId,
                       propertyPath: 'attackFlatBonusDamage',
                       baseValue: 0,
                     })
@@ -401,7 +398,7 @@ export function buildBattlefieldPreview(options: {
               luck: state.luck,
             })
           : buildEntityActiveSummary({
-              rollingHeroEntityId: entity.ownerHeroEntityId,
+              rollingHeroEntityId: summoned.ownerHeroEntityId,
               active: activeProfile,
               minimumTrace: makeStaticNumberTrace(0),
               maximumTrace: makeStaticNumberTrace(0),

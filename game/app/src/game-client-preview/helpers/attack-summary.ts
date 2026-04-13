@@ -4,9 +4,12 @@ import { renderEffectDisplayText } from '../../../../shared/models'
 import { formatPreviewNumber, formatSignedDelta } from '../../utils/game-client-format'
 import type { AppNumberTrace } from '../types'
 import {
-  clampNumber,
   numberTraceToDetailLine,
 } from './number-trace'
+
+function clampNumber(value: number, min: number, max: number): number {
+  return Math.max(min, Math.min(max, value))
+}
 
 export function summarizeLuckAdjustedRange(options: {
   minimum: number
@@ -267,4 +270,3 @@ export function buildEntityActiveSummary(options: {
     currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
   }
 }
-

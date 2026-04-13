@@ -2,17 +2,16 @@ import {
   type BattleEvent,
   type PlayCardAction,
   type BattleState,
-  type SummonedEntityKind,
 } from "../../../shared/models";
 import { type BattleRng } from "../../core/rng";
 import {
   executeCardEffect,
   resolveActorHeroForEffect,
-  type SummonedEntityBlueprint,
 } from "../effects/execute-card-effect";
 import { renderEffectDisplayText } from "../../../shared/models";
 import { removeDefeatedSummonedEntities } from "../entity-lifecycle";
 import { allConditionsMatch, listenerMatchesEvent } from "./matching";
+import { type ContentRegistry } from "../../core/content-registry";
 
 const SYNTHETIC_LISTENER_HAND_CARD_ID = "__listener__";
 
@@ -30,15 +29,12 @@ export function resolveTriggeredListeners(options: {
   seedActionEvents: BattleEvent[];
   nextSequence: number;
   battleRng: BattleRng;
+  registry: ContentRegistry;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonedEntityBlueprint: (
-    entityDefinitionId: string,
-    kind: SummonedEntityKind,
-  ) => SummonedEntityBlueprint | undefined;
 }): {
   ok: true;
   state: BattleState;
@@ -53,8 +49,8 @@ export function resolveTriggeredListeners(options: {
     seedActionEvents,
     nextSequence,
     battleRng,
+    registry,
     createSummonedEntityId,
-    resolveSummonedEntityBlueprint,
   } = options;
 
   let nextState = state;
@@ -111,14 +107,14 @@ export function resolveTriggeredListeners(options: {
           lastDamageWasDodged,
           lastSummonedEntityId,
           effectSourceEntityId: listener.sourceEntityId ?? listener.ownerHeroEntityId,
+          registry,
           createSummonedEntityId,
-          resolveSummonedEntityBlueprint,
         });
 
         if (!execution.ok) {
           return {
             ok: false,
-            reason: `Listener ${listener.listenerId} failed: ${execution.reason}`,
+            reason: `Listener ${listener.listenerId} failed: ${(execution as { reason: string }).reason}`,
           };
         }
 

@@ -1,146 +1,100 @@
-import { createGameApi } from '../../../../index'
 import type { AppBattlePreview } from '../types'
 import {
-  buildEntityActiveSummary,
-} from './attack-summary'
-import { describeNumericCardText } from './card-summary'
-import {
-  combineNumberTraces,
-  makeStaticNumberTrace,
-  resolveNumberTrace,
-} from './number-trace'
-export function resolveSummonPreviewForCard(options: {
-  cardDef: {
-    effects: Array<{
-      payload: {
-        kind: string
-      } & Record<string, unknown>
-    }>
-  }
-  gameApi: ReturnType<typeof createGameApi>
-  cardsById: Record<string, (ReturnType<typeof createGameApi>['cardsById'])[keyof ReturnType<typeof createGameApi>['cardsById']]>
+  describeNumericCardText,
+} from './card-summary'
+import { resolveNumberTrace } from './number-trace'
+import type { AppBattleApi } from '../../game-client'
+import type { BattleState } from '../../../../shared/models'
+
+export function buildSummonPreview(options: {
+  gameApi: AppBattleApi
+  state: BattleState
+  cardDefinitionId: string
   ownerHeroEntityId: string
-  state: ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
-  luck: {
-    anchorHeroEntityId: string
-    balance: number
-  }
 }): AppBattlePreview['heroHands'][number]['cards'][number]['summonPreview'] {
-  const { cardDef, gameApi, cardsById, ownerHeroEntityId, state, luck } = options
-  const summonPayload = cardDef.effects
-    .map((effect) => effect.payload)
-    .find(
-      (payload): payload is { kind: 'summonEntity'; entityDefinitionId: string; entityKind: 'weapon' | 'totem' | 'companion' } =>
-        payload.kind === 'summonEntity' &&
-        typeof payload.entityDefinitionId === 'string' &&
-        (payload.entityKind === 'weapon' || payload.entityKind === 'totem' || payload.entityKind === 'companion'),
-    )
+  const { gameApi, state, cardDefinitionId } = options
 
-  if (!summonPayload) {
-    return null
-  }
-
-  const summonedBlueprint = gameApi.resolveSummonedEntityBlueprint(
-    summonPayload.entityDefinitionId,
-    summonPayload.entityKind,
+  const summonedBlueprint = gameApi.GAME_CONTENT_REGISTRY.resolveSummonedEntityBlueprint(
+    cardDefinitionId,
+    'companion', // Default kind if needed
   )
 
   if (!summonedBlueprint) {
     return null
   }
 
-  const sourceCardDef = cardsById[summonedBlueprint.definitionCardId]
-  const passiveSummary = sourceCardDef
-    ? describeNumericCardText({
-        card: sourceCardDef,
-        actorHero: {
-          entityId: ownerHeroEntityId,
-          attackDamage: summonedBlueprint.attackDamage,
-          abilityPower: summonedBlueprint.abilityPower,
-          armor: summonedBlueprint.armor,
-        },
-          viewMode: 'entity',
-        luck,
-      })
-    : null
+  // Use a temporary entityId for tracing
+  const tempEntityId = `preview:${cardDefinitionId}`
 
-  const activeProfile =
-    summonedBlueprint.kind === 'weapon' || summonedBlueprint.kind === 'companion'
-      ? gameApi.resolveEntityActiveProfile({
-          sourceDefinitionCardId: summonedBlueprint.definitionCardId,
-          sourceKind: summonedBlueprint.kind,
-        })
-      : undefined
+  const attackDamageTrace = resolveNumberTrace({
+    gameApi,
+    state,
+    targetEntityId: tempEntityId,
+    propertyPath: 'attackDamage',
+    baseValue: summonedBlueprint.attackDamage,
+    clampMin: 0,
+  })
+  const abilityPowerTrace = resolveNumberTrace({
+    gameApi,
+    state,
+    targetEntityId: tempEntityId,
+    propertyPath: 'abilityPower',
+    baseValue: summonedBlueprint.abilityPower,
+    clampMin: 0,
+  })
+  const armorTrace = resolveNumberTrace({
+    gameApi,
+    state,
+    targetEntityId: tempEntityId,
+    propertyPath: 'armor',
+    baseValue: summonedBlueprint.armor,
+    clampMin: 0,
+  })
 
-  const activeSummary = activeProfile
-    ? activeProfile.kind === 'attack'
-      ? buildEntityActiveSummary({
-          rollingHeroEntityId: ownerHeroEntityId,
-          active: activeProfile,
-          minimumTrace: makeStaticNumberTrace(activeProfile.minimumDamage),
-          maximumTrace: makeStaticNumberTrace(activeProfile.maximumDamage),
-          attackDamageTrace:
-            summonedBlueprint.kind === 'weapon'
-              ? combineNumberTraces(
-                  makeStaticNumberTrace(summonedBlueprint.attackDamage),
-                  resolveNumberTrace({
-                    gameApi,
-                    state,
-                    targetEntityId: ownerHeroEntityId,
-                    propertyPath: 'attackDamage',
-                    baseValue: state.entitiesById[ownerHeroEntityId]?.kind === 'hero'
-                      ? state.entitiesById[ownerHeroEntityId].attackDamage
-                      : 0,
-                    clampMin: 0,
-                  }),
-                )
-              : makeStaticNumberTrace(summonedBlueprint.attackDamage),
-          attackFlatBonusDamageTrace:
-            summonedBlueprint.kind === 'weapon'
-              ? resolveNumberTrace({
-                  gameApi,
-                  state,
-                  targetEntityId: ownerHeroEntityId,
-                  propertyPath: 'attackFlatBonusDamage',
-                  baseValue: 0,
-                })
-              : makeStaticNumberTrace(0),
-          abilityPowerTrace: makeStaticNumberTrace(summonedBlueprint.abilityPower),
-          luck,
-        })
-      : buildEntityActiveSummary({
-          rollingHeroEntityId: ownerHeroEntityId,
-          active: activeProfile,
-          minimumTrace: makeStaticNumberTrace(0),
-          maximumTrace: makeStaticNumberTrace(0),
-          attackDamageTrace: makeStaticNumberTrace(0),
-          attackFlatBonusDamageTrace: makeStaticNumberTrace(0),
-          abilityPowerTrace: makeStaticNumberTrace(0),
-          luck,
-        })
-    : null
+  const passiveText = describeNumericCardText({
+    card: {
+      name: summonedBlueprint.definitionCardId,
+      effects: [], // Summary doesn't need full effects here
+    },
+    actorHero: {
+      entityId: tempEntityId,
+      attackDamage: attackDamageTrace.effective,
+      abilityPower: abilityPowerTrace.effective,
+      armor: armorTrace.effective,
+    },
+    actorNumberTraces: {
+      attackDamage: attackDamageTrace,
+      abilityPower: abilityPowerTrace,
+      armor: armorTrace,
+    },
+    state,
+    gameApi,
+    sourceEntityId: tempEntityId,
+    viewMode: 'entity',
+    luck: state.luck,
+  })
 
-  const sourceCardType =
-    sourceCardDef?.type === 'weapon' || sourceCardDef?.type === 'totem' || sourceCardDef?.type === 'companion'
-      ? sourceCardDef.type
-      : summonedBlueprint.kind
+  const activeProfile = gameApi.GAME_CONTENT_REGISTRY.resolveEntityActiveProfile({
+    sourceDefinitionCardId: cardDefinitionId,
+    sourceKind: summonedBlueprint.kind === 'companion' ? 'companion' : 'weapon',
+  })
 
   return {
-  cardDefinitionId: sourceCardDef?.id ?? summonPayload.entityDefinitionId,
-    entityDefinitionId: summonPayload.entityDefinitionId,
+    cardDefinitionId,
+    entityDefinitionId: summonedBlueprint.definitionCardId,
     entityKind: summonedBlueprint.kind,
-    displayName: sourceCardDef?.name ?? summonPayload.entityDefinitionId,
-    cardType: sourceCardType,
-    rarity: sourceCardDef?.rarity ?? 'common',
+    displayName: summonedBlueprint.definitionCardId,
+    cardType: summonedBlueprint.kind === 'companion' ? 'companion' : 'weapon',
+    rarity: 'common', // Default for preview
     maxHealth: summonedBlueprint.maxHealth,
-    armor: summonedBlueprint.armor,
+    attackDamage: attackDamageTrace.effective,
+    abilityPower: abilityPowerTrace.effective,
+    armor: armorTrace.effective,
     magicResist: summonedBlueprint.magicResist,
-    attackDamage: summonedBlueprint.attackDamage,
-    abilityPower: summonedBlueprint.abilityPower,
     maxMovesPerTurn: summonedBlueprint.maxMovesPerTurn ?? 0,
-    passiveSummaryText: passiveSummary?.summaryText ?? null,
-    passiveSummaryDetailText: passiveSummary?.summaryDetailText ?? null,
-    activeAbilitySummaryText: activeSummary?.summaryText ?? null,
-    activeAbilitySummaryDetailText: activeSummary?.summaryDetailText ?? null,
+    passiveSummaryText: passiveText.summaryText,
+    passiveSummaryDetailText: passiveText.summaryDetailText,
+    activeAbilitySummaryText: activeProfile ? 'Active Ability' : null,
+    activeAbilitySummaryDetailText: activeProfile ? 'Details not available in preview.' : null,
   }
 }

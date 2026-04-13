@@ -26,9 +26,9 @@ export function useTimeline(options: {
       const timelineSnapshots = firstPreSnapshot ? [firstPreSnapshot, ...postSnapshots] : postSnapshots
       const timelineLatestSnapshotId = timelineSnapshots.at(-1)?.id ?? null
       const currentSnapshotId = prev.session.activeSnapshotId ?? timelineLatestSnapshotId
-      const currentSnapshot = currentSnapshotId ? prev.session.snapshots.find((s) => s.id === currentSnapshotId) ?? null : null
+      const currentSnapshot = currentSnapshotId !== null ? prev.session.snapshots.find((s) => s.id === currentSnapshotId) ?? null : null
       const timelineActiveSnapshotId = currentSnapshot ? (currentSnapshot.phase === 'pre' ? firstPreSnapshot?.id ?? null : currentSnapshot.id) : null
-      const timelineActiveSnapshotIndex = timelineActiveSnapshotId ? timelineSnapshots.findIndex((s) => s.id === timelineActiveSnapshotId) : -1
+      const timelineActiveSnapshotIndex = timelineActiveSnapshotId !== null ? timelineSnapshots.findIndex((s) => s.id === timelineActiveSnapshotId) : -1
       const nextIndex = timelineActiveSnapshotIndex + direction
 
       if (nextIndex < 0 || nextIndex >= timelineSnapshots.length) return prev

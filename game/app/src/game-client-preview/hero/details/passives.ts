@@ -17,16 +17,16 @@ import { buildAuraPassiveEffects } from './auras'
 import type {
   AuraGroup,
   HeroPassiveEffect,
-  PreviewBattleState,
-  PreviewGameApi,
 } from './types'
+import type { AppBattleApi } from '../../../game-client'
+import type { BattleState } from '../../../../../shared/models'
 
 export function buildHeroPassivePackage(options: {
-  gameApi: PreviewGameApi
-  state: PreviewBattleState
-  cardsById: Record<string, (PreviewGameApi['cardsById'])[keyof PreviewGameApi['cardsById']]>
+  gameApi: AppBattleApi
+  state: BattleState
+  cardsById: Record<string, any>
   heroEntityId: string
-  heroDef: (PreviewGameApi['heroesById'])[keyof PreviewGameApi['heroesById']]
+  heroDef: any
   contributionSourceIds: Set<string>
   auraGroups: AuraGroup[]
 }): {
@@ -80,7 +80,7 @@ export function buildHeroPassivePackage(options: {
         const sourceEntity = modifier.sourceEntityId ? state.entitiesById[modifier.sourceEntityId] : null
         const sourceCardName =
           sourceEntity && sourceEntity.kind !== 'hero'
-            ? cardsById[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
+            ? (cardsById as any)[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
             : null
         const sourceLabel = sourceEntity?.kind === 'hero' ? 'Your hero' : sourceCardName ?? sourceEntity?.entityId ?? 'Unknown source'
         const operationText = summarizeNumericOperation(
@@ -157,7 +157,7 @@ export function buildHeroPassivePackage(options: {
       const sourceEntity = rule.source.kind === 'sourceEntity' ? state.entitiesById[rule.source.sourceEntityId] : null
       const sourceCardName =
         sourceEntity && sourceEntity.kind !== 'hero'
-          ? cardsById[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
+          ? (cardsById as any)[sourceEntity.definitionCardId]?.name ?? sourceEntity.definitionCardId
           : null
       const operationSummary = rule.operations
         .map((operation) => {

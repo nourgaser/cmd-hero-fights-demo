@@ -1,15 +1,12 @@
 import {
   type BattleEvent,
   type BattleState,
-  type CardDefinition,
-  type EntityFootprint,
   type PlayCardAction,
-  type SummonedEntityKind,
 } from "../../shared/models";
 import { type BattleRng } from "../core/rng";
-import { type SummonedEntityBlueprint } from "./effects/execute-card-effect";
 import { applyPlayCardCostAndMoveToDiscard, executePlayCardEffects } from "./play-card";
 import { validatePlayCardAction } from "./validate-play-card";
+import { type ContentRegistry } from "../core/content-registry";
 
 export type ResolvePlayCardResult =
   | {
@@ -28,7 +25,7 @@ export type ResolvePlayCardResult =
 export function resolvePlayCardAction(options: {
   state: BattleState;
   action: PlayCardAction;
-  cardDefinitionsById: Record<string, CardDefinition>;
+  registry: ContentRegistry;
   nextSequence: number;
   battleRng: BattleRng;
   createSummonedEntityId: (context: {
@@ -36,34 +33,26 @@ export function resolvePlayCardAction(options: {
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
-  resolveSummonedEntityBlueprint: (
-    entityDefinitionId: string,
-    kind: SummonedEntityKind,
-  ) => SummonedEntityBlueprint | undefined;
 }): ResolvePlayCardResult {
   const {
     state,
     action,
-    cardDefinitionsById,
+    registry,
     nextSequence,
     battleRng,
     createSummonedEntityId,
-    resolveSummonFootprint,
-    resolveSummonedEntityBlueprint,
   } = options;
 
   const validation = validatePlayCardAction({
     state,
     action,
-    cardDefinitionsById,
-    resolveSummonFootprint,
+    registry,
   });
   if (!validation.ok) {
     return {
       ok: false,
       state,
-      reason: (validation as any).reason,
+      reason: (validation as { reason: string }).reason,
     };
   }
 
@@ -113,14 +102,14 @@ export function resolvePlayCardAction(options: {
     actorHeroEntityId: actorHero.entityId,
     nextSequence: sequence,
     battleRng,
+    registry,
     createSummonedEntityId,
-    resolveSummonedEntityBlueprint,
   });
   if (!effectsExecution.ok) {
     return {
       ok: false,
       state,
-      reason: effectsExecution.reason,
+      reason: (effectsExecution as { reason: string }).reason,
     };
   }
 

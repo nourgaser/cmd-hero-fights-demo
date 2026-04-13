@@ -1,4 +1,3 @@
-import { createGameApi } from '../../../../index'
 import {
   type StatKey,
   STAT_METADATA,
@@ -13,8 +12,11 @@ import {
   resolveNumberTrace,
 } from './number-trace'
 import { summarizeLuckAdjustedRange } from './attack-summary'
+import type { AppBattleApi } from '../../game-client'
+import type { BattleState } from '../../../../shared/models'
 
-type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+type PreviewBattleState = BattleState;
+
 export function describeNumericCardText(options: {
   card: {
     name: string
@@ -42,7 +44,7 @@ export function describeNumericCardText(options: {
     armor: AppNumberTrace
   }
   state?: PreviewBattleState
-  gameApi?: ReturnType<typeof createGameApi>
+  gameApi?: AppBattleApi
   sourceEntityId?: string
   viewMode?: 'card' | 'entity'
   luck: {
@@ -384,4 +386,3 @@ export function describeCardCastCondition(cardDefinition: unknown): string | nul
       return null
   }
 }
-

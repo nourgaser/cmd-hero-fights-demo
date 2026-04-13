@@ -1,5 +1,5 @@
-import { createGameApi } from '../../index'
-import type { BattleAction, BattleEvent } from '../../shared/models'
+import type { BattleAction, BattleEvent, BattleState } from '../../shared/models'
+import type { BattleRng, resolveAction, createBattle, GAME_CONTENT_REGISTRY } from '../../api'
 
 export type {
   AppBattlePreview,
@@ -7,10 +7,6 @@ export type {
   AppNumberTrace,
 } from './game-client-preview'
 export { buildPreviewFromState } from './game-client-preview'
-
-type CreatedBattle = ReturnType<ReturnType<typeof createGameApi>['createBattle']>
-type BattleState = CreatedBattle['state']
-type BattleRng = CreatedBattle['rng']
 
 export type AppRngCheckpoint = {
   seed: string
@@ -46,8 +42,14 @@ export type AppActionHistoryEntry = {
   postSnapshotId: number
 }
 
+export type AppBattleApi = {
+  createBattle: typeof createBattle;
+  resolveAction: typeof resolveAction;
+  GAME_CONTENT_REGISTRY: typeof GAME_CONTENT_REGISTRY;
+}
+
 export type AppBattleSession = {
-  gameApi: ReturnType<typeof createGameApi>
+  gameApi: AppBattleApi
   state: BattleState
   battleRng: BattleRng
   nextSequence: number

@@ -4,13 +4,17 @@ import type {
   AppBattleSnapshot,
 } from '../game-client'
 import {
-  type AppReplayActionLogEntry,
   branchSessionFromSnapshot,
   createInitialBattleSession,
   replaySessionFromActionLog,
 } from '../game-client-session'
-import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from '../data/game-bootstrap'
-import type { ReplayUrlPayload } from '../utils/replay-url'
+import {
+  createBattle,
+  resolveAction,
+  GAME_CONTENT_REGISTRY,
+} from '../../../api'
+
+import type { GameBootstrapConfig } from '../data/game-bootstrap'
 
 export type AppRuntime = {
   session: AppBattleSession
@@ -19,52 +23,26 @@ export type AppRuntime = {
 
 export type ReplayNavigationDirection = -1 | 1
 
-export function clampAutoPlayDelay(delayMs: number, minDelayMs = 50, defaultDelayMs = 200): number {
-  if (!Number.isFinite(delayMs)) {
-    return defaultDelayMs
+export function createRuntimeFromReplayPayload(replayPayload: {
+  bootstrapConfig: GameBootstrapConfig
+  actionLog: Array<{ action: any; success?: boolean }>
+  snapshotId: number | null
+}): AppRuntime {
+  const gameApi = {
+    createBattle,
+    resolveAction,
+    GAME_CONTENT_REGISTRY,
   }
 
-  return Math.max(minDelayMs, Math.floor(delayMs))
-}
-
-export function pickRandom<T>(items: T[]): T | null {
-  if (items.length === 0) {
-    return null
-  }
-
-  const index = Math.floor(Math.random() * items.length)
-  return items[index] ?? null
-}
-
-export function formatReplayPlaybackSpeed(speed: number): string {
-  return Number.isInteger(speed) ? `${speed}x` : `${speed.toFixed(2).replace(/\.00$/, '')}x`
-}
-
-export function buildIsGdShortlink(shortAlias: string): string {
-  return `https://is.gd/${shortAlias}`
-}
-
-export function buildReplayShortAlias(replayHashHex: string): string {
-  return `cmd_hero_fights_${replayHashHex.slice(0, 7)}`
-}
-
-export function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRuntime {
-  const initial = createInitialBattleSession(config)
-  return {
-    session: initial.session,
-    preview: initial.preview,
-  }
-}
-
-export function createRuntimeFromReplayPayload(replayPayload: ReplayUrlPayload): AppRuntime {
   const replayResult = replaySessionFromActionLog({
+    gameApi,
     config: replayPayload.bootstrapConfig,
     actionLog: replayPayload.actionLog,
-    snapshotId: replayPayload.snapshotId ?? undefined,
+    snapshotId: replayPayload.snapshotId,
   })
 
   if (!replayResult.ok) {
-    throw new Error(replayResult.reason)
+    throw new Error((replayResult as { reason: string }).reason)
   }
 
   return {
@@ -73,63 +51,100 @@ export function createRuntimeFromReplayPayload(replayPayload: ReplayUrlPayload):
   }
 }
 
-export function createActionLogFromSession(session: AppBattleSession): AppReplayActionLogEntry[] {
-  return session.snapshots
-    .filter((snapshot) => snapshot.phase === 'post')
-    .map((snapshot) => ({
-      action: snapshot.action,
-    }))
+export function createRuntimeFromConfig(config: GameBootstrapConfig): AppRuntime {
+  const gameApi = {
+    createBattle,
+    resolveAction,
+    GAME_CONTENT_REGISTRY,
+  }
+
+  const { session, preview } = createInitialBattleSession({
+    gameApi,
+    config,
+  })
+
+  return {
+    session,
+    preview,
+  }
 }
 
 export function getReplayModeActiveSnapshot(session: AppBattleSession): AppBattleSnapshot | null {
-  if (session.snapshots.length === 0) {
+  if (session.activeSnapshotId === null) {
     return null
   }
 
-  const postSnapshots = session.snapshots.filter((snapshot) => snapshot.phase === 'post')
-  const latestSnapshotId = postSnapshots.at(-1)?.id ?? null
-  const currentSnapshotId = session.activeSnapshotId ?? latestSnapshotId
-
-  if (!currentSnapshotId) {
-    return null
-  }
-
-  const currentSnapshot = session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
-  if (!currentSnapshot || currentSnapshot.phase === 'pre') {
-    return null
-  }
-
-  return currentSnapshot
+  return session.snapshots.find((s) => s.id === session.activeSnapshotId) ?? null
 }
 
-export function ensureSessionReadyForAction(session: AppBattleSession) {
-  const latestSnapshotId = session.snapshots.at(-1)?.id ?? null
-  const activeSnapshotId = session.activeSnapshotId ?? latestSnapshotId
-
-  if (!latestSnapshotId || !activeSnapshotId || activeSnapshotId === latestSnapshotId) {
+export function createActionLogFromSession(
+  session: AppBattleSession,
+): Array<{ action: any; success: boolean }> {
+  return session.history.map((entry) => {
+    const preSnapshot = session.snapshots.find((s) => s.id === entry.preSnapshotId)
     return {
-      ok: true as const,
-      session,
-      branchedFromSnapshotId: null as number | null,
+      action: preSnapshot?.action ?? { kind: entry.actionKind } as any,
+      success: entry.success,
     }
+  })
+}
+
+export function ensureSessionReadyForAction(session: AppBattleSession):
+  | { ok: true; session: AppBattleSession; branchedFromSnapshotId: number | null }
+  | { ok: false; reason: string } {
+  if (session.activeSnapshotId === null) {
+    return { ok: true, session, branchedFromSnapshotId: null }
   }
 
   const branchResult = branchSessionFromSnapshot({
     session,
-    snapshotId: activeSnapshotId,
+    snapshotId: session.activeSnapshotId,
   })
 
   if (!branchResult.ok) {
     return {
       ok: false as const,
-      reason: branchResult.reason,
+      reason: (branchResult as { reason: string }).reason,
     }
   }
 
   return {
-    ok: true as const,
+    ok: true,
     session: branchResult.session,
-    branchedFromSnapshotId: activeSnapshotId,
+    branchedFromSnapshotId: session.activeSnapshotId,
+  }
+}
+
+export function pickRandom<T>(items: T[]): T | null {
+  if (items.length === 0) return null
+  return items[Math.floor(Math.random() * items.length)] ?? null
+}
+
+export function clampAutoPlayDelay(delayMs: number): number {
+  return Math.max(50, Math.min(5000, delayMs))
+}
+
+export function loadBootstrapConfig(options: {
+  seedStorageKey: string
+  bootstrapStorageKey: string
+  defaultConfig: GameBootstrapConfig
+}): GameBootstrapConfig {
+  if (typeof window === 'undefined') return options.defaultConfig
+
+  const storedSeed = window.localStorage.getItem(options.seedStorageKey)
+  const storedConfigText = window.localStorage.getItem(options.bootstrapStorageKey)
+
+  try {
+    const config = storedConfigText
+      ? (JSON.parse(storedConfigText) as GameBootstrapConfig)
+      : options.defaultConfig
+
+    if (storedSeed) {
+      return { ...config, seed: storedSeed }
+    }
+    return config
+  } catch {
+    return options.defaultConfig
   }
 }
 
@@ -138,7 +153,6 @@ export function incrementSeed(seed: string): string {
   if (!match) {
     return `${seed}-1`
   }
-
   const prefix = match[1] ?? ''
   const digits = match[2]
   if (!digits) {
@@ -149,135 +163,59 @@ export function incrementSeed(seed: string): string {
   return `${prefix}${nextDigits}`
 }
 
-export function loadBootstrapConfig(options: {
-  seedStorageKey: string
-  bootstrapStorageKey: string
-  defaultConfig?: GameBootstrapConfig
-}): GameBootstrapConfig {
-  const { seedStorageKey, bootstrapStorageKey, defaultConfig = DEFAULT_GAME_BOOTSTRAP_CONFIG } = options
-
-  if (typeof window === 'undefined') {
-    return defaultConfig
-  }
-
-  const persistedBootstrapConfig = window.localStorage.getItem(bootstrapStorageKey)
-  if (persistedBootstrapConfig) {
-    try {
-      const parsed = JSON.parse(persistedBootstrapConfig) as GameBootstrapConfig
-      const nextConfig = {
-        ...parsed,
-        seed: incrementSeed(parsed.seed || defaultConfig.seed),
-      }
-
-      window.localStorage.setItem(bootstrapStorageKey, JSON.stringify(nextConfig))
-      window.localStorage.setItem(seedStorageKey, nextConfig.seed)
-
-      return nextConfig
-    } catch {
-      // Fall back to the default config path below.
-    }
-  }
-
-  const persistedSeed = window.localStorage.getItem(seedStorageKey)?.trim()
-  const baseSeed = persistedSeed || defaultConfig.seed
-  const nextSeed = incrementSeed(baseSeed)
-  const nextConfig = {
-    ...defaultConfig,
-    seed: nextSeed,
-  }
-
-  window.localStorage.setItem(seedStorageKey, nextSeed)
-  window.localStorage.setItem(bootstrapStorageKey, JSON.stringify(nextConfig))
-
-  return nextConfig
+export function isTypingTarget(event: KeyboardEvent | { target: EventTarget | null }): boolean {
+  const target = event.target as HTMLElement | null
+  if (!target) return false
+  if (target.isContentEditable) return true
+  const tagName = target.tagName
+  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') return true
+  return target.closest('[role="textbox"]') !== null
 }
 
 export function updateHoverCardPlacement(wrap: HTMLElement) {
   const hoverCard = wrap.querySelector<HTMLElement>('.hover-card')
-  if (!hoverCard) {
-    return
-  }
+  if (!hoverCard) return
 
-  const rect = wrap.getBoundingClientRect()
+  const rect = hoverCard.getBoundingClientRect()
   const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
-  const maxTooltipWidth = Math.max(180, Math.min(340, viewportWidth - 24))
-  const tooltipWidth = Math.min(Math.max(hoverCard.scrollWidth, hoverCard.offsetWidth, 180), maxTooltipWidth)
-  const tooltipHeight = Math.min(Math.max(hoverCard.scrollHeight, hoverCard.offsetHeight, 84), viewportHeight - 24)
+  const padding = 12
 
-  const spaceAbove = rect.top
-  const spaceBelow = viewportHeight - rect.bottom
-  const placeBottom = spaceAbove < tooltipHeight + 24 && spaceBelow > spaceAbove
+  let align: 'center' | 'left' | 'right' = 'center'
+  if (rect.left < padding) align = 'left'
+  else if (rect.right > viewportWidth - padding) align = 'right'
 
-  let align: 'left' | 'center' | 'right' = 'center'
-  const spaceLeft = rect.left
-  const spaceRight = viewportWidth - rect.right
+  let placement: 'top' | 'bottom' = 'top'
+  if (rect.top < padding) placement = 'bottom'
 
-  if (spaceLeft < tooltipWidth * 0.5 + 20 && spaceRight > spaceLeft) {
-    align = 'left'
-  } else if (spaceRight < tooltipWidth * 0.5 + 20 && spaceLeft > spaceRight) {
-    align = 'right'
-  } else if (rect.left + rect.width * 0.5 < viewportWidth * 0.35) {
-    align = 'left'
-  } else if (rect.right - rect.width * 0.5 > viewportWidth * 0.65) {
-    align = 'right'
-  }
-
-  wrap.dataset.hoverPlacement = placeBottom ? 'bottom' : 'top'
   wrap.dataset.hoverAlign = align
-  wrap.style.setProperty('--hover-tooltip-max-width', `${maxTooltipWidth}px`)
+  wrap.dataset.hoverPlacement = placement
 }
 
-export function renderDisplayText(displayText?: {
-  template?: string
-  params?: Record<string, string | number | boolean | undefined>
-}): string | null {
-  if (!displayText?.template) {
-    return null
-  }
+export function formatReplayPlaybackSpeed(speed: number): string {
+  if (speed < 1) return `${speed}x`
+  return `${speed}x`
+}
 
-  return displayText.template.replaceAll(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
-    const value = displayText.params?.[key]
-    return value === undefined ? match : String(value)
+export function buildReplayShortAlias(hashHex: string): string {
+  return `replay-${hashHex.slice(0, 12)}`
+}
+
+export function buildIsGdShortlink(alias: string): string {
+  return `https://is.gd/${alias}`
+}
+
+export function renderDisplayText(text: { template: string; params?: Record<string, string | number | boolean | undefined> }): string {
+  return text.template.replace(/\{(\w+)\}/g, (match, key) => {
+    const val = text.params?.[key]
+    return val !== undefined ? String(val) : match
   })
 }
 
-export function describeCardCastCondition(cardDefinition: unknown): string | null {
-  if (!cardDefinition || typeof cardDefinition !== 'object' || !('castCondition' in cardDefinition)) {
-    return null
+export function describeCardCastCondition(card: { castCondition?: { kind: string; threshold: number } }): string | null {
+  const condition = card.castCondition
+  if (!condition) return null
+  if (condition.kind === 'heroHealthBelow') {
+    return `Only playable when your hero is below ${condition.threshold} HP.`
   }
-
-  const castCondition = (cardDefinition as { castCondition?: unknown }).castCondition
-  if (!castCondition || typeof castCondition !== 'object' || !('kind' in castCondition)) {
-    return null
-  }
-
-  if (castCondition.kind !== 'heroHealthBelow') {
-    return null
-  }
-
-  const threshold = (castCondition as { threshold?: unknown }).threshold
-  if (typeof threshold !== 'number') {
-    return null
-  }
-
-  return `Only playable when your hero is below ${threshold} HP.`
-}
-
-export function isTypingTarget(event: KeyboardEvent): boolean {
-  const target = event.target as HTMLElement | null
-  if (!target) {
-    return false
-  }
-
-  if (target.isContentEditable) {
-    return true
-  }
-
-  const tagName = target.tagName
-  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
-    return true
-  }
-
-  return target.closest('[role="textbox"]') !== null
+  return null
 }

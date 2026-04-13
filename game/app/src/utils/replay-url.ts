@@ -1,7 +1,8 @@
 import type { BattleAction } from '../../../shared/models'
 import { deflateSync, inflateSync } from 'fflate'
 import type { GameBootstrapConfig } from '../data/game-bootstrap'
-import type { AppReplayActionLogEntry } from '../game-client-session'
+export type AppReplayActionLogEntry = { action: BattleAction }
+
 
 const REPLAY_PARAM_KEY = 'replay'
 type ReplayHistoryMode = 'push' | 'replace'

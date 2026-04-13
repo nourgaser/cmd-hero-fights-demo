@@ -1,79 +1,16 @@
-import { createGameApi } from '../../index'
 import type { BattleAction, BattleEvent } from '../../shared/models'
 import {
-  DEFAULT_GAME_BOOTSTRAP_CONFIG,
-  type GameBootstrapConfig,
-  type HeroBootstrapConfig,
-} from './data/game-bootstrap'
+  type AppBattlePreview,
+  buildPreviewFromState,
+} from './game-client-preview'
 import {
   type AppActionHistoryEntry,
-  type AppBattlePreview,
   type AppBattleSession,
   type AppBattleSnapshot,
-  buildPreviewFromState,
+  type AppBattleApi,
 } from './game-client'
 
-function resolveHeroSetup(
-  gameApi: ReturnType<typeof createGameApi>,
-  setup: HeroBootstrapConfig,
-) {
-  const heroesById =
-    gameApi.heroesById as Record<
-      string,
-      (typeof gameApi.heroesById)[keyof typeof gameApi.heroesById]
-    >
-  const cardsById =
-    gameApi.cardsById as Record<string, (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]>
-
-  const heroDefinition = heroesById[setup.heroDefinitionId]
-  if (!heroDefinition) {
-    throw new Error(`Unknown heroDefinitionId '${setup.heroDefinitionId}' in bootstrap config.`)
-  }
-
-  for (const cardId of setup.openingDeckCardIds) {
-    if (!cardsById[cardId]) {
-      throw new Error(`Unknown deck card id '${cardId}' for hero '${setup.heroEntityId}'.`)
-    }
-  }
-
-  return {
-    heroEntityId: setup.heroEntityId,
-    hero: heroDefinition,
-    openingMovePoints: setup.openingMovePoints,
-    openingDeckCardIds: [...setup.openingDeckCardIds],
-    startAnchorPosition: setup.startAnchorPosition,
-  }
-}
-
-type SessionResolutionSuccess = {
-  ok: true
-  session: AppBattleSession
-  preview: AppBattlePreview
-  resultMessage: string
-  events: BattleEvent[]
-}
-
-type SessionResolutionFailure = {
-  ok: false
-  reason: string
-  session: AppBattleSession
-  preview: AppBattlePreview
-}
-
-type SnapshotSessionResult =
-  | {
-      ok: true
-      session: AppBattleSession
-      preview: AppBattlePreview
-    }
-  | {
-      ok: false
-      reason: string
-    }
-
-export type AppReplayActionLogEntry = {
-  action: BattleAction
-}
+import { type GameBootstrapConfig } from './data/game-bootstrap'
 
 function cloneSerializable<T>(value: T): T {
   if (typeof structuredClone === 'function') {
@@ -91,13 +28,14 @@ function createSummonedEntityId(context: {
   return `${context.ownerHeroEntityId}:summon:${context.entityDefinitionId}:${context.sequence}`
 }
 
-export function createInitialBattleSession(
-  config: GameBootstrapConfig = DEFAULT_GAME_BOOTSTRAP_CONFIG,
-): {
+export function createInitialBattleSession(options: {
+  gameApi: AppBattleApi
+  config: GameBootstrapConfig
+}): {
   session: AppBattleSession
   preview: AppBattlePreview
 } {
-  const gameApi = createGameApi()
+  const { gameApi, config } = options
 
   const [heroA, heroB] = config.heroes
   if (!heroA || !heroB) {
@@ -110,16 +48,50 @@ export function createInitialBattleSession(
     battlefieldRows: config.battlefieldRows,
     battlefieldColumns: config.battlefieldColumns,
     openingHandSize: config.openingHandSize,
-    heroes: [resolveHeroSetup(gameApi, heroA), resolveHeroSetup(gameApi, heroB)],
+    heroes: [
+      {
+        heroEntityId: heroA.heroEntityId,
+        heroDefinitionId: heroA.heroDefinitionId,
+        openingMovePoints: heroA.openingMovePoints,
+        openingDeckCardIds: [...heroA.openingDeckCardIds],
+        startAnchorPosition: heroA.startAnchorPosition,
+      },
+      {
+        heroEntityId: heroB.heroEntityId,
+        heroDefinitionId: heroB.heroDefinitionId,
+        openingMovePoints: heroB.openingMovePoints,
+        openingDeckCardIds: [...heroB.openingDeckCardIds],
+        startAnchorPosition: heroB.startAnchorPosition,
+      },
+    ],
+    registry: gameApi.GAME_CONTENT_REGISTRY,
   })
+
+  const initialSnapshot: AppBattleSnapshot = {
+    id: 0,
+    phase: 'pre',
+    turnNumber: 1,
+    actorHeroEntityId: createdBattle.state.turn.activeHeroEntityId,
+    actionKind: 'endTurn', // Placeholder
+    action: { kind: 'endTurn', actorHeroEntityId: createdBattle.state.turn.activeHeroEntityId },
+    state: createdBattle.state,
+    nextSequence: 0,
+    resultMessage: 'Battle started.',
+    success: true,
+    events: [],
+    rngCheckpoint: {
+      seed: config.seed,
+      stepCount: 0,
+    },
+  }
 
   const session: AppBattleSession = {
     gameApi,
     state: createdBattle.state,
     battleRng: createdBattle.rng,
-    nextSequence: 1,
+    nextSequence: 0,
     history: [],
-    snapshots: [],
+    snapshots: [initialSnapshot],
     activeSnapshotId: null,
     nextHistoryEntryId: 1,
     nextSnapshotId: 1,
@@ -131,42 +103,41 @@ export function createInitialBattleSession(
   }
 }
 
-export function resolveSessionPlayCard(options: {
-  session: AppBattleSession
-  actorHeroEntityId: string
-  handCardId: string
-  targetEntityId?: string
-  targetPosition?: { row: number; column: number }
-}):
-  | SessionResolutionSuccess
-  | SessionResolutionFailure {
-  const { session, actorHeroEntityId, handCardId, targetEntityId, targetPosition } = options
+export type SessionResolutionResult =
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; events: BattleEvent[]; resultMessage: string }
+  | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview }
 
-  const action: BattleAction = {
-    kind: 'playCard',
-    actorHeroEntityId,
-    handCardId,
-    selection: {
-      targetEntityId,
-      targetPosition,
-    },
-  }
-
-  return resolveSessionAction({ session, action })
-}
-
-function resolveSessionAction(options: {
+export function resolveSessionAction(options: {
   session: AppBattleSession
   action: BattleAction
-}):
-  | SessionResolutionSuccess
-  | SessionResolutionFailure {
+}): SessionResolutionResult {
   const { session, action } = options
 
-  const turnNumber = session.state.turn.turnNumber
   const preSnapshotId = session.nextSnapshotId
-  const postSnapshotId = preSnapshotId + 1
-  const historyEntryId = session.nextHistoryEntryId
+  const postSnapshotId = session.nextSnapshotId + 1
+  const turnNumber = session.state.turn.turnNumber
+
+  const result = session.gameApi.resolveAction({
+    state: session.state,
+    action,
+    nextSequence: session.nextSequence,
+    battleRng: session.battleRng,
+    registry: session.gameApi.GAME_CONTENT_REGISTRY,
+    createSummonedEntityId,
+  })
+
+  const historyEntry: AppActionHistoryEntry = {
+    id: session.nextHistoryEntryId,
+    turnNumber,
+    actorHeroEntityId: action.actorHeroEntityId,
+    actionKind: action.kind,
+    resultMessage: result.ok ? result.resultMessage : (result as { reason: string }).reason,
+    success: result.ok,
+    failureReason: !result.ok ? (result as { reason: string }).reason : undefined,
+    eventCount: result.ok ? result.events.length : 0,
+    preSnapshotId,
+    postSnapshotId,
+  }
 
   const preSnapshot: AppBattleSnapshot = {
     id: preSnapshotId,
@@ -177,19 +148,15 @@ function resolveSessionAction(options: {
     action: cloneSerializable(action),
     state: cloneSerializable(session.state),
     nextSequence: session.nextSequence,
-    resultMessage: 'Before action resolution.',
-    success: true,
+    resultMessage: historyEntry.resultMessage,
+    success: historyEntry.success,
+    failureReason: historyEntry.failureReason,
     events: [],
-    rngCheckpoint: session.battleRng.getCheckpoint(),
+    rngCheckpoint: {
+      seed: session.battleRng.seed,
+      stepCount: session.battleRng.stepCount,
+    },
   }
-
-  const result = session.gameApi.resolveAction({
-    state: session.state,
-    nextSequence: session.nextSequence,
-    battleRng: session.battleRng,
-    createSummonedEntityId,
-    action,
-  })
 
   if (!result.ok) {
     const postSnapshot: AppBattleSnapshot = {
@@ -201,39 +168,27 @@ function resolveSessionAction(options: {
       action: cloneSerializable(action),
       state: cloneSerializable(result.state),
       nextSequence: session.nextSequence,
-      resultMessage: !result.ok ? result.reason : '',
+      resultMessage: !result.ok ? (result as { reason: string }).reason : '',
       success: false,
-      failureReason: !result.ok ? result.reason : undefined,
+      failureReason: !result.ok ? (result as { reason: string }).reason : undefined,
       events: [],
-      rngCheckpoint: session.battleRng.getCheckpoint(),
-    }
-
-    const historyEntry: AppActionHistoryEntry = {
-      id: historyEntryId,
-      turnNumber,
-      actorHeroEntityId: action.actorHeroEntityId,
-      actionKind: action.kind,
-      resultMessage: !result.ok ? result.reason : '',
-      success: false,
-      failureReason: !result.ok ? result.reason : undefined,
-      eventCount: 0,
-      preSnapshotId,
-      postSnapshotId,
+      rngCheckpoint: {
+        seed: session.battleRng.seed,
+        stepCount: session.battleRng.stepCount,
+      },
     }
 
     const nextSession: AppBattleSession = {
       ...session,
-      state: result.state,
       history: [...session.history, historyEntry],
       snapshots: [...session.snapshots, preSnapshot, postSnapshot],
-      activeSnapshotId: postSnapshotId,
-      nextHistoryEntryId: historyEntryId + 1,
+      nextHistoryEntryId: session.nextHistoryEntryId + 1,
       nextSnapshotId: postSnapshotId + 1,
     }
 
     return {
       ok: false,
-      reason: !result.ok ? result.reason : 'Unknown error',
+      reason: !result.ok ? (result as { reason: string }).reason : 'Unknown error',
       session: nextSession,
       preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
     }
@@ -250,20 +205,11 @@ function resolveSessionAction(options: {
     nextSequence: result.nextSequence,
     resultMessage: result.resultMessage,
     success: true,
-    events: cloneSerializable(result.events),
-    rngCheckpoint: session.battleRng.getCheckpoint(),
-  }
-
-  const historyEntry: AppActionHistoryEntry = {
-    id: historyEntryId,
-    turnNumber,
-    actorHeroEntityId: action.actorHeroEntityId,
-    actionKind: action.kind,
-    resultMessage: result.resultMessage,
-    success: true,
-    eventCount: result.events.length,
-    preSnapshotId,
-    postSnapshotId,
+    events: result.events,
+    rngCheckpoint: {
+      seed: session.battleRng.seed,
+      stepCount: session.battleRng.stepCount,
+    },
   }
 
   const nextSession: AppBattleSession = {
@@ -272,35 +218,38 @@ function resolveSessionAction(options: {
     nextSequence: result.nextSequence,
     history: [...session.history, historyEntry],
     snapshots: [...session.snapshots, preSnapshot, postSnapshot],
-    activeSnapshotId: postSnapshotId,
-    nextHistoryEntryId: historyEntryId + 1,
+    nextHistoryEntryId: session.nextHistoryEntryId + 1,
     nextSnapshotId: postSnapshotId + 1,
   }
 
   return {
     ok: true,
     session: nextSession,
-    preview: buildPreviewFromState({ gameApi: session.gameApi, state: result.state }),
-    resultMessage: result.resultMessage,
+    preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
     events: result.events,
+    resultMessage: result.resultMessage,
   }
 }
 
-export function resolveSessionSimpleAction(options: {
+export function resolveSessionPlayCard(options: {
   session: AppBattleSession
   actorHeroEntityId: string
-  kind: 'pressLuck' | 'endTurn'
-}):
-  | SessionResolutionSuccess
-  | SessionResolutionFailure {
-  const { session, actorHeroEntityId, kind } = options
-
-  const action: BattleAction = {
-    kind,
-    actorHeroEntityId,
-  }
-
-  return resolveSessionAction({ session, action })
+  handCardId: string
+  targetEntityId?: string
+  targetPosition?: { row: number; column: number }
+}): SessionResolutionResult {
+  return resolveSessionAction({
+    session: options.session,
+    action: {
+      kind: 'playCard',
+      actorHeroEntityId: options.actorHeroEntityId,
+      handCardId: options.handCardId,
+      selection: {
+        targetEntityId: options.targetEntityId,
+        targetPosition: options.targetPosition,
+      },
+    },
+  })
 }
 
 export function resolveSessionBasicAttack(options: {
@@ -308,21 +257,18 @@ export function resolveSessionBasicAttack(options: {
   actorHeroEntityId: string
   attackerEntityId: string
   targetEntityId: string
-}):
-  | SessionResolutionSuccess
-  | SessionResolutionFailure {
-  const { session, actorHeroEntityId, attackerEntityId, targetEntityId } = options
-
-  const action: BattleAction = {
-    kind: 'basicAttack',
-    actorHeroEntityId,
-    attackerEntityId,
-    selection: {
-      targetEntityId,
+}): SessionResolutionResult {
+  return resolveSessionAction({
+    session: options.session,
+    action: {
+      kind: 'basicAttack',
+      actorHeroEntityId: options.actorHeroEntityId,
+      attackerEntityId: options.attackerEntityId,
+      selection: {
+        targetEntityId: options.targetEntityId,
+      },
     },
-  }
-
-  return resolveSessionAction({ session, action })
+  })
 }
 
 export function resolveSessionUseEntityActive(options: {
@@ -330,58 +276,59 @@ export function resolveSessionUseEntityActive(options: {
   actorHeroEntityId: string
   sourceEntityId: string
   targetEntityId?: string
-}):
-  | SessionResolutionSuccess
-  | SessionResolutionFailure {
-  const { session, actorHeroEntityId, sourceEntityId, targetEntityId } = options
-
-  const action: BattleAction = {
-    kind: 'useEntityActive',
-    actorHeroEntityId,
-    sourceEntityId,
-    selection: {
-      targetEntityId: targetEntityId ?? undefined,
+}): SessionResolutionResult {
+  return resolveSessionAction({
+    session: options.session,
+    action: {
+      kind: 'useEntityActive',
+      actorHeroEntityId: options.actorHeroEntityId,
+      sourceEntityId: options.sourceEntityId,
+      selection: {
+        targetEntityId: options.targetEntityId,
+      },
     },
-  }
-
-  return resolveSessionAction({ session, action })
+  })
 }
 
-export function createInitialBattlePreview(
-  config: GameBootstrapConfig = DEFAULT_GAME_BOOTSTRAP_CONFIG,
-): AppBattlePreview {
-  return createInitialBattleSession(config).preview
+export function resolveSessionSimpleAction(options: {
+  session: AppBattleSession
+  actorHeroEntityId: string
+  kind: 'pressLuck' | 'endTurn'
+}): SessionResolutionResult {
+  return resolveSessionAction({
+    session: options.session,
+    action: {
+      kind: options.kind,
+      actorHeroEntityId: options.actorHeroEntityId,
+    } as BattleAction,
+  })
 }
+
+export type SnapshotSessionResult =
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview }
+  | { ok: false; reason: string }
 
 export function jumpSessionToSnapshot(options: {
   session: AppBattleSession
   snapshotId: number
 }): SnapshotSessionResult {
   const { session, snapshotId } = options
-  const snapshot = session.snapshots.find((entry) => entry.id === snapshotId)
-
+  const snapshot = session.snapshots.find((s) => s.id === snapshotId)
   if (!snapshot) {
-    return {
-      ok: false,
-      reason: `Snapshot ${snapshotId} was not found.`,
-    }
+    return { ok: false, reason: `Snapshot ${snapshotId} not found.` }
   }
 
   const nextSession: AppBattleSession = {
     ...session,
-    state: cloneSerializable(snapshot.state),
+    state: snapshot.state,
     nextSequence: snapshot.nextSequence,
-    battleRng: session.gameApi.createBattleRngFromCheckpoint(snapshot.rngCheckpoint),
-    activeSnapshotId: snapshot.id,
+    activeSnapshotId: snapshotId,
   }
 
   return {
     ok: true,
     session: nextSession,
-    preview: buildPreviewFromState({
-      gameApi: session.gameApi,
-      state: nextSession.state,
-    }),
+    preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
   }
 }
 
@@ -389,57 +336,41 @@ export function branchSessionFromSnapshot(options: {
   session: AppBattleSession
   snapshotId: number
 }): SnapshotSessionResult {
-  const jumpResult = jumpSessionToSnapshot(options)
-  if (!jumpResult.ok) {
-    return jumpResult
+  const { session, snapshotId } = options
+  const snapshot = session.snapshots.find((s) => s.id === snapshotId)
+  if (!snapshot) {
+    return { ok: false, reason: `Snapshot ${snapshotId} not found.` }
   }
-
-  const sourceSnapshot = jumpResult.session.snapshots.find((entry) => entry.id === options.snapshotId)
-  if (!sourceSnapshot) {
-    return {
-      ok: false,
-      reason: `Snapshot ${options.snapshotId} was not found.`,
-    }
-  }
-
-  const truncatedSnapshots = jumpResult.session.snapshots.filter((entry) => entry.id <= sourceSnapshot.id)
-  const truncatedHistory = jumpResult.session.history.filter((entry) => entry.postSnapshotId <= sourceSnapshot.id)
 
   const nextSession: AppBattleSession = {
-    ...jumpResult.session,
-    snapshots: truncatedSnapshots,
-    nextSnapshotId: sourceSnapshot.id + 1,
-    history: truncatedHistory,
-    nextHistoryEntryId: (truncatedHistory.at(-1)?.id ?? 0) + 1,
+    ...session,
+    state: snapshot.state,
+    nextSequence: snapshot.nextSequence,
+    activeSnapshotId: null,
+    history: session.history.filter((h) => h.postSnapshotId <= snapshotId),
+    snapshots: session.snapshots.filter((s) => s.id <= snapshotId),
+    nextSnapshotId: snapshotId + 1,
   }
 
   return {
     ok: true,
     session: nextSession,
-    preview: jumpResult.preview,
+    preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
   }
 }
 
 export function replaySessionFromActionLog(options: {
+  gameApi: AppBattleApi
   config: GameBootstrapConfig
-  actionLog: AppReplayActionLogEntry[]
-  snapshotId?: number
-}):
-  | {
-      ok: true
-      session: AppBattleSession
-      preview: AppBattlePreview
-    }
-  | {
-      ok: false
-      reason: string
-    } {
-  const { config, actionLog, snapshotId } = options
-  let runtime = createInitialBattleSession(config)
+  actionLog: Array<{ action: BattleAction; success?: boolean }>
+  snapshotId: number | null
+}): SnapshotSessionResult {
+  const { gameApi, config, actionLog, snapshotId } = options
+  let runtime = createInitialBattleSession({ gameApi, config })
 
   for (const entry of actionLog) {
     const action = entry.action
-    let result: SessionResolutionSuccess | SessionResolutionFailure
+    let result: SessionResolutionResult
 
     switch (action.kind) {
       case 'playCard':
@@ -482,13 +413,24 @@ export function replaySessionFromActionLog(options: {
         }
     }
 
+    if (!result.ok) {
+      if (!entry.success) {
+        runtime = {
+          session: result.session,
+          preview: result.preview,
+        }
+        continue
+      }
+      return { ok: false, reason: `Replay failed at action: ${action.kind}. Reason: ${(result as { reason: string }).reason}` }
+    }
+
     runtime = {
       session: result.session,
       preview: result.preview,
     }
   }
 
-  if (snapshotId !== undefined) {
+  if (snapshotId !== null) {
     const jumpResult = jumpSessionToSnapshot({
       session: runtime.session,
       snapshotId,

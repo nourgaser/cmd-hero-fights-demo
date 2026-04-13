@@ -1,3 +1,6 @@
+import {
+  type AppBattleSnapshot,
+} from '../game-client'
 import { useEffect, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import type { GameBootstrapConfig } from '../data/game-bootstrap'

@@ -10,7 +10,7 @@ Current progress (2026-04-13): player-facing formatting lives in `game/app/src/u
 - [x] Split the giant stylesheet into component-scoped styles or smaller CSS modules so settings, battlefield, inspect, hover, toast, and hand styles do not live in one monolith.
 - [x] For UI refactors, use folder-per-component structure (ComponentName/index.tsx + ComponentName/style.css) so changes stay surgical and ownership is obvious.
 - [x] Reduce repeated summary/rendering logic by centralizing display text, tooltip text, and inspect text formatting in shared helpers.
-- [ ] Replace manual hero/card lookup wiring with a single content registry path that covers definitions, initial listeners, summon blueprints, summon footprints, and active profiles.
+- [x] Replace manual hero/card lookup wiring with a single content registry path that covers definitions, initial listeners, summon blueprints, summon footprints, and active profiles.
 - [x] Replace manual effect-handler dispatch with a registry assembled from the same effect source of truth as the schema.
 - [ ] Remove duplicated listener-condition matching between schema/model definitions and runtime matching logic.
 - [ ] Reduce action/effect/targeting switch fan-out so new kinds do not require patching multiple unrelated files.

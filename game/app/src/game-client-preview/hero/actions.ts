@@ -1,15 +1,13 @@
-import { createGameApi } from '../../../../index'
 import type { AppBattlePreview } from '../types'
-
-type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+import type { BattleState, HeroEntityState } from '../../../../shared/models'
 
 export function buildHeroActionTargets(options: {
-  state: PreviewBattleState
+  state: BattleState
 }): AppBattlePreview['heroActionTargets'] {
   const { state } = options
 
   return (state.heroEntityIds as string[]).map((heroEntityId) => {
-    const entity = state.entitiesById[heroEntityId]
+    const entity = state.entitiesById[heroEntityId] as HeroEntityState
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)

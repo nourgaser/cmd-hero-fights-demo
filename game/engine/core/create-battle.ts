@@ -1,13 +1,11 @@
 import {
   type BattleState,
   type BattlefieldSide,
-  type CardDefinition,
   type CardId,
   type EntityFootprint,
   type EntityId,
   type HeroDefinition,
   type HeroEntityState,
-  type ListenerDefinition,
   type Position,
   createEmptyBattlefieldOccupancy,
   footprintFits,
@@ -18,10 +16,11 @@ import {
 import { MOVE_POINTS_CAP } from "../../shared/game-constants";
 import { createBattleRng, type BattleRng } from "./rng";
 import { annotateBattleStateWithActionOptions } from "../actions/annotate-action-options";
+import { type ContentRegistry } from "./content-registry";
 
 type CreateBattleHeroSetup = {
   heroEntityId: EntityId;
-  hero: HeroDefinition;
+  heroDefinitionId: string;
   openingMovePoints: number;
   openingDeckCardIds: CardId[];
   startAnchorPosition: Position;
@@ -34,21 +33,7 @@ export type CreateBattleInput = {
   battlefieldColumns: number;
   openingHandSize: number;
   heroes: [CreateBattleHeroSetup, CreateBattleHeroSetup];
-  cardDefinitionsById?: Record<string, CardDefinition>;
-  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
-  resolveEntityActiveProfile?: (context: {
-    sourceDefinitionCardId: string;
-    sourceKind: "weapon" | "companion";
-  }) =>
-    | {
-        kind: "attack" | "effect";
-        moveCost: number;
-      }
-    | undefined;
-  resolveHeroInitialListeners?: (context: {
-    hero: HeroDefinition;
-    heroEntityId: string;
-  }) => ListenerDefinition[];
+  registry: ContentRegistry;
 };
 
 export type CreatedBattle = {
@@ -59,28 +44,29 @@ export type CreatedBattle = {
 function createHeroEntityState(
   setup: CreateBattleHeroSetup,
   battlefieldSide: BattlefieldSide,
+  hero: HeroDefinition,
 ): HeroEntityState {
   const openingMovePoints = Math.min(setup.openingMovePoints, MOVE_POINTS_CAP);
 
   return {
     kind: "hero",
     entityId: setup.heroEntityId,
-    heroDefinitionId: setup.hero.id,
+    heroDefinitionId: setup.heroDefinitionId,
     battlefieldSide,
     anchorPosition: setup.startAnchorPosition,
-    footprint: setup.hero.footprint,
-    maxHealth: setup.hero.combat.maxHealth,
-    currentHealth: setup.hero.combat.maxHealth,
-    armor: setup.hero.combat.armor,
-    magicResist: setup.hero.combat.magicResist,
-    attackDamage: setup.hero.combat.attackDamage,
-    abilityPower: setup.hero.combat.abilityPower,
-    criticalChance: setup.hero.combat.criticalChance,
-    criticalMultiplier: setup.hero.combat.criticalMultiplier,
-    dodgeChance: setup.hero.combat.dodgeChance,
+    footprint: hero.footprint,
+    maxHealth: hero.combat.maxHealth,
+    currentHealth: hero.combat.maxHealth,
+    armor: hero.combat.armor,
+    magicResist: hero.combat.magicResist,
+    attackDamage: hero.combat.attackDamage,
+    abilityPower: hero.combat.abilityPower,
+    criticalChance: hero.combat.criticalChance,
+    criticalMultiplier: hero.combat.criticalMultiplier,
+    dodgeChance: hero.combat.dodgeChance,
     maxMovePoints: openingMovePoints,
     movePoints: openingMovePoints,
-    basicAttackMoveCost: setup.hero.basicAttack.moveCost,
+    basicAttackMoveCost: hero.basicAttack.moveCost,
     deckCardIds: [...setup.openingDeckCardIds],
     handCards: [],
     discardCardIds: [],
@@ -135,6 +121,13 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
   const heroASide: BattlefieldSide = "north";
   const heroBSide: BattlefieldSide = "south";
 
+  const heroADefinition = input.registry.heroesById[heroASetup.heroDefinitionId];
+  const heroBDefinition = input.registry.heroesById[heroBSetup.heroDefinitionId];
+
+  if (!heroADefinition || !heroBDefinition) {
+    throw new Error("Hero definition not found in registry.");
+  }
+
   let occupancy = createEmptyBattlefieldOccupancy({
     rows: input.battlefieldRows,
     columns: input.battlefieldColumns,
@@ -143,8 +136,8 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
   // Throws early when rows are not evenly split.
   rowsPerSide(occupancy.dimensions);
 
-  const heroAFootprint: EntityFootprint = heroASetup.hero.footprint;
-  const heroBFootprint: EntityFootprint = heroBSetup.hero.footprint;
+  const heroAFootprint: EntityFootprint = heroADefinition.footprint;
+  const heroBFootprint: EntityFootprint = heroBDefinition.footprint;
 
   if (!footprintFits(occupancy, heroASetup.startAnchorPosition, heroAFootprint)) {
     throw new Error("Hero A footprint does not fit in empty battlefield cells.");
@@ -202,6 +195,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
         openingDeckCardIds: shuffleCardIds(heroASetup.openingDeckCardIds.sort((a, b) => a.localeCompare(b)), rng),
       },
       heroASide,
+      heroADefinition,
     ),
     input.openingHandSize,
   );
@@ -212,17 +206,18 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
         openingDeckCardIds: shuffleCardIds(heroBSetup.openingDeckCardIds.sort((a, b) => a.localeCompare(b)), rng),
       },
       heroBSide,
+      heroBDefinition,
     ),
     input.openingHandSize,
   );
 
   const initialListeners = [
-    ...(input.resolveHeroInitialListeners?.({
-      hero: heroASetup.hero,
+    ...(input.registry.resolveHeroInitialListeners({
+      heroDefinitionId: heroASetup.heroDefinitionId,
       heroEntityId: heroASetup.heroEntityId,
     }) ?? []),
-    ...(input.resolveHeroInitialListeners?.({
-      hero: heroBSetup.hero,
+    ...(input.registry.resolveHeroInitialListeners({
+      heroDefinitionId: heroBSetup.heroDefinitionId,
       heroEntityId: heroBSetup.heroEntityId,
     }) ?? []),
   ];
@@ -252,14 +247,10 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     activeAuras: [],
   };
 
-  const annotatedState = input.cardDefinitionsById
-    ? annotateBattleStateWithActionOptions({
-        state,
-        cardDefinitionsById: input.cardDefinitionsById,
-        resolveSummonFootprint: input.resolveSummonFootprint,
-        resolveEntityActiveProfile: input.resolveEntityActiveProfile,
-      })
-    : state;
+  const annotatedState = annotateBattleStateWithActionOptions({
+    state,
+    registry: input.registry,
+  });
 
   return {
     state: annotatedState,

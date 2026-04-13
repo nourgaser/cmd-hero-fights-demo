@@ -2,9 +2,6 @@ import {
   type BattleAction,
   type BattleEvent,
   type BattleState,
-  type CardDefinition,
-  type EntityFootprint,
-  type SummonedEntityKind,
 } from "../../shared/models";
 import { type BattleRng } from "../core/rng";
 import {
@@ -25,14 +22,12 @@ import {
 } from "./resolve-basic-attack";
 import {
   resolveUseEntityActiveAction,
-  type EntityActiveProfile,
   type ResolveUseEntityActiveResult,
 } from "./resolve-use-entity-active";
-import { type SummonedEntityBlueprint } from "./effects/execute-card-effect";
-import { type HeroDefinition } from "../../shared/models";
 import { removeDefeatedSummonedEntities } from "./entity-lifecycle";
 import { resolveTriggeredListeners } from "./listeners";
 import { annotateBattleStateWithActionOptions } from "./annotate-action-options";
+import { type ContentRegistry } from "../core/content-registry";
 
 export type ResolveActionResult =
   | {
@@ -53,34 +48,20 @@ export function resolveAction(options: {
   action: BattleAction;
   nextSequence: number;
   battleRng: BattleRng;
-  cardDefinitionsById: Record<string, CardDefinition>;
-  heroDefinitionsById: Record<string, HeroDefinition>;
+  registry: ContentRegistry;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
-  resolveSummonedEntityBlueprint: (
-    entityDefinitionId: string,
-    kind: SummonedEntityKind,
-  ) => SummonedEntityBlueprint | undefined;
-  resolveEntityActiveProfile?: (context: {
-    sourceDefinitionCardId: string;
-    sourceKind: "weapon" | "companion";
-  }) => EntityActiveProfile | undefined;
 }): ResolveActionResult {
   const {
     state,
     action,
     nextSequence,
     battleRng,
-    cardDefinitionsById,
-    heroDefinitionsById,
+    registry,
     createSummonedEntityId,
-    resolveSummonFootprint,
-    resolveSummonedEntityBlueprint,
-    resolveEntityActiveProfile,
   } = options;
 
   let baseResult: ResolveActionResult;
@@ -90,12 +71,10 @@ export function resolveAction(options: {
       const result: ResolvePlayCardResult = resolvePlayCardAction({
         state,
         action,
-        cardDefinitionsById,
+        registry,
         nextSequence,
         battleRng,
         createSummonedEntityId,
-        resolveSummonFootprint,
-        resolveSummonedEntityBlueprint,
       });
 
       if (!result.ok) {
@@ -136,7 +115,7 @@ export function resolveAction(options: {
         action,
         nextSequence,
         battleRng,
-        heroDefinitionsById,
+        registry,
       });
 
       if (!result.ok) {
@@ -152,8 +131,7 @@ export function resolveAction(options: {
         nextSequence,
         battleRng,
         createSummonedEntityId,
-        resolveSummonedEntityBlueprint,
-        resolveEntityActiveProfile,
+        registry,
       });
 
       if (!result.ok) {
@@ -183,14 +161,14 @@ export function resolveAction(options: {
     nextSequence: cleanup.nextSequence,
     battleRng,
     createSummonedEntityId,
-    resolveSummonedEntityBlueprint,
+    registry,
   });
 
   if (!listenerResolution.ok) {
     return {
       ok: false,
       state,
-      reason: listenerResolution.reason,
+      reason: (listenerResolution as { reason: string }).reason,
     };
   }
 
@@ -198,9 +176,7 @@ export function resolveAction(options: {
     ok: true,
     state: annotateBattleStateWithActionOptions({
       state: listenerResolution.state,
-      cardDefinitionsById,
-      resolveSummonFootprint,
-      resolveEntityActiveProfile,
+      registry,
     }),
     events: [...eventsAfterCleanup, ...listenerResolution.events],
     nextSequence: listenerResolution.nextSequence,

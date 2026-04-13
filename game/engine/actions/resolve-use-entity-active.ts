@@ -5,7 +5,6 @@ import {
   type UseEntityActiveAction,
 } from "../../shared/models";
 import { renderEffectDisplayText, type EffectDefinition, type EffectDisplayText } from "../../shared/models";
-import type { SummonedEntityBlueprint } from "./effects/context";
 import { resolveEffectiveNumber } from "../core/number-resolver";
 import { getEffectiveArmor, getEffectiveDodgeChance, getEffectiveMagicResist } from "./effects/get-effective-number";
 import { roundWhole, toAppliedDamage } from "../core/combat";
@@ -22,6 +21,7 @@ import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
 } from "../../shared/game-constants";
+import { type ContentRegistry } from "../core/content-registry";
 
 export type EntityActiveAttackProfile = {
   kind: "attack";
@@ -62,28 +62,20 @@ export function resolveUseEntityActiveAction(options: {
   action: UseEntityActiveAction;
   nextSequence: number;
   battleRng: BattleRng;
+  registry: ContentRegistry;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonedEntityBlueprint: (
-    entityDefinitionId: string,
-    kind: "weapon" | "totem" | "companion",
-  ) => SummonedEntityBlueprint | undefined;
-  resolveEntityActiveProfile?: (context: {
-    sourceDefinitionCardId: string;
-    sourceKind: "weapon" | "companion";
-  }) => EntityActiveProfile | undefined;
 }): ResolveUseEntityActiveResult {
   const {
     state,
     action,
     nextSequence,
     battleRng,
+    registry,
     createSummonedEntityId,
-    resolveSummonedEntityBlueprint,
-    resolveEntityActiveProfile,
   } = options;
 
   const actorResolution = resolveActiveActorHeroForAction({
@@ -96,7 +88,7 @@ export function resolveUseEntityActiveAction(options: {
     return {
       ok: false,
       state,
-      reason: actorResolution.reason,
+      reason: (actorResolution as { reason: string }).reason,
     };
   }
   const actorHero = actorResolution.actorHero;
@@ -126,7 +118,7 @@ export function resolveUseEntityActiveAction(options: {
     };
   }
 
-  const profile = resolveEntityActiveProfile?.({
+  const profile = registry.resolveEntityActiveProfile({
     sourceDefinitionCardId: source.definitionCardId,
     sourceKind: source.kind,
   });
@@ -173,15 +165,15 @@ export function resolveUseEntityActiveAction(options: {
         lastDamageWasDodged,
         lastSummonedEntityId,
         effectSourceEntityId: source.entityId,
+        registry,
         createSummonedEntityId,
-        resolveSummonedEntityBlueprint,
       });
 
       if (!execution.ok) {
         return {
           ok: false,
           state,
-          reason: execution.reason,
+          reason: (execution as { reason: string }).reason,
         };
       }
 

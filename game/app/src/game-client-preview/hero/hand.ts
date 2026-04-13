@@ -1,4 +1,3 @@
-import { createGameApi } from '../../../../index'
 import {
   formatKeywordLabel,
   renderTemplatedText,
@@ -10,19 +9,17 @@ import {
   resolveNumberTrace,
   resolveSummonPreviewForCard,
 } from '../helpers'
-
-type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
-
-type PreviewGameApi = ReturnType<typeof createGameApi>
+import type { AppBattleApi } from '../../game-client'
+import type { BattleState, HeroEntityState } from '../../../../shared/models'
 
 export function buildHeroHandCounts(options: {
-  gameApi: PreviewGameApi
-  state: PreviewBattleState
+  gameApi: AppBattleApi
+  state: BattleState
 }): AppBattlePreview['heroHandCounts'] {
   const { gameApi, state } = options
 
   return (state.heroEntityIds as string[]).map((heroEntityId) => {
-    const entity = state.entitiesById[heroEntityId]
+    const entity = state.entitiesById[heroEntityId] as HeroEntityState
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
@@ -50,18 +47,15 @@ export function buildHeroHandCounts(options: {
 }
 
 export function buildHeroHands(options: {
-  gameApi: PreviewGameApi
-  state: PreviewBattleState
+  gameApi: AppBattleApi
+  state: BattleState
 }): AppBattlePreview['heroHands'] {
   const { gameApi, state } = options
 
-  const cardsById = gameApi.cardsById as Record<
-    string,
-    (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]
-  >
+  const cardsById = gameApi.GAME_CONTENT_REGISTRY.cardsById
 
   return (state.heroEntityIds as string[]).map((heroEntityId) => {
-    const entity = state.entitiesById[heroEntityId]
+    const entity = state.entitiesById[heroEntityId] as HeroEntityState
 
     if (!entity || entity.kind !== 'hero') {
       throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
@@ -109,7 +103,7 @@ export function buildHeroHands(options: {
 
         const keywords = keywordReferences
           .map((keywordReference) => {
-            const keywordDefinition = gameApi.keywordsById[keywordReference.keywordId]
+            const keywordDefinition = gameApi.GAME_CONTENT_REGISTRY.keywordsById[keywordReference.keywordId]
             if (!keywordDefinition) {
               return null
             }
@@ -145,7 +139,7 @@ export function buildHeroHands(options: {
           rarity: cardDef.rarity,
           keywords,
           ...describeNumericCardText({
-            card: cardDef,
+            card: cardDef as any,
             actorHero: entity,
             actorNumberTraces: {
               attackDamage: actorAttackDamageTrace,
@@ -163,12 +157,10 @@ export function buildHeroHands(options: {
           validTargetEntityIds: handCard.validTargetEntityIds ?? [],
           validPlacementPositions: handCard.validPlacementPositions ?? [],
           summonPreview: resolveSummonPreviewForCard({
-            cardDef,
             gameApi,
-            cardsById,
-            ownerHeroEntityId: entity.entityId,
             state,
-            luck: state.luck,
+            cardDefinitionId: handCard.cardDefinitionId,
+            ownerHeroEntityId: entity.entityId,
           }),
         }
       }),

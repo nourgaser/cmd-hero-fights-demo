@@ -12,7 +12,7 @@ import { resolveEffectiveNumber } from "../../../core/number-resolver";
 export function handleSummonEffect(
   context: EffectExecutionContext,
 ): ExecuteCardEffectResult {
-  const { state, effect, action, actorHero, sequence, lastDamageWasDodged } = context;
+  const { state, effect, action, actorHero, sequence, lastDamageWasDodged, registry } = context;
 
   if (effect.payload.kind !== "summonEntity") {
     return { ok: false, reason: "handleSummonEffect received non-summon payload." };
@@ -23,7 +23,7 @@ export function handleSummonEffect(
     return { ok: false, reason: "Summon effect execution requires a selected target position." };
   }
 
-  const blueprint = context.resolveSummonedEntityBlueprint?.(
+  const blueprint = registry.resolveSummonedEntityBlueprint(
     effect.payload.entityDefinitionId,
     effect.payload.entityKind,
   );

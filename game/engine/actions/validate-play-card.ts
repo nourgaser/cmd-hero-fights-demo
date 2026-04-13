@@ -1,13 +1,13 @@
 import {
     type BattleState,
     type CardDefinition,
-    type EntityFootprint,
     type PlayCardAction,
     SingleCellFootprint,
     isCardCastConditionMet,
 } from "../../shared/models";
 import { validatePlacementForHeroSide, type PlacementValidationResult } from "../battlefield/placement";
 import { resolveActiveActorHeroForAction } from "./shared-validation";
+import { type ContentRegistry } from "../core/content-registry";
 
 export type PlayCardValidationResult =
     | { ok: true; card: CardDefinition }
@@ -16,10 +16,9 @@ export type PlayCardValidationResult =
 export function validatePlayCardAction(options: {
     state: BattleState;
     action: PlayCardAction;
-    cardDefinitionsById: Record<string, CardDefinition>;
-    resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
+    registry: ContentRegistry;
 }): PlayCardValidationResult {
-    const { state, action, cardDefinitionsById, resolveSummonFootprint } = options;
+    const { state, action, registry } = options;
 
     const actorResolution = resolveActiveActorHeroForAction({
         state,
@@ -28,7 +27,7 @@ export function validatePlayCardAction(options: {
         inactiveReason: "Only the active hero can play a card.",
     });
     if (!actorResolution.ok) {
-        return { ok: false, reason: (actorResolution as any).reason };
+        return { ok: false, reason: (actorResolution as { reason: string }).reason };
     }
     const actor = actorResolution.actorHero;
 
@@ -37,7 +36,7 @@ export function validatePlayCardAction(options: {
         return { ok: false, reason: "Selected hand card was not found on acting hero hand." };
     }
 
-    const card = cardDefinitionsById[handCard.cardDefinitionId];
+    const card = registry.cardsById[handCard.cardDefinitionId];
     if (!card) {
         return { ok: false, reason: "Card definition for hand card was not found." };
     }
@@ -81,7 +80,7 @@ export function validatePlayCardAction(options: {
         }
 
         const footprint =
-            resolveSummonFootprint?.(summonEffect.payload.entityDefinitionId) ?? SingleCellFootprint;
+            registry.resolveSummonFootprint(summonEffect.payload.entityDefinitionId) ?? SingleCellFootprint;
 
         const placementResult: PlacementValidationResult = validatePlacementForHeroSide({
             state,
@@ -91,7 +90,7 @@ export function validatePlayCardAction(options: {
         });
 
         if (!placementResult.ok) {
-            return placementResult;
+            return { ok: false, reason: (placementResult as { reason: string }).reason };
         }
     }
 

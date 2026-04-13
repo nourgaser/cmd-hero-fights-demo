@@ -3,22 +3,15 @@ import {
   type HeroEntityState,
 } from "../../../shared/models";
 import { resolveAttackTargetEntityIdsWithTaunt } from "../../battlefield/taunt";
+import { type ContentRegistry } from "../../core/content-registry";
 
 export function resolveEntityActiveOptions(options: {
   state: BattleState;
   actorHero: HeroEntityState;
   isActiveHero: boolean;
-  resolveEntityActiveProfile?: (context: {
-    sourceDefinitionCardId: string;
-    sourceKind: "weapon" | "companion";
-  }) =>
-    | {
-        kind: "attack" | "effect";
-        moveCost: number;
-      }
-    | undefined;
+  registry: ContentRegistry;
 }): HeroEntityState["entityActiveOptions"] {
-  const { state, actorHero, isActiveHero, resolveEntityActiveProfile } = options;
+  const { state, actorHero, isActiveHero, registry } = options;
 
   if (!isActiveHero) {
     return undefined;
@@ -33,7 +26,7 @@ export function resolveEntityActiveOptions(options: {
         return null;
       }
 
-      const profile = resolveEntityActiveProfile?.({
+      const profile = registry.resolveEntityActiveProfile({
         sourceDefinitionCardId: entry.definitionCardId,
         sourceKind: entry.kind,
       });

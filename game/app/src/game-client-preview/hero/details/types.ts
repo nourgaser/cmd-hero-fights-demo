@@ -1,9 +1,10 @@
-import { createGameApi } from '../../../../../index'
 import type { AppBattlePreview } from '../../types'
+import type { AppBattleApi } from '../../../game-client'
+import type { BattleState, HeroEntityState } from '../../../../../shared/models'
 
-export type PreviewGameApi = ReturnType<typeof createGameApi>
-export type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
-export type HeroEntity = Extract<PreviewBattleState['entitiesById'][string], { kind: 'hero' }>
+export type PreviewGameApi = AppBattleApi
+export type PreviewBattleState = BattleState
+export type HeroEntity = HeroEntityState
 export type HeroPassiveEffect = AppBattlePreview['heroDetailsByEntityId'][string]['activePassiveEffects'][number]
 
 export type AuraGroup = {

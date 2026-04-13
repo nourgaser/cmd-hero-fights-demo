@@ -4,7 +4,7 @@ import { CARD_ICON_META } from '../../data/visual-metadata'
 import './style.css'
 import type { AppBattlePreview } from '../../game-client'
 
-type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
+export type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 
 type HandBarProps = {
   cards: HandBarCard[]

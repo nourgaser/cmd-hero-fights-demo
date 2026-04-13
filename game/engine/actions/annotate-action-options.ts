@@ -1,29 +1,18 @@
 import {
   type BattleState,
-  type CardDefinition,
-  type EntityFootprint,
 } from "../../shared/models";
 import {
   annotateHeroHandCards,
   resolveBasicAttackTargetEntityIds,
   resolveEntityActiveOptions,
 } from "./action-options";
+import { type ContentRegistry } from "../core/content-registry";
 
 export function annotateBattleStateWithActionOptions(options: {
   state: BattleState;
-  cardDefinitionsById: Record<string, CardDefinition>;
-  resolveSummonFootprint?: (entityDefinitionId: string) => EntityFootprint | undefined;
-  resolveEntityActiveProfile?: (context: {
-    sourceDefinitionCardId: string;
-    sourceKind: "weapon" | "companion";
-  }) =>
-    | {
-        kind: "attack" | "effect";
-        moveCost: number;
-      }
-    | undefined;
+  registry: ContentRegistry;
 }): BattleState {
-  const { state, cardDefinitionsById, resolveSummonFootprint, resolveEntityActiveProfile } = options;
+  const { state, registry } = options;
   const activeHeroEntityId = state.turn.activeHeroEntityId;
 
   const nextEntitiesById: BattleState["entitiesById"] = {};
@@ -40,8 +29,7 @@ export function annotateBattleStateWithActionOptions(options: {
       state,
       actorHero: entity,
       isActiveHero,
-      cardDefinitionsById,
-      resolveSummonFootprint,
+      registry,
     });
 
     nextEntitiesById[entityId] = {
@@ -56,7 +44,7 @@ export function annotateBattleStateWithActionOptions(options: {
         state,
         actorHero: entity,
         isActiveHero,
-        resolveEntityActiveProfile,
+        registry,
       }),
     };
   }

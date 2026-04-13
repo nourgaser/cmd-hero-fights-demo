@@ -1,61 +1,62 @@
-import { createGameApi } from '../../../../index'
-import type { NumberExplanation } from '../../../../shared/models'
-import {
-  formatPreviewNumber,
-  formatSignedDelta,
-} from '../../utils/game-client-format'
-import type {
-  AppNumberContributionPreview,
-  AppNumberTrace,
-} from '../types'
-
-type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
-
-function toAppNumberTrace(explanation: NumberExplanation): AppNumberTrace {
-  return {
-    base: explanation.baseValue,
-    effective: explanation.effectiveValue,
-    delta: explanation.effectiveValue - explanation.baseValue,
-    contributions: explanation.contributions.map((contribution) => ({
-      sourceId: contribution.sourceId,
-      label: contribution.label,
-      delta: contribution.delta,
-    })),
-  }
-}
-
-export function numberTraceToDetailLine(label: string, trace: AppNumberTrace): string {
-  const head = `${label}: ${formatPreviewNumber(trace.base)} -> ${formatPreviewNumber(trace.effective)}`
-  if (trace.delta === 0 || trace.contributions.length === 0) {
-    return `${head} (no modifiers)`
-  }
-
-  const contributionText = trace.contributions
-    .map((contribution) => `${contribution.label} ${formatSignedDelta(contribution.delta)}`)
-    .join(', ')
-
-  return `${head} (${formatSignedDelta(trace.delta)}: ${contributionText})`
-}
+import type { AppNumberTrace } from '../types'
+import type { AppBattleApi } from '../../game-client'
+import type { BattleState } from '../../../../shared/models'
 
 export function resolveNumberTrace(options: {
-  gameApi: ReturnType<typeof createGameApi>
-  state: ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+  gameApi: AppBattleApi
+  state: BattleState
   targetEntityId: string
   propertyPath: string
   baseValue: number
   clampMin?: number
   clampMax?: number
 }): AppNumberTrace {
-  const explanation = options.gameApi.resolveEffectiveNumber({
-    state: options.state,
-    targetEntityId: options.targetEntityId,
-    propertyPath: options.propertyPath,
-    baseValue: options.baseValue,
-    clampMin: options.clampMin,
-    clampMax: options.clampMax,
-  })
+  const { state, targetEntityId, propertyPath, baseValue, clampMin, clampMax } = options
 
-  return toAppNumberTrace(explanation)
+  const contributions: AppNumberTrace['contributions'] = []
+  let bonusValue = 0
+
+  for (const modifier of state.activeModifiers) {
+    if (modifier.targetEntityId !== targetEntityId || modifier.propertyPath !== propertyPath) {
+      continue
+    }
+
+    const delta = modifier.operation === 'add' ? modifier.value : -modifier.value
+    bonusValue += delta
+    contributions.push({
+      sourceId: (modifier as any).modifierId ?? modifier.id,
+      label: modifier.label,
+      delta,
+    })
+  }
+
+  for (const rule of state.activePassiveRules) {
+    const isTarget = (rule.targetSelector as any) === 'sourceEntity' ? (rule.source as any).sourceEntityId === targetEntityId : false
+    if (!isTarget) continue
+
+    for (const op of rule.operations) {
+      if (op.propertyPath !== propertyPath) continue
+      const delta = op.operation === 'add' ? (op.value ?? 0) : -(op.value ?? 0)
+      bonusValue += delta
+      contributions.push({
+        sourceId: rule.id,
+        label: rule.label,
+        delta,
+      })
+    }
+  }
+
+  const rawValue = baseValue + bonusValue
+  let effectiveValue = rawValue
+  if (clampMin !== undefined) effectiveValue = Math.max(clampMin, effectiveValue)
+  if (clampMax !== undefined) effectiveValue = Math.min(clampMax, effectiveValue)
+
+  return {
+    base: baseValue,
+    effective: effectiveValue,
+    delta: effectiveValue - baseValue,
+    contributions,
+  }
 }
 
 export function makeStaticNumberTrace(value: number): AppNumberTrace {
@@ -67,57 +68,15 @@ export function makeStaticNumberTrace(value: number): AppNumberTrace {
   }
 }
 
-export function combineNumberTraces(...traces: AppNumberTrace[]): AppNumberTrace {
-  const contributionsBySource = new Map<string, AppNumberContributionPreview>()
-
-  for (const trace of traces) {
-    for (const contribution of trace.contributions) {
-      const key = `${contribution.sourceId}:${contribution.label}`
-      const existing = contributionsBySource.get(key)
-      if (existing) {
-        existing.delta += contribution.delta
-      } else {
-        contributionsBySource.set(key, {
-          sourceId: contribution.sourceId,
-          label: contribution.label,
-          delta: contribution.delta,
-        })
-      }
-    }
+export function numberTraceToDetailLine(label: string, trace: AppNumberTrace): string {
+  if (trace.delta === 0) {
+    return `${label}: ${trace.base}`
   }
-
-  return {
-    base: traces.reduce((sum, trace) => sum + trace.base, 0),
-    effective: traces.reduce((sum, trace) => sum + trace.effective, 0),
-    delta: traces.reduce((sum, trace) => sum + trace.delta, 0),
-    contributions: Array.from(contributionsBySource.values()).filter((entry) => entry.delta !== 0),
-  }
-}
-
-function clamp(value: number, minimum: number, maximum: number): number {
-  return Math.max(minimum, Math.min(maximum, value))
-}
-
-function applyModifierOperationForPermanentLayer(options: {
-  currentValue: number
-  operation: 'add' | 'subtract' | 'set'
-  value: number
-}): number {
-  const { currentValue, operation, value } = options
-  switch (operation) {
-    case 'add':
-      return currentValue + value
-    case 'subtract':
-      return currentValue - value
-    case 'set':
-      return value
-    default:
-      return currentValue
-  }
+  return `${label}: ${trace.effective} (${trace.base} ${trace.delta >= 0 ? '+' : '-'}${Math.abs(trace.delta)})`
 }
 
 export function resolvePermanentLayerValue(options: {
-  state: PreviewBattleState
+  state: BattleState
   targetEntityId: string
   propertyPath: string
   baseValue: number
@@ -125,34 +84,29 @@ export function resolvePermanentLayerValue(options: {
   clampMax?: number
 }): number {
   const { state, targetEntityId, propertyPath, baseValue, clampMin, clampMax } = options
+  let bonusValue = 0
 
-  const persistentAlwaysModifiers = state.activeModifiers.filter(
-    (modifier) =>
-      modifier.targetEntityId === targetEntityId &&
-      modifier.propertyPath === propertyPath &&
-      modifier.lifetime === 'persistent' &&
-      (!modifier.condition || modifier.condition.kind === 'always'),
-  )
+  for (const modifier of state.activeModifiers) {
+    if (modifier.targetEntityId !== targetEntityId || modifier.propertyPath !== propertyPath || modifier.lifetime !== 'persistent') {
+      continue
+    }
 
-  let value = baseValue
-  for (const modifier of persistentAlwaysModifiers) {
-    value = applyModifierOperationForPermanentLayer({
-      currentValue: value,
-      operation: modifier.operation,
-      value: modifier.value,
-    })
+    const delta = modifier.operation === 'add' ? modifier.value : -modifier.value
+    bonusValue += delta
   }
 
-  if (clampMin !== undefined) {
-    value = Math.max(clampMin, value)
-  }
-  if (clampMax !== undefined) {
-    value = Math.min(clampMax, value)
-  }
+  let effectiveValue = baseValue + bonusValue
+  if (clampMin !== undefined) effectiveValue = Math.max(clampMin, effectiveValue)
+  if (clampMax !== undefined) effectiveValue = Math.min(clampMax, effectiveValue)
 
-  return value
+  return effectiveValue
 }
 
-export function clampNumber(value: number, minimum: number, maximum: number): number {
-  return clamp(value, minimum, maximum)
+export function combineNumberTraces(left: AppNumberTrace, right: AppNumberTrace): AppNumberTrace {
+  return {
+    base: left.base + right.base,
+    effective: left.effective + right.effective,
+    delta: left.delta + right.delta,
+    contributions: [...left.contributions, ...right.contributions],
+  }
 }

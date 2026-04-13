@@ -2,7 +2,6 @@ import {
   type BasicAttackAction,
   type BattleEvent,
   type BattleState,
-  type HeroDefinition,
 } from "../../shared/models";
 import {
   getEffectiveAttackDamage,
@@ -27,6 +26,7 @@ import {
   LUCK_CRIT_CHANCE_PER_POINT,
   LUCK_DODGE_CHANCE_PER_POINT,
 } from "../../shared/game-constants";
+import { type ContentRegistry } from "../core/content-registry";
 
 export type ResolveBasicAttackResult =
   | {
@@ -47,9 +47,9 @@ export function resolveBasicAttackAction(options: {
   action: BasicAttackAction;
   nextSequence: number;
   battleRng: BattleRng;
-  heroDefinitionsById: Record<string, HeroDefinition>;
+  registry: ContentRegistry;
 }): ResolveBasicAttackResult {
-  const { state, action, nextSequence, battleRng, heroDefinitionsById } = options;
+  const { state, action, nextSequence, battleRng, registry } = options;
 
   const actorResolution = resolveActiveActorHeroForAction({
     state,
@@ -61,7 +61,7 @@ export function resolveBasicAttackAction(options: {
     return {
       ok: false,
       state,
-      reason: actorResolution.reason,
+      reason: (actorResolution as { reason: string }).reason,
     };
   }
   const actorHero = actorResolution.actorHero;
@@ -141,7 +141,7 @@ export function resolveBasicAttackAction(options: {
     };
   }
 
-  const heroDefinition = heroDefinitionsById[attacker.heroDefinitionId];
+  const heroDefinition = registry.heroesById[attacker.heroDefinitionId];
   if (!heroDefinition) {
     return {
       ok: false,

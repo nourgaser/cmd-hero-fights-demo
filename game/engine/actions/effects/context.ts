@@ -8,6 +8,7 @@ import {
   type SummonedEntityKind,
 } from "../../../shared/models";
 import { type BattleRng } from "../../core/rng";
+import { type ContentRegistry } from "../../core/content-registry";
 
 export type SummonedEntityBlueprint = {
   kind: SummonedEntityKind;
@@ -53,13 +54,10 @@ export type EffectExecutionContext = {
   lastDamageWasDodged: boolean | undefined;
   lastSummonedEntityId: string | undefined;
   effectSourceEntityId: string | undefined;
+  registry: ContentRegistry;
   createSummonedEntityId: (context: {
     ownerHeroEntityId: string;
     entityDefinitionId: string;
     sequence: number;
   }) => string;
-  resolveSummonedEntityBlueprint: (
-    entityDefinitionId: string,
-    kind: SummonedEntityKind,
-  ) => SummonedEntityBlueprint | undefined;
 };
