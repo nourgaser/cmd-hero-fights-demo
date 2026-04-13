@@ -150,19 +150,6 @@ export function RulebookPanel({ isOpen, onClose }: RulebookPanelProps) {
   )
 
   useEffect(() => {
-    if (!isOpen || typeof document === 'undefined') {
-      return
-    }
-
-    const previousOverflow = document.body.style.overflow
-    document.body.style.overflow = 'hidden'
-
-    return () => {
-      document.body.style.overflow = previousOverflow
-    }
-  }, [isOpen])
-
-  useEffect(() => {
     if (!isOpen) {
       return
     }

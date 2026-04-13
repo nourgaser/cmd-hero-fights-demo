@@ -615,6 +615,42 @@ function App() {
   }, [autoPlayUseEntityActives])
 
   useEffect(() => {
+    if (typeof document === 'undefined') {
+      return
+    }
+
+    const shouldLockBackgroundScroll =
+      isDeckEditorOpen ||
+      isSettingsPanelOpen ||
+      isHistoryModalOpen ||
+      isReplayModeOpen ||
+      isRulebookOpen
+
+    if (!shouldLockBackgroundScroll) {
+      return
+    }
+
+    const root = document.documentElement
+    const body = document.body
+    const previousRootOverflow = root.style.overflow
+    const previousBodyOverflow = body.style.overflow
+    const previousRootOverscroll = root.style.overscrollBehavior
+    const previousBodyOverscroll = body.style.overscrollBehavior
+
+    root.style.overflow = 'hidden'
+    body.style.overflow = 'hidden'
+    root.style.overscrollBehavior = 'none'
+    body.style.overscrollBehavior = 'none'
+
+    return () => {
+      root.style.overflow = previousRootOverflow
+      body.style.overflow = previousBodyOverflow
+      root.style.overscrollBehavior = previousRootOverscroll
+      body.style.overscrollBehavior = previousBodyOverscroll
+    }
+  }, [isDeckEditorOpen, isHistoryModalOpen, isReplayModeOpen, isRulebookOpen, isSettingsPanelOpen])
+
+  useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || isTypingTarget(event)) {
         return

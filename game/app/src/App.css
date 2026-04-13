@@ -496,6 +496,7 @@ html {
   width: 100%;
   height: 100%;
   overflow: hidden;
+  overscroll-behavior: contain;
   padding: clamp(8px, 1.2vw, 16px);
   color: #f4e5cb;
   background:
@@ -1732,6 +1733,7 @@ html {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .settings-modal-head {
@@ -1796,6 +1798,7 @@ html {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
+  overscroll-behavior: contain;
 }
 
 .history-modal-body {
@@ -1857,6 +1860,7 @@ html {
   background: linear-gradient(180deg, rgba(22, 32, 56, 0.98), rgba(16, 24, 44, 0.98));
   color: #dce8ff;
   overflow: hidden;
+  overscroll-behavior: contain;
   pointer-events: auto;
   box-shadow: 0 -12px 28px rgba(0, 0, 0, 0.28);
 }
@@ -1908,6 +1912,7 @@ html {
 .history-log-scroll {
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 10px;
 }
 
@@ -2697,6 +2702,7 @@ html {
   display: grid;
   grid-template-rows: auto minmax(0, 1fr);
   overflow: hidden;
+  overscroll-behavior: contain;
   box-shadow: 0 24px 64px rgba(0, 0, 0, 0.45);
 }
 
@@ -2850,6 +2856,7 @@ html {
 .rulebook-content {
   min-height: 0;
   overflow: auto;
+  overscroll-behavior: contain;
   padding: 18px;
   display: grid;
   gap: 16px;

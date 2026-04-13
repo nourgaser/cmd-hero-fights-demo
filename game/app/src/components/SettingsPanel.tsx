@@ -255,15 +255,6 @@ export function SettingsPanel(props: SettingsPanelProps) {
   }, [isDeckEditorOpen])
 
   useEffect(() => {
-    if (isDeckEditorOpen) {
-      document.body.style.overflow = 'hidden'
-      return () => {
-        document.body.style.overflow = ''
-      }
-    }
-  }, [isDeckEditorOpen])
-
-  useEffect(() => {
     if (!isDeckEditorOpen) {
       return
     }
