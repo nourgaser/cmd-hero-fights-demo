@@ -217,6 +217,35 @@
   pointer-events: none;
 }
 
+.entity-luck-clovers {
+  position: absolute;
+  top: 8px;
+  left: 8px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: 1px;
+  z-index: var(--layer-badge);
+  pointer-events: none;
+  white-space: nowrap;
+}
+
+.entity-luck-clovers.favored {
+  color: #4caf50;
+}
+
+.entity-luck-clovers.unfavored {
+  color: #f44336;
+}
+
+.entity-luck-clover {
+  width: 18px;
+  height: 18px;
+  font-size: 18px;
+  filter: drop-shadow(0 1px 1px #0003);
+  flex-shrink: 0;
+}
+
 .battle-slot.placement-highlighted {
   outline: 2px dashed #8c7a4a;
   outline-offset: -2px;
