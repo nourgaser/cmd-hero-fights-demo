@@ -198,6 +198,22 @@
   color: #dce8ff;
 }
 
+.settings-seed-field select {
+  width: 100%;
+  box-sizing: border-box;
+  border: 0;
+  padding: 0;
+  font: inherit;
+  background: transparent;
+  color: #dce8ff;
+}
+
+.settings-audio-note {
+  padding: 2px 8px 0;
+  font-size: 11px;
+  opacity: 0.85;
+}
+
 .settings-seed-panel button {
   color: #dce8ff;
   border: 1px solid #5f76ab;

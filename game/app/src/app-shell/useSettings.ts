@@ -7,8 +7,11 @@ import {
   AUTO_PLAY_DEFAULT_DELAY_MS,
   AUTO_PLAY_USE_ENTITY_ACTIVES_STORAGE_KEY,
   MUSIC_MUTED_STORAGE_KEY,
+  MUSIC_TRACKS,
+  MUSIC_TRACK_STORAGE_KEY,
   SETTINGS_BOOTSTRAP_STORAGE_KEY,
   SETTINGS_SEED_STORAGE_KEY,
+  type MusicTrackId,
 } from './constants'
 import { clampAutoPlayDelay, loadBootstrapConfig } from './runtime-utils'
 import { readReplayPayloadFromLocation } from '../utils/replay-url'
@@ -68,6 +71,15 @@ export function useSettings() {
     return window.localStorage.getItem(MUSIC_MUTED_STORAGE_KEY) === 'true'
   })
 
+  const [musicTrackId, setMusicTrackId] = useState<MusicTrackId>(() => {
+    if (typeof window === 'undefined') {
+      return MUSIC_TRACKS[0].id
+    }
+
+    const stored = window.localStorage.getItem(MUSIC_TRACK_STORAGE_KEY)
+    return MUSIC_TRACKS.some((track) => track.id === stored) ? (stored as MusicTrackId) : MUSIC_TRACKS[0].id
+  })
+
   const [replayBarPosition, setReplayBarPosition] = useState<{ x: number; y: number }>(() => {
     if (typeof window === 'undefined') {
       return { x: 0, y: 0 }
@@ -108,6 +120,11 @@ export function useSettings() {
 
   useEffect(() => {
     if (typeof window === 'undefined') return
+    window.localStorage.setItem(MUSIC_TRACK_STORAGE_KEY, musicTrackId)
+  }, [musicTrackId])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') return
     window.localStorage.setItem('REPLAY_BAR_POSITION', JSON.stringify(replayBarPosition))
   }, [replayBarPosition])
 
@@ -126,6 +143,8 @@ export function useSettings() {
     setAutoPlayDelayMs,
     isMusicMuted,
     setIsMusicMuted,
+    musicTrackId,
+    setMusicTrackId,
     replayBarPosition,
     setReplayBarPosition,
   }

@@ -3,6 +3,7 @@ import { JsonView, allExpanded, defaultStyles } from 'react-json-view-lite'
 import { toast } from 'react-hot-toast'
 import 'react-json-view-lite/dist/index.css'
 import type { GameBootstrapConfig } from '../../data/game-bootstrap'
+import { MUSIC_TRACKS, type MusicTrackId } from '../../app-shell/constants'
 import './style.css'
 
 type SettingsPanelProps = {
@@ -17,10 +18,12 @@ type SettingsPanelProps = {
   autoPlayDelayMs: number
   autoPlayAutoEndTurnWhenNoLegalMoves: boolean
   autoPlayUseEntityActives: boolean
+  musicTrackId: MusicTrackId
   onAutoPlayButtonsVisibleChange: (nextValue: boolean) => void
   onAutoPlayDelayMsChange: (nextValue: number) => void
   onAutoPlayAutoEndTurnWhenNoLegalMovesChange: (nextValue: boolean) => void
   onAutoPlayUseEntityActivesChange: (nextValue: boolean) => void
+  onMusicTrackIdChange: (nextValue: MusicTrackId) => void
   onClosePanel?: () => void
   isVisible?: boolean
 }
@@ -28,12 +31,13 @@ type SettingsPanelProps = {
 const SETTINGS_PANEL_STORAGE_KEY = 'cmd-hero:settings-panel-state'
 const DECK_SAVE_TOAST_ID = 'deck-editor-save'
 
-type SettingsSectionKey = 'seed' | 'bootstrap' | 'exchange' | 'runtime'
+type SettingsSectionKey = 'seed' | 'audio' | 'bootstrap' | 'exchange' | 'runtime'
 type SettingsSectionOpenState = Record<SettingsSectionKey, boolean>
 
-const SETTINGS_SECTION_ORDER: SettingsSectionKey[] = ['seed', 'bootstrap', 'exchange', 'runtime']
+const SETTINGS_SECTION_ORDER: SettingsSectionKey[] = ['seed', 'audio', 'bootstrap', 'exchange', 'runtime']
 const DEFAULT_SECTION_OPEN_STATE: SettingsSectionOpenState = {
   seed: true,
+  audio: true,
   bootstrap: true,
   exchange: false,
   runtime: true,
@@ -66,6 +70,7 @@ const loadPersistedState = (): SettingsPanelPersistedState => {
       expandAll: typeof parsed.expandAll === 'boolean' ? parsed.expandAll : false,
       sectionOpen: {
         seed: parsed.sectionOpen?.seed !== false,
+        audio: parsed.sectionOpen?.audio !== false,
         bootstrap: parsed.sectionOpen?.bootstrap !== false,
         exchange: parsed.sectionOpen?.exchange === true,
         runtime: parsed.sectionOpen?.runtime !== false,
@@ -100,10 +105,12 @@ export function SettingsPanel(props: SettingsPanelProps) {
     autoPlayDelayMs,
     autoPlayAutoEndTurnWhenNoLegalMoves,
     autoPlayUseEntityActives,
+    musicTrackId,
     onAutoPlayButtonsVisibleChange,
     onAutoPlayDelayMsChange,
     onAutoPlayAutoEndTurnWhenNoLegalMovesChange,
     onAutoPlayUseEntityActivesChange,
+    onMusicTrackIdChange,
     onClosePanel,
     isVisible = true,
   } = props
@@ -228,6 +235,7 @@ export function SettingsPanel(props: SettingsPanelProps) {
       expandAll: open,
       sectionOpen: {
         seed: open,
+        audio: open,
         bootstrap: open,
         exchange: open,
         runtime: open,
@@ -378,6 +386,35 @@ export function SettingsPanel(props: SettingsPanelProps) {
               </button>
             </div>
           </div>
+            ) : null}
+          </section>
+          <section id="settings-section-audio" className={`settings-section ${sectionOpen.audio ? 'open' : 'closed'}`.trim()}>
+            <button
+              type="button"
+              className="settings-section-toggle"
+              onClick={() => toggleSection('audio')}
+              aria-expanded={sectionOpen.audio}
+            >
+              <span>Audio</span>
+              <span className="settings-section-toggle-symbol" aria-hidden="true">{sectionOpen.audio ? '−' : '+'}</span>
+            </button>
+            {sectionOpen.audio ? (
+              <div className="settings-seed-panel">
+                <label className="settings-seed-field">
+                  <span>Background Track</span>
+                  <select
+                    value={musicTrackId}
+                    onChange={(event) => onMusicTrackIdChange(event.target.value as MusicTrackId)}
+                  >
+                    {MUSIC_TRACKS.map((track) => (
+                      <option key={track.id} value={track.id}>
+                        {track.label}
+                      </option>
+                    ))}
+                  </select>
+                </label>
+                <span className="settings-audio-note">Changes apply immediately.</span>
+              </div>
             ) : null}
           </section>
           <section id="settings-section-bootstrap" className={`settings-section ${sectionOpen.bootstrap ? 'open' : 'closed'}`.trim()}>
