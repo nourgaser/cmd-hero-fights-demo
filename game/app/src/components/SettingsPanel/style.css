@@ -166,7 +166,28 @@
 }
 
 .settings-runtime-panel {
+  display: grid;
+  gap: 8px;
   padding: 8px;
+}
+
+.settings-runtime-actions {
+  display: flex;
+  gap: 8px;
+}
+
+.settings-runtime-actions button {
+  color: #dce8ff;
+  border: 1px solid #5f76ab;
+  border-radius: 8px;
+  padding: 5px 10px;
+  font-size: 11px;
+  background: color-mix(in srgb, #24395f 84%, #ffffff 16%);
+  cursor: pointer;
+}
+
+.settings-runtime-textarea {
+  min-height: 150px;
 }
 
 .settings-seed-panel {
