@@ -1,5 +1,5 @@
 import type { BattleAction, BattleEvent, BattleState } from '../../shared/models'
-import type { BattleRng, resolveAction, createBattle, GAME_CONTENT_REGISTRY } from '../../api'
+import type { BattleRng, resolveAction, createBattle, resolveEffectiveNumber, GAME_CONTENT_REGISTRY } from '../../api'
 
 export type {
   AppBattlePreview,
@@ -45,6 +45,7 @@ export type AppActionHistoryEntry = {
 export type AppBattleApi = {
   createBattle: typeof createBattle;
   resolveAction: typeof resolveAction;
+  resolveEffectiveNumber: typeof resolveEffectiveNumber;
   GAME_CONTENT_REGISTRY: typeof GAME_CONTENT_REGISTRY;
 }
 

@@ -11,6 +11,7 @@ import {
 import {
   createBattle,
   resolveAction,
+  resolveEffectiveNumber,
   GAME_CONTENT_REGISTRY,
 } from '../../../api'
 import type { BattleAction } from '../../../shared/models'
@@ -32,6 +33,7 @@ export function createRuntimeFromReplayPayload(replayPayload: {
   const gameApi = {
     createBattle,
     resolveAction,
+    resolveEffectiveNumber,
     GAME_CONTENT_REGISTRY,
   }
 
@@ -56,6 +58,7 @@ export function createRuntimeFromConfig(config: GameBootstrapConfig): AppRuntime
   const gameApi = {
     createBattle,
     resolveAction,
+    resolveEffectiveNumber,
     GAME_CONTENT_REGISTRY,
   }
 

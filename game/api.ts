@@ -6,11 +6,13 @@ import {
   resolveAction,
   type ResolveActionResult,
 } from "./engine/actions/resolve-action";
+import { resolveEffectiveNumber } from "./engine/core/number-resolver";
 import { type BattleRng, type BattleRngCheckpoint } from "./engine/core/rng";
 
 export {
   createBattle,
   resolveAction,
+  resolveEffectiveNumber,
   GAME_CONTENT_REGISTRY,
 };
 
