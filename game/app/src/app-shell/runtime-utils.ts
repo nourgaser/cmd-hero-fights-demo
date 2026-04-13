@@ -205,7 +205,7 @@ export function formatReplayPlaybackSpeed(speed: number): string {
 }
 
 export function buildReplayShortAlias(hashHex: string): string {
-  return `replay-${hashHex.slice(0, 12)}`
+  return `cmd_hero_fights_${hashHex.slice(0, 7)}`
 }
 
 export function buildIsGdShortlink(alias: string): string {
