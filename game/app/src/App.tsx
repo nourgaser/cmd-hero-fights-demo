@@ -4,20 +4,18 @@ import { Toaster, toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../shared/models'
 import { LUCK_BALANCE_LIMIT } from '../../shared/game-constants.ts'
 import {
-  type AppReplayActionLogEntry,
   type AppBattleSnapshot,
-  branchSessionFromSnapshot,
-  createInitialBattleSession,
   type AppActionHistoryEntry,
+} from './game-client.ts'
+import {
+  branchSessionFromSnapshot,
   jumpSessionToSnapshot,
   replaySessionFromActionLog,
-  type AppBattleSession,
-  type AppBattlePreview,
   resolveSessionBasicAttack,
   resolveSessionPlayCard,
   resolveSessionSimpleAction,
   resolveSessionUseEntityActive,
-} from './game-client.ts'
+} from './game-client-session.ts'
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from './data/game-bootstrap.ts'
 import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from './utils/render-numeric-text.tsx'
 import {
@@ -25,6 +23,26 @@ import {
   readReplayPayloadFromLocation,
   writeReplayPayloadToLocation,
 } from './utils/replay-url.ts'
+import {
+  type AppRuntime,
+  type ReplayNavigationDirection,
+  buildIsGdShortlink,
+  buildReplayShortAlias,
+  clampAutoPlayDelay,
+  createActionLogFromSession,
+  createRuntimeFromConfig,
+  createRuntimeFromReplayPayload,
+  describeCardCastCondition,
+  ensureSessionReadyForAction,
+  formatReplayPlaybackSpeed,
+  getReplayModeActiveSnapshot,
+  incrementSeed,
+  isTypingTarget,
+  loadBootstrapConfig,
+  pickRandom,
+  renderDisplayText,
+  updateHoverCardPlacement,
+} from './app-shell/runtime-utils.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
 import { RulebookPanel } from './components/RulebookPanel.tsx'
@@ -42,7 +60,6 @@ const MUSIC_SOURCE = '/game_music.mp3'
 const ACTION_TOAST_ID = 'action-feedback'
 const ACTION_TOAST_DURATION_MS = 7000
 const EVENT_TOAST_DURATION_MS = 4500
-const AUTO_PLAY_MIN_DELAY_MS = 50
 const AUTO_PLAY_DEFAULT_DELAY_MS = 200
 const REPLAY_PLAYBACK_SPEEDS = [0.25, 0.5, 1, 2, 4] as const
 const SETTINGS_EXPORT_STORAGE_KEYS = [
@@ -68,11 +85,6 @@ type IsGdCreateResponse = {
   errormessage?: string
 }
 
-type AppRuntime = {
-  session: AppBattleSession
-  preview: AppBattlePreview
-}
-
 type PlannedAutoPlayAction =
   | {
       kind: 'playCard'
@@ -96,27 +108,6 @@ type PlannedAutoPlayAction =
       kind: 'endTurn'
     }
 
-function clampAutoPlayDelay(delayMs: number): number {
-  if (!Number.isFinite(delayMs)) {
-    return AUTO_PLAY_DEFAULT_DELAY_MS
-  }
-
-  return Math.max(AUTO_PLAY_MIN_DELAY_MS, Math.floor(delayMs))
-}
-
-function pickRandom<T>(items: T[]): T | null {
-  if (items.length === 0) {
-    return null
-  }
-
-  const index = Math.floor(Math.random() * items.length)
-  return items[index] ?? null
-}
-
-function formatReplayPlaybackSpeed(speed: number): string {
-  return Number.isInteger(speed) ? `${speed}x` : `${speed.toFixed(2).replace(/\.00$/, '')}x`
-}
-
 async function sha256Hex(input: string): Promise<string | null> {
   if (typeof window === 'undefined' || !window.crypto?.subtle) {
     return null
@@ -133,243 +124,21 @@ async function sha256Hex(input: string): Promise<string | null> {
   }
 }
 
-function buildIsGdShortlink(shortAlias: string): string {
-  return `https://is.gd/${shortAlias}`
-}
-
-function buildReplayShortAlias(replayHashHex: string): string {
-  return `cmd_hero_fights_${replayHashHex.slice(0, 7)}`
-}
-
-type ReplayNavigationDirection = -1 | 1
-
-function createRuntimeFromConfig(config = DEFAULT_GAME_BOOTSTRAP_CONFIG): AppRuntime {
-  const initial = createInitialBattleSession(config)
-  return {
-    session: initial.session,
-    preview: initial.preview,
-  }
-}
-
-function createActionLogFromSession(session: AppBattleSession): AppReplayActionLogEntry[] {
-  return session.snapshots
-    .filter((snapshot) => snapshot.phase === 'post')
-    .map((snapshot) => ({
-      action: snapshot.action,
-    }))
-}
-
-function getReplayModeActiveSnapshot(session: AppBattleSession): AppBattleSnapshot | null {
-  if (session.snapshots.length === 0) {
-    return null
-  }
-
-  const postSnapshots = session.snapshots.filter((snapshot) => snapshot.phase === 'post')
-  const latestSnapshotId = postSnapshots.at(-1)?.id ?? null
-  const currentSnapshotId = session.activeSnapshotId ?? latestSnapshotId
-
-  if (!currentSnapshotId) {
-    return null
-  }
-
-  const currentSnapshot = session.snapshots.find((snapshot) => snapshot.id === currentSnapshotId) ?? null
-  if (!currentSnapshot || currentSnapshot.phase === 'pre') {
-    return null
-  }
-
-  return currentSnapshot
-}
-
-function ensureSessionReadyForAction(session: AppBattleSession) {
-  const latestSnapshotId = session.snapshots.at(-1)?.id ?? null
-  const activeSnapshotId = session.activeSnapshotId ?? latestSnapshotId
-
-  if (!latestSnapshotId || !activeSnapshotId || activeSnapshotId === latestSnapshotId) {
-    return {
-      ok: true as const,
-      session,
-      branchedFromSnapshotId: null as number | null,
-    }
-  }
-
-  const branchResult = branchSessionFromSnapshot({
-    session,
-    snapshotId: activeSnapshotId,
-  })
-
-  if (!branchResult.ok) {
-    return {
-      ok: false as const,
-      reason: branchResult.reason,
-    }
-  }
-
-  return {
-    ok: true as const,
-    session: branchResult.session,
-    branchedFromSnapshotId: activeSnapshotId,
-  }
-}
-
-function incrementSeed(seed: string): string {
-  const match = seed.match(/^(.*?)(\d+)$/)
-  if (!match) {
-    return `${seed}-1`
-  }
-
-  const prefix = match[1] ?? ''
-  const digits = match[2]
-  if (!digits) {
-    return `${seed}-1`
-  }
-  const nextValue = Number.parseInt(digits, 10) + 1
-  const nextDigits = `${nextValue}`.padStart(digits.length, '0')
-  return `${prefix}${nextDigits}`
-}
-
-function loadBootstrapConfig() {
-  if (typeof window === 'undefined') {
-    return DEFAULT_GAME_BOOTSTRAP_CONFIG
-  }
-
-  const persistedBootstrapConfig = window.localStorage.getItem(SETTINGS_BOOTSTRAP_STORAGE_KEY)
-  if (persistedBootstrapConfig) {
-    try {
-      const parsed = JSON.parse(persistedBootstrapConfig) as GameBootstrapConfig
-      const nextConfig = {
-        ...parsed,
-        seed: incrementSeed(parsed.seed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed),
-      }
-
-      window.localStorage.setItem(SETTINGS_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
-      window.localStorage.setItem(SETTINGS_SEED_STORAGE_KEY, nextConfig.seed)
-
-      return nextConfig
-    } catch {
-      // Fall back to the default config path below.
-    }
-  }
-
-  const persistedSeed = window.localStorage.getItem(SETTINGS_SEED_STORAGE_KEY)?.trim()
-  const baseSeed = persistedSeed || DEFAULT_GAME_BOOTSTRAP_CONFIG.seed
-  const nextSeed = incrementSeed(baseSeed)
-  const nextConfig = {
-    ...DEFAULT_GAME_BOOTSTRAP_CONFIG,
-    seed: nextSeed,
-  }
-
-  window.localStorage.setItem(SETTINGS_SEED_STORAGE_KEY, nextSeed)
-  window.localStorage.setItem(SETTINGS_BOOTSTRAP_STORAGE_KEY, JSON.stringify(nextConfig))
-
-  return nextConfig
-}
-
-function updateHoverCardPlacement(wrap: HTMLElement) {
-  const hoverCard = wrap.querySelector<HTMLElement>('.hover-card')
-  if (!hoverCard) {
-    return
-  }
-
-  const rect = wrap.getBoundingClientRect()
-  const viewportWidth = window.innerWidth
-  const viewportHeight = window.innerHeight
-  const maxTooltipWidth = Math.max(180, Math.min(340, viewportWidth - 24))
-  const tooltipWidth = Math.min(Math.max(hoverCard.scrollWidth, hoverCard.offsetWidth, 180), maxTooltipWidth)
-  const tooltipHeight = Math.min(Math.max(hoverCard.scrollHeight, hoverCard.offsetHeight, 84), viewportHeight - 24)
-
-  const spaceAbove = rect.top
-  const spaceBelow = viewportHeight - rect.bottom
-  const placeBottom = spaceAbove < tooltipHeight + 24 && spaceBelow > spaceAbove
-
-  let align: 'left' | 'center' | 'right' = 'center'
-  const spaceLeft = rect.left
-  const spaceRight = viewportWidth - rect.right
-
-  if (spaceLeft < tooltipWidth * 0.5 + 20 && spaceRight > spaceLeft) {
-    align = 'left'
-  } else if (spaceRight < tooltipWidth * 0.5 + 20 && spaceLeft > spaceRight) {
-    align = 'right'
-  } else if (rect.left + rect.width * 0.5 < viewportWidth * 0.35) {
-    align = 'left'
-  } else if (rect.right - rect.width * 0.5 > viewportWidth * 0.65) {
-    align = 'right'
-  }
-
-  wrap.dataset.hoverPlacement = placeBottom ? 'bottom' : 'top'
-  wrap.dataset.hoverAlign = align
-  wrap.style.setProperty('--hover-tooltip-max-width', `${maxTooltipWidth}px`)
-}
-
-function renderDisplayText(displayText?: {
-  template?: string
-  params?: Record<string, string | number | boolean | undefined>
-}): string | null {
-  if (!displayText?.template) {
-    return null
-  }
-
-  return displayText.template.replaceAll(/\{([a-zA-Z0-9_]+)\}/g, (match, key) => {
-    const value = displayText.params?.[key]
-    return value === undefined ? match : String(value)
-  })
-}
-
-function describeCardCastCondition(cardDefinition: unknown): string | null {
-  if (!cardDefinition || typeof cardDefinition !== 'object' || !('castCondition' in cardDefinition)) {
-    return null
-  }
-
-  const castCondition = (cardDefinition as { castCondition?: unknown }).castCondition
-  if (!castCondition || typeof castCondition !== 'object' || !('kind' in castCondition)) {
-    return null
-  }
-
-  if (castCondition.kind !== 'heroHealthBelow') {
-    return null
-  }
-
-  const threshold = (castCondition as { threshold?: unknown }).threshold
-  if (typeof threshold !== 'number') {
-    return null
-  }
-
-  return `Only playable when your hero is below ${threshold} HP.`
-}
-
-function isTypingTarget(event: KeyboardEvent): boolean {
-  const target = event.target as HTMLElement | null
-  if (!target) {
-    return false
-  }
-
-  if (target.isContentEditable) {
-    return true
-  }
-
-  const tagName = target.tagName
-  if (tagName === 'INPUT' || tagName === 'TEXTAREA' || tagName === 'SELECT') {
-    return true
-  }
-
-  return target.closest('[role="textbox"]') !== null
-}
-
 function App() {
   const [initialReplayPayload] = useState(() => readReplayPayloadFromLocation())
-  const [initialBootstrapConfig] = useState(() => initialReplayPayload?.bootstrapConfig ?? loadBootstrapConfig())
+  const [initialBootstrapConfig] = useState(() =>
+    initialReplayPayload?.bootstrapConfig ??
+    loadBootstrapConfig({
+      seedStorageKey: SETTINGS_SEED_STORAGE_KEY,
+      bootstrapStorageKey: SETTINGS_BOOTSTRAP_STORAGE_KEY,
+      defaultConfig: DEFAULT_GAME_BOOTSTRAP_CONFIG,
+    }),
+  )
   const [bootstrapConfig, setBootstrapConfig] = useState(initialBootstrapConfig)
   const [startupError] = useState(() => {
     try {
       if (initialReplayPayload) {
-        const replayResult = replaySessionFromActionLog({
-          config: initialReplayPayload.bootstrapConfig,
-          actionLog: initialReplayPayload.actionLog,
-          snapshotId: initialReplayPayload.snapshotId ?? undefined,
-        })
-
-        if (!replayResult.ok) {
-          throw new Error(replayResult.reason)
-        }
+        createRuntimeFromReplayPayload(initialReplayPayload)
       } else {
         createRuntimeFromConfig(initialBootstrapConfig)
       }
@@ -382,20 +151,7 @@ function App() {
   const [runtime, setRuntime] = useState<AppRuntime | null>(() => {
     try {
       if (initialReplayPayload) {
-        const replayResult = replaySessionFromActionLog({
-          config: initialReplayPayload.bootstrapConfig,
-          actionLog: initialReplayPayload.actionLog,
-          snapshotId: initialReplayPayload.snapshotId ?? undefined,
-        })
-
-        if (!replayResult.ok) {
-          return null
-        }
-
-        return {
-          session: replayResult.session,
-          preview: replayResult.preview,
-        }
+        return createRuntimeFromReplayPayload(initialReplayPayload)
       }
 
       return createRuntimeFromConfig(initialBootstrapConfig)
@@ -464,6 +220,10 @@ function App() {
   const replayTimelineListRef = useRef<HTMLUListElement | null>(null)
   const replayNavigationFrameRef = useRef<number | null>(null)
   const replayNavigationDirectionRef = useRef<ReplayNavigationDirection | 0>(0)
+  const hasSyncedReplayHistoryRef = useRef(false)
+  const suppressReplayUrlWriteRef = useRef(false)
+  const suppressReplayToastSyncRef = useRef(false)
+  const lastHandledLocationHrefRef = useRef<string | null>(null)
   const replayBarDragStateRef = useRef<{
     isDragging: boolean
     startX: number
@@ -572,6 +332,13 @@ function App() {
       return
     }
 
+    if (suppressReplayUrlWriteRef.current) {
+      suppressReplayUrlWriteRef.current = false
+      hasSyncedReplayHistoryRef.current = true
+      lastHandledLocationHrefRef.current = window.location.href
+      return
+    }
+
     const actionLog = createActionLogFromSession(runtime.session)
     const payload = createReplayUrlPayload({
       bootstrapConfig,
@@ -579,8 +346,59 @@ function App() {
       actionLog,
       snapshotId: runtime.session.activeSnapshotId,
     })
-    writeReplayPayloadToLocation(payload)
+    writeReplayPayloadToLocation(payload, {
+      historyMode: hasSyncedReplayHistoryRef.current ? 'push' : 'replace',
+    })
+    hasSyncedReplayHistoryRef.current = true
+    lastHandledLocationHrefRef.current = window.location.href
   }, [bootstrapConfig, runtime])
+
+  useEffect(() => {
+    if (typeof window === 'undefined') {
+      return
+    }
+
+    const handleLocationChange = () => {
+      if (lastHandledLocationHrefRef.current === window.location.href) {
+        return
+      }
+
+      lastHandledLocationHrefRef.current = window.location.href
+      const replayPayload = readReplayPayloadFromLocation()
+      suppressReplayUrlWriteRef.current = true
+
+      try {
+        let nextRuntime: AppRuntime
+        if (replayPayload) {
+          setBootstrapConfig(replayPayload.bootstrapConfig)
+          nextRuntime = createRuntimeFromReplayPayload(replayPayload)
+        } else {
+          nextRuntime = createRuntimeFromConfig(bootstrapConfig)
+        }
+
+        suppressReplayToastSyncRef.current = true
+        setRuntime(nextRuntime)
+        setResetEpoch((current) => current + 1)
+        toast.dismiss()
+        const activeReplaySnapshot = getReplayModeActiveSnapshot(nextRuntime.session)
+        if (activeReplaySnapshot) {
+          showReplaySnapshotToasts(activeReplaySnapshot)
+        }
+      } catch {
+        suppressReplayUrlWriteRef.current = false
+        suppressReplayToastSyncRef.current = false
+        // Preserve the current session if the URL fragment cannot be replayed.
+      }
+    }
+
+    lastHandledLocationHrefRef.current = window.location.href
+    window.addEventListener('hashchange', handleLocationChange)
+    window.addEventListener('popstate', handleLocationChange)
+    return () => {
+      window.removeEventListener('hashchange', handleLocationChange)
+      window.removeEventListener('popstate', handleLocationChange)
+    }
+  }, [bootstrapConfig])
 
   useEffect(() => {
     if (typeof window === 'undefined') {
@@ -1127,6 +945,11 @@ function App() {
 
   useEffect(() => {
     if (!isReplayModeOpen) {
+      return
+    }
+
+    if (suppressReplayToastSyncRef.current) {
+      suppressReplayToastSyncRef.current = false
       return
     }
 

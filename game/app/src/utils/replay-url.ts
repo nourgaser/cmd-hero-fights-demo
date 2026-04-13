@@ -1,9 +1,10 @@
 import type { BattleAction } from '../../../shared/models'
 import { deflateSync, inflateSync } from 'fflate'
 import type { GameBootstrapConfig } from '../data/game-bootstrap.ts'
-import type { AppReplayActionLogEntry } from '../game-client.ts'
+import type { AppReplayActionLogEntry } from '../game-client-session.ts'
 
 const REPLAY_PARAM_KEY = 'replay'
+type ReplayHistoryMode = 'push' | 'replace'
 
 type ReplayUrlPayloadV2 = {
   version: 2
@@ -96,7 +97,10 @@ export function readReplayPayloadFromLocation(): ReplayUrlPayload | null {
   return decodeReplayUrlPayload(encoded)
 }
 
-export function writeReplayPayloadToLocation(payload: ReplayUrlPayload): void {
+export function writeReplayPayloadToLocation(
+  payload: ReplayUrlPayload,
+  options?: { historyMode?: ReplayHistoryMode },
+): void {
   if (typeof window === 'undefined') {
     return
   }
@@ -108,5 +112,15 @@ export function writeReplayPayloadToLocation(payload: ReplayUrlPayload): void {
   params.set(REPLAY_PARAM_KEY, encodeReplayUrlPayload(payload))
   const nextHash = params.toString()
   const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ''}`
+  const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
+  if (nextUrl === currentUrl) {
+    return
+  }
+
+  if (options?.historyMode === 'push') {
+    window.history.pushState(null, '', nextUrl)
+    return
+  }
+
   window.history.replaceState(null, '', nextUrl)
 }

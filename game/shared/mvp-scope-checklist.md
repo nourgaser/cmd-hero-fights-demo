@@ -2,10 +2,13 @@
 
 ## Scalability / Maintainability
 
-- [ ] Break up the largest source files first (game/app/src/App.css, game/app/src/game-client.ts, game/app/src/App.tsx, game/app/src/components/SettingsPanel.tsx, game/app/src/components/DebugStatePanel.tsx, game/engine/actions/effects/handlers/combat.ts, game/engine/actions/effects/handlers/stats.ts) so no single file keeps absorbing unrelated responsibilities.
-- [ ] Split game/app/src/game-client.ts into smaller modules for preview derivation, replay/session management, action resolution, and player-facing summary formatting.
+Current progress (2026-04-13): player-facing formatting lives in `game/app/src/utils/game-client-format.ts`, replay/session resolution lives in `game/app/src/game-client-session.ts`, and preview derivation now lives in the modular `game/app/src/game-client-preview/` directory (with `game-client-preview.ts` as a compatibility barrel). `game-client.ts` is now a thin compatibility surface for shared exports/types, and `App.tsx` has started extracting runtime/bootstrap/helper logic into `game/app/src/app-shell/runtime-utils.ts`.
+
+- [ ] Break up the largest source files first (game/app/src/App.css, game/app/src/App.tsx, game/app/src/components/SettingsPanel.tsx, game/app/src/components/DebugStatePanel.tsx, game/engine/actions/effects/handlers/combat.ts, game/engine/actions/effects/handlers/stats.ts) so no single file keeps absorbing unrelated responsibilities.
+- [x] Split game/app/src/game-client.ts into smaller modules for preview derivation, replay/session management, action resolution, and player-facing summary formatting.
 - [ ] Split game/app/src/App.tsx into shell state, replay/bootstrap wiring, autoplay logic, settings persistence, and action plumbing.
 - [ ] Split the giant stylesheet into component-scoped styles or smaller CSS modules so settings, battlefield, inspect, hover, toast, and hand styles do not live in one monolith.
+- [ ] For UI refactors, use folder-per-component structure (`ComponentName/index.tsx` + `ComponentName/style.css`) so changes stay surgical and ownership is obvious.
 - [ ] Reduce repeated summary/rendering logic by centralizing display text, tooltip text, and inspect text formatting in shared helpers.
 - [ ] Replace manual hero/card lookup wiring with a single content registry path that covers definitions, initial listeners, summon blueprints, summon footprints, and active profiles.
 - [ ] Replace manual effect-handler dispatch with a registry assembled from the same effect source of truth as the schema.
@@ -16,11 +19,4 @@
 - [ ] Keep deterministic systems centralized: RNG, luck, replay encoding, and snapshot/action-log replay should all flow through one path with no duplicated state reconstruction logic.
 - [ ] Make player-facing text, calculations, and card implementation details derive from the same typed source so UI summaries cannot drift from engine behavior.
 - [ ] Preserve consistent logging and player-facing information by keeping event emission, inspect surfaces, and toast/debug messaging aligned with the underlying action resolution order.
-- [ ] Split or simplify the largest app-facing preview file if it keeps accumulating formatting, tooltip, summon-preview, and cast-condition logic in one place.
-
-## Product / UX Backlog
-- [ ] Add tutorial / rulebook.
-- [x] Force desktop mode on mobile devices.
-- [x] Disable double tap to zoom and other game-interaction breaking controls on mobile (and desktop).
-- [ ] Fix issue where updating the URL fragment does not reflect until you explicitly refresh the page. The app needs to listen to fragment changes and handle them just like URL parameter changes.
-- [x] Auto play does not show toasts so if you play vs a bot or make bots plays vs each other no toasts show up at all. (Handle carefully when auto play delay is small -> visual spam and performance)
+- [x] Split and simplify the app-facing preview surface by moving `game-client-preview` into grouped modules (hero, battlefield, and helpers) with a small compatibility barrel.

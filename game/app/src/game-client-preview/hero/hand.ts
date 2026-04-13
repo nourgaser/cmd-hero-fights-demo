@@ -1,0 +1,177 @@
+import { createGameApi } from '../../../../index.ts'
+import {
+  formatKeywordLabel,
+  renderTemplatedText,
+} from '../../utils/game-client-format.ts'
+import type { AppBattlePreview } from '../types.ts'
+import {
+  describeCardCastCondition,
+  describeNumericCardText,
+  resolveNumberTrace,
+  resolveSummonPreviewForCard,
+} from '../helpers.ts'
+
+type PreviewBattleState = ReturnType<ReturnType<typeof createGameApi>['createBattle']>['state']
+
+type PreviewGameApi = ReturnType<typeof createGameApi>
+
+export function buildHeroHandCounts(options: {
+  gameApi: PreviewGameApi
+  state: PreviewBattleState
+}): AppBattlePreview['heroHandCounts'] {
+  const { gameApi, state } = options
+
+  return state.heroEntityIds.map((heroEntityId) => {
+    const entity = state.entitiesById[heroEntityId]
+
+    if (!entity || entity.kind !== 'hero') {
+      throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
+    }
+
+    const moveCapacityTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: heroEntityId,
+      propertyPath: 'moveCapacity',
+      baseValue: entity.maxMovePoints,
+      clampMin: 0,
+    })
+
+    return {
+      heroEntityId,
+      handSize: entity.handCards.length,
+      deckSize: entity.deckCardIds.length,
+      battlefieldSide: entity.battlefieldSide,
+      movePoints: entity.movePoints,
+      maxMovePoints: entity.maxMovePoints,
+      moveCapacityTrace,
+    }
+  })
+}
+
+export function buildHeroHands(options: {
+  gameApi: PreviewGameApi
+  state: PreviewBattleState
+}): AppBattlePreview['heroHands'] {
+  const { gameApi, state } = options
+
+  const cardsById = gameApi.cardsById as Record<
+    string,
+    (typeof gameApi.cardsById)[keyof typeof gameApi.cardsById]
+  >
+
+  return state.heroEntityIds.map((heroEntityId) => {
+    const entity = state.entitiesById[heroEntityId]
+
+    if (!entity || entity.kind !== 'hero') {
+      throw new Error(`Expected hero entity in battle state for '${heroEntityId}'.`)
+    }
+
+    const actorAttackDamageTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'attackDamage',
+      baseValue: entity.attackDamage,
+      clampMin: 0,
+    })
+    const actorAbilityPowerTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'abilityPower',
+      baseValue: entity.abilityPower,
+      clampMin: 0,
+    })
+    const actorArmorTrace = resolveNumberTrace({
+      gameApi,
+      state,
+      targetEntityId: entity.entityId,
+      propertyPath: 'armor',
+      baseValue: entity.armor,
+      clampMin: 0,
+    })
+
+    return {
+      heroEntityId,
+      cards: entity.handCards.map((handCard) => {
+        const cardDef = cardsById[handCard.cardDefinitionId]
+        if (!cardDef) {
+          throw new Error(`Missing card definition '${handCard.cardDefinitionId}' while building preview.`)
+        }
+
+        const keywordReferences = (cardDef as {
+          keywords?: Array<{
+            keywordId: string
+            params?: Record<string, string | number | boolean | undefined>
+          }>
+        }).keywords ?? []
+
+        const keywords = keywordReferences
+          .map((keywordReference) => {
+            const keywordDefinition = gameApi.keywordsById[keywordReference.keywordId]
+            if (!keywordDefinition) {
+              return null
+            }
+
+            return {
+              keywordId: keywordDefinition.id,
+              keywordName: formatKeywordLabel(keywordDefinition.name, keywordReference.params),
+              keywordSummaryText: renderTemplatedText({
+                template: keywordDefinition.summaryText.template,
+                params: {
+                  ...(keywordDefinition.summaryText.params ?? {}),
+                  ...(keywordReference.params ?? {}),
+                },
+              }) ?? keywordDefinition.name,
+            }
+          })
+          .filter(
+            (
+              keyword,
+            ): keyword is {
+              keywordId: string
+              keywordName: string
+              keywordSummaryText: string
+            } => keyword !== null,
+          )
+
+        return {
+          handCardId: handCard.id,
+          cardDefinitionId: handCard.cardDefinitionId,
+          cardName: cardDef.name,
+          moveCost: cardDef.moveCost,
+          cardType: cardDef.type,
+          rarity: cardDef.rarity,
+          keywords,
+          ...describeNumericCardText({
+            card: cardDef,
+            actorHero: entity,
+            actorNumberTraces: {
+              attackDamage: actorAttackDamageTrace,
+              abilityPower: actorAbilityPowerTrace,
+              armor: actorArmorTrace,
+            },
+            state,
+            gameApi,
+            sourceEntityId: entity.entityId,
+            luck: state.luck,
+          }),
+          castConditionText: describeCardCastCondition(cardDef),
+          isPlayable: handCard.isPlayable ?? false,
+          targeting: cardDef.targeting,
+          validTargetEntityIds: handCard.validTargetEntityIds ?? [],
+          validPlacementPositions: handCard.validPlacementPositions ?? [],
+          summonPreview: resolveSummonPreviewForCard({
+            cardDef,
+            gameApi,
+            cardsById,
+            ownerHeroEntityId: entity.entityId,
+            state,
+            luck: state.luck,
+          }),
+        }
+      }),
+    }
+  })
+}
