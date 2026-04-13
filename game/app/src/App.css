@@ -267,6 +267,8 @@ html {
   min-height: 0;
   color: #dce8ff;
   display: grid;
+  align-content: start;
+  grid-auto-rows: max-content;
   gap: 8px;
 }
 
@@ -310,9 +312,6 @@ html {
 
 .settings-runtime-panel {
   padding: 8px;
-  max-height: min(42vh, 380px);
-  overflow: auto;
-  overscroll-behavior: contain;
 }
 
 .settings-seed-panel {
@@ -358,9 +357,6 @@ html {
   display: grid;
   gap: 6px;
   padding: 8px;
-  max-height: min(54vh, 520px);
-  overflow: auto;
-  overscroll-behavior: contain;
   background: transparent;
 }
 
