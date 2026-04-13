@@ -1,171 +1,14 @@
 import { type EffectExecutionContext, type ExecuteCardEffectResult } from "../context";
 import { targetEntityIdFromSelector } from "../targeting";
-import type { BattleState, EffectTargetSelector } from "../../../../shared/models";
-import { MOVE_POINTS_CAP } from "../../../../shared/game-constants";
 import { resolveEffectiveNumber } from "../../../core/number-resolver";
-import { resolveAdjacentAllyEntityIds } from "../../../battlefield/adjacency";
-
-function buildModifierId(options: {
-  effectId: string;
-  sequence: number;
-  targetEntityId: string;
-}): string {
-  return `mod.${options.effectId}.${options.targetEntityId}.${options.sequence}`;
-}
-
-function buildPassiveRuleId(options: {
-  effectId: string;
-  sequence: number;
-  sourceEntityId: string;
-}): string {
-  return `rule.${options.effectId}.${options.sourceEntityId}.${options.sequence}`;
-}
-
-type StatKey =
-  | "armor"
-  | "magicResist"
-  | "attackDamage"
-  | "abilityPower"
-  | "dodgeChance"
-  | "attackFlatBonusDamage"
-  | "basicAttackFlatBonusDamage"
-  | "moveCapacity"
-  | "attackHealOnAttack"
-  | "sharpness"
-  | "basicAttackSharpness"
-  | "useEntityActive.maximum"
-  | "immune";
-
-type ModifyStatPayload = {
-  kind: "modifyStat";
-  target: EffectTargetSelector;
-  stat: StatKey;
-  amount?: number;
-  amountFromSourceStat?: string;
-  amountFromSourceSelector?: "sourceEntity" | "sourceOwnerHero" | "selfHero";
-  duration?: "persistent" | "untilSourceRemoved";
-  changeKind?: "apply" | "removeMatching";
-  sourceBinding?: "effectSource" | "actorHero" | "lastSummonedEntity" | "selectedTarget";
-};
-
-function titleCaseFromSlug(slug: string): string {
-  return slug
-    .split("-")
-    .filter((part) => part.length > 0)
-    .map((part) => part.charAt(0).toUpperCase() + part.slice(1))
-    .join(" ");
-}
-
-function sourceLabelFromEffectId(effectId: string): string {
-  const segments = effectId.split(".");
-  if (segments[0] === "effect" && segments[1]) {
-    return titleCaseFromSlug(segments[1]);
-  }
-  return effectId;
-}
-
-function resolvePassiveRuleTargetEntityIds(options: {
-  state: BattleState;
-  sourceEntityId: string;
-  targetSelector: EffectTargetSelector;
-}): string[] {
-  const { state, sourceEntityId, targetSelector } = options;
-  const sourceEntity = state.entitiesById[sourceEntityId];
-  if (!sourceEntity) {
-    return [];
-  }
-
-  const sourceOwnerHeroEntityId =
-    sourceEntity.kind === "hero" ? sourceEntity.entityId : sourceEntity.ownerHeroEntityId;
-
-  switch (targetSelector) {
-    case "selfHero":
-    case "sourceOwnerHero":
-      return [sourceOwnerHeroEntityId];
-    case "sourceEntity":
-      return [sourceEntityId];
-    case "sourceEntityAdjacentAllies":
-      return resolveAdjacentAllyEntityIds({ state, targetEntityId: sourceEntityId });
-    case "sourceOwnerAllies":
-      return Object.values(state.entitiesById)
-        .filter((entity) => {
-          if (entity.kind === "hero") {
-            return entity.entityId === sourceOwnerHeroEntityId;
-          }
-
-          return entity.ownerHeroEntityId === sourceOwnerHeroEntityId;
-        })
-        .map((entity) => entity.entityId);
-    case "sourceOwnerHeroAndCompanions":
-      return Object.values(state.entitiesById)
-        .filter((entity) =>
-          entity.kind === "hero"
-            ? entity.entityId === sourceOwnerHeroEntityId
-            : entity.kind === "companion" && entity.ownerHeroEntityId === sourceOwnerHeroEntityId,
-        )
-        .map((entity) => entity.entityId);
-    default:
-      return [];
-  }
-}
-
-function applyImmediateMoveCapacityDelta(options: {
-  state: BattleState;
-  targetEntityIds: string[];
-  amount: number;
-}): BattleState {
-  const { state, targetEntityIds, amount } = options;
-  if (amount === 0 || targetEntityIds.length === 0) {
-    return state;
-  }
-
-  const nextEntitiesById = { ...state.entitiesById };
-
-  for (const targetEntityId of targetEntityIds) {
-    const entity = nextEntitiesById[targetEntityId];
-    if (!entity) {
-      continue;
-    }
-
-    if (entity.kind === "hero") {
-      const effectiveMoveCapacity = resolveEffectiveNumber({
-        state,
-        targetEntityId,
-        propertyPath: "moveCapacity",
-        baseValue: entity.maxMovePoints,
-        clampMin: 0,
-      }).effectiveValue;
-      const cap = Math.min(effectiveMoveCapacity, MOVE_POINTS_CAP);
-
-      nextEntitiesById[targetEntityId] = {
-        ...entity,
-        movePoints: Math.max(0, Math.min(entity.movePoints + amount, cap)),
-      };
-      continue;
-    }
-
-    if (entity.kind === "companion") {
-      const effectiveMoveCapacity = resolveEffectiveNumber({
-        state,
-        targetEntityId,
-        propertyPath: "moveCapacity",
-        baseValue: entity.maxMovesPerTurn,
-        clampMin: 0,
-      }).effectiveValue;
-      const cap = Math.min(effectiveMoveCapacity, MOVE_POINTS_CAP);
-
-      nextEntitiesById[targetEntityId] = {
-        ...entity,
-        remainingMoves: Math.max(0, Math.min(entity.remainingMoves + amount, cap)),
-      };
-    }
-  }
-
-  return {
-    ...state,
-    entitiesById: nextEntitiesById,
-  };
-}
+import { 
+  buildModifierId, 
+  buildPassiveRuleId, 
+  sourceLabelFromEffectId 
+} from "./stats/utils";
+import { resolvePassiveRuleTargetEntityIds } from "./stats/passive-rules";
+import { applyImmediateMoveCapacityDelta } from "./stats/move-capacity";
+import type { ModifyStatPayload } from "./stats/types";
 
 export function handleModifyStatEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
   if (context.effect.payload.kind !== "modifyStat") {
@@ -187,7 +30,6 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
   const changeKind = payload.changeKind ?? "apply";
 
   const sourceLabel = sourceLabelFromEffectId(effect.id);
-
   const propertyPath = payload.stat;
   const label = sourceLabel;
 
@@ -260,7 +102,6 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
 
     let nextState = stateWithPassiveRule;
 
-    // For move capacity with dynamic operations, resolve the source entity's stat value first
     if (payload.stat === "moveCapacity" && payload.amountFromSourceStat) {
       const sourceEntity = state.entitiesById[sourceEntityId];
       if (sourceEntity) {
@@ -332,7 +173,6 @@ export function handleModifyStatEffect(context: EffectExecutionContext): Execute
     return { ok: false, reason: "modifyStat target was not found." };
   }
 
-  // Ensure amount is defined for persistent modifiers
   if (duration === "persistent" && payload.amountFromSourceStat !== undefined) {
     return {
       ok: false,

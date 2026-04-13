@@ -57,7 +57,7 @@ export function usePlayerScreenState(options: {
     basicAttackTargetEntityIds.length > 0
 
   const heroBasicAttackSourceId = canUseHeroBasicAttackSource ? selfId : null
-  const entityActiveOptions = selfActionTargets?.entityActive ?? []
+  const entityActiveOptions = useMemo(() => selfActionTargets?.entityActive ?? [], [selfActionTargets])
 
   const entityActiveSourceIds = useMemo(() => 
     heroBasicAttackSourceId !== null
