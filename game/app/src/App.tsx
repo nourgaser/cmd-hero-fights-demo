@@ -85,6 +85,14 @@ type IsGdCreateResponse = {
   errormessage?: string
 }
 
+type ReplayHistoryBoundary = 'base' | 'guard' | 'normal'
+
+type ReplayHistoryState = {
+  kind: 'cmd-replay-history'
+  entryId: number
+  boundary: ReplayHistoryBoundary
+}
+
 type PlannedAutoPlayAction =
   | {
       kind: 'playCard'
@@ -122,6 +130,19 @@ async function sha256Hex(input: string): Promise<string | null> {
   } catch {
     return null
   }
+}
+
+function isReplayHistoryState(value: unknown): value is ReplayHistoryState {
+  if (!value || typeof value !== 'object') {
+    return false
+  }
+
+  const candidate = value as Partial<ReplayHistoryState>
+  return (
+    candidate.kind === 'cmd-replay-history' &&
+    typeof candidate.entryId === 'number' &&
+    (candidate.boundary === 'base' || candidate.boundary === 'guard' || candidate.boundary === 'normal')
+  )
 }
 
 function App() {
@@ -221,6 +242,8 @@ function App() {
   const replayNavigationFrameRef = useRef<number | null>(null)
   const replayNavigationDirectionRef = useRef<ReplayNavigationDirection | 0>(0)
   const hasSyncedReplayHistoryRef = useRef(false)
+  const nextReplayHistoryEntryIdRef = useRef(1)
+  const lastHandledReplayHistoryEntryIdRef = useRef<number | null>(null)
   const suppressReplayUrlWriteRef = useRef(false)
   const suppressReplayToastSyncRef = useRef(false)
   const lastHandledLocationHrefRef = useRef<string | null>(null)
@@ -249,6 +272,12 @@ function App() {
       text,
     }))
   }
+
+  const createReplayHistoryState = (boundary: ReplayHistoryBoundary): ReplayHistoryState => ({
+    kind: 'cmd-replay-history',
+    entryId: nextReplayHistoryEntryIdRef.current++,
+    boundary,
+  })
 
   useEffect(() => {
     const root = document.documentElement
@@ -335,6 +364,8 @@ function App() {
     if (suppressReplayUrlWriteRef.current) {
       suppressReplayUrlWriteRef.current = false
       hasSyncedReplayHistoryRef.current = true
+      const currentHistoryState = isReplayHistoryState(window.history.state) ? window.history.state : null
+      lastHandledReplayHistoryEntryIdRef.current = currentHistoryState?.entryId ?? null
       lastHandledLocationHrefRef.current = window.location.href
       return
     }
@@ -346,10 +377,30 @@ function App() {
       actionLog,
       snapshotId: runtime.session.activeSnapshotId,
     })
+    if (!hasSyncedReplayHistoryRef.current) {
+      const baseState = createReplayHistoryState('base')
+      writeReplayPayloadToLocation(payload, {
+        historyMode: 'replace',
+        historyState: baseState,
+      })
+      const guardState = createReplayHistoryState('guard')
+      writeReplayPayloadToLocation(payload, {
+        historyMode: 'push',
+        historyState: guardState,
+      })
+      hasSyncedReplayHistoryRef.current = true
+      lastHandledReplayHistoryEntryIdRef.current = guardState.entryId
+      lastHandledLocationHrefRef.current = window.location.href
+      return
+    }
+
+    const nextHistoryState = createReplayHistoryState('normal')
     writeReplayPayloadToLocation(payload, {
-      historyMode: hasSyncedReplayHistoryRef.current ? 'push' : 'replace',
+      historyMode: 'push',
+      historyState: nextHistoryState,
     })
     hasSyncedReplayHistoryRef.current = true
+    lastHandledReplayHistoryEntryIdRef.current = nextHistoryState.entryId
     lastHandledLocationHrefRef.current = window.location.href
   }, [bootstrapConfig, runtime])
 
@@ -359,10 +410,23 @@ function App() {
     }
 
     const handleLocationChange = () => {
-      if (lastHandledLocationHrefRef.current === window.location.href) {
+      const currentHistoryState = isReplayHistoryState(window.history.state) ? window.history.state : null
+      if (
+        currentHistoryState &&
+        lastHandledReplayHistoryEntryIdRef.current === currentHistoryState.entryId
+      ) {
         return
       }
 
+      if (
+        !currentHistoryState &&
+        lastHandledReplayHistoryEntryIdRef.current === null &&
+        lastHandledLocationHrefRef.current === window.location.href
+      ) {
+        return
+      }
+
+      lastHandledReplayHistoryEntryIdRef.current = currentHistoryState?.entryId ?? null
       lastHandledLocationHrefRef.current = window.location.href
       const replayPayload = readReplayPayloadFromLocation()
       suppressReplayUrlWriteRef.current = true
@@ -383,6 +447,21 @@ function App() {
         const activeReplaySnapshot = getReplayModeActiveSnapshot(nextRuntime.session)
         if (activeReplaySnapshot) {
           showReplaySnapshotToasts(activeReplaySnapshot)
+        }
+
+        if (currentHistoryState?.boundary === 'base') {
+          const guardState = createReplayHistoryState('guard')
+          writeReplayPayloadToLocation(replayPayload ?? createReplayUrlPayload({
+            bootstrapConfig,
+            seed: nextRuntime.session.state.seed,
+            actionLog: createActionLogFromSession(nextRuntime.session),
+            snapshotId: nextRuntime.session.activeSnapshotId,
+          }), {
+            historyMode: 'push',
+            historyState: guardState,
+          })
+          lastHandledReplayHistoryEntryIdRef.current = guardState.entryId
+          lastHandledLocationHrefRef.current = window.location.href
         }
       } catch {
         suppressReplayUrlWriteRef.current = false

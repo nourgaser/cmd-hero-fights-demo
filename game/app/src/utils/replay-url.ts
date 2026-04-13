@@ -99,7 +99,7 @@ export function readReplayPayloadFromLocation(): ReplayUrlPayload | null {
 
 export function writeReplayPayloadToLocation(
   payload: ReplayUrlPayload,
-  options?: { historyMode?: ReplayHistoryMode },
+  options?: { historyMode?: ReplayHistoryMode; historyState?: unknown },
 ): void {
   if (typeof window === 'undefined') {
     return
@@ -113,14 +113,14 @@ export function writeReplayPayloadToLocation(
   const nextHash = params.toString()
   const nextUrl = `${window.location.pathname}${window.location.search}${nextHash ? `#${nextHash}` : ''}`
   const currentUrl = `${window.location.pathname}${window.location.search}${window.location.hash}`
-  if (nextUrl === currentUrl) {
+  if (nextUrl === currentUrl && options?.historyMode !== 'push') {
     return
   }
 
   if (options?.historyMode === 'push') {
-    window.history.pushState(null, '', nextUrl)
+    window.history.pushState(options.historyState ?? null, '', nextUrl)
     return
   }
 
-  window.history.replaceState(null, '', nextUrl)
+  window.history.replaceState(options?.historyState ?? null, '', nextUrl)
 }
