@@ -668,6 +668,17 @@
   background: linear-gradient(180deg, var(--tooltip-surface-start) 0%, var(--tooltip-surface-end) 100%);
 }
 
+.entity-name-hover {
+  min-width: 0;
+  max-width: 160px;
+  padding: 6px 10px;
+  border-radius: 9px;
+  font-size: 13px;
+  font-weight: 600;
+  line-height: 1.15;
+  white-space: nowrap;
+}
+
 .battlefield-card {
   position: relative;
   padding: 12px;
