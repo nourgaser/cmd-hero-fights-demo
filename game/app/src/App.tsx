@@ -222,12 +222,12 @@ function App() {
 
   useEffect(() => {
     if (typeof document === 'undefined') return
-    const shouldLock = isDeckEditorOpen || isSettingsPanelOpen || isHistoryModalOpen || isReplayModeOpen || isRulebookOpen
+    const shouldLock = isDeckEditorOpen || isSettingsPanelOpen || isHistoryModalOpen || isRulebookOpen
     if (!shouldLock) return
     const root = document.documentElement; const body = document.body; const prevRootO = root.style.overflow; const prevBodyO = body.style.overflow; const prevRootS = root.style.overscrollBehavior; const prevBodyS = body.style.overscrollBehavior
     root.style.overflow = 'hidden'; body.style.overflow = 'hidden'; root.style.overscrollBehavior = 'none'; body.style.overscrollBehavior = 'none'
     return () => { root.style.overflow = prevRootO; body.style.overflow = prevBodyO; root.style.overscrollBehavior = prevRootS; body.style.overscrollBehavior = prevBodyS }
-  }, [isDeckEditorOpen, isHistoryModalOpen, isReplayModeOpen, isRulebookOpen, isSettingsPanelOpen])
+  }, [isDeckEditorOpen, isHistoryModalOpen, isRulebookOpen, isSettingsPanelOpen])
 
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
