@@ -6,55 +6,13 @@ import {
   type ExecuteCardEffectResult,
   type SummonedEntityBlueprint,
 } from "./context";
-import {
-  handleDealDamageEffect,
-  handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
-  handleDestroySelfArmorAndDealPerArmorToTargetEffect,
-  handleGrantHealthEffect,
-  handleHealEffect,
-  handleReflectDamageEffect,
-} from "./handlers/combat";
-import {
-  handleAddListenerEffect,
-  handleDrawCardsEffect,
-  handleRemoveListenerEffect,
-  handleResetLuckBalanceEffect,
-  handleRefundMoveCostEffect,
-} from "./handlers/economy";
-import { handleApplyAuraEffect } from "./handlers/aura";
-import {
-  handleModifyStatEffect,
-} from "./handlers/stats";
-import { handleSummonEffect } from "./handlers/summon";
-
-type EffectHandler = (context: EffectExecutionContext) => ExecuteCardEffectResult;
-
-const effectHandlers = {
-  summonEntity: handleSummonEffect,
-  modifyStat: handleModifyStatEffect,
-  drawCards: handleDrawCardsEffect,
-  heal: handleHealEffect,
-  grantHealth: handleGrantHealthEffect,
-  reflectDamage: handleReflectDamageEffect,
-  dealDamage: handleDealDamageEffect,
-  destroyArmorAndDealPerArmorToEnemyHero: handleDestroyArmorAndDealPerArmorToEnemyHeroEffect,
-  destroySelfArmorAndDealPerArmorToTarget: handleDestroySelfArmorAndDealPerArmorToTargetEffect,
-  resetLuckBalance: handleResetLuckBalanceEffect,
-  refundMoveCost: handleRefundMoveCostEffect,
-  applyAura: handleApplyAuraEffect,
-  addListener: handleAddListenerEffect,
-  removeListener: handleRemoveListenerEffect,
-} satisfies Record<string, EffectHandler>;
+import { executeEffect } from "./handlers/registry";
 
 export { type SummonedEntityBlueprint };
 export { type ExecuteCardEffectResult };
 
 export function executeCardEffect(context: EffectExecutionContext): ExecuteCardEffectResult {
-  const handler = effectHandlers[context.effect.payload.kind as keyof typeof effectHandlers];
-  if (!handler) {
-    return { ok: false, reason: `Unsupported effect kind: ${String(context.effect.payload.kind)}` };
-  }
-  return handler(context);
+  return executeEffect(context);
 }
 
 export function resolveActorHeroForEffect(options: {
