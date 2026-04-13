@@ -28,6 +28,7 @@ type PlayerScreenProps = {
     targetPosition?: { row: number; column: number }
   }) => void
   onOpenDeckEditor: () => void
+  onOpenRulebook: () => void
   onHardReroll?: () => void
   isMusicMuted?: boolean
   onToggleMusic?: () => void
@@ -35,6 +36,7 @@ type PlayerScreenProps = {
   isSettingsOpen?: boolean
   onToggleSettings?: () => void
   showSettingsControl?: boolean
+  isRulebookOpen?: boolean
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -53,6 +55,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     onEndTurn,
     onPlayCard,
     onOpenDeckEditor,
+    onOpenRulebook,
     onHardReroll,
     isMusicMuted,
     onToggleMusic,
@@ -60,6 +63,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     isSettingsOpen,
     onToggleSettings,
     showSettingsControl,
+    isRulebookOpen,
   } = props
   const screenRef = useRef<HTMLElement | null>(null)
 
@@ -727,6 +731,19 @@ export function PlayerScreen(props: PlayerScreenProps) {
               <span aria-hidden="true">⚙</span>
             </button>
           ) : null}
+          <button
+            type="button"
+            className={`help-chip rulebook-chip${isRulebookOpen ? ' rulebook-chip-active' : ''} hint-wrap`}
+            onClick={onOpenRulebook}
+            aria-haspopup="dialog"
+            aria-expanded={isRulebookOpen ? 'true' : 'false'}
+            aria-label={isRulebookOpen ? 'Rulebook open' : 'Open rulebook'}
+            data-hover-align="right"
+          >
+            <Icon icon="game-icons:open-book" aria-hidden="true" />
+            <span className="sr-only">Open rulebook</span>
+            <span className="hover-card" role="tooltip">Rulebook</span>
+          </button>
           <span className="help-chip keyboard-shortcuts-chip hint-wrap" tabIndex={0} data-hover-align="right">
             <Icon icon="game-icons:keyboard" aria-hidden="true" />
             <span className="sr-only">Keyboard shortcuts</span>

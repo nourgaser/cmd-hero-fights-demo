@@ -27,6 +27,7 @@ import {
 } from './utils/replay-url.ts'
 import { PlayerScreen } from './components/PlayerScreen.tsx'
 import { SettingsPanel } from './components/SettingsPanel.tsx'
+import { RulebookPanel } from './components/RulebookPanel.tsx'
 
 const SETTINGS_SEED_STORAGE_KEY = 'cmd-hero:settings-seed'
 const SETTINGS_BOOTSTRAP_STORAGE_KEY = 'cmd-hero:settings-bootstrap-config'
@@ -410,6 +411,7 @@ function App() {
   const [deckEditorHeroIndex, setDeckEditorHeroIndex] = useState<0 | 1>(0)
   const [isSettingsPanelOpen, setIsSettingsPanelOpen] = useState(false)
   const [isHistoryModalOpen, setIsHistoryModalOpen] = useState(false)
+  const [isRulebookOpen, setIsRulebookOpen] = useState(false)
   const [isReplayModeOpen, setIsReplayModeOpen] = useState(false)
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const [replayPlaybackSpeedIndex, setReplayPlaybackSpeedIndex] = useState(0)
@@ -615,6 +617,14 @@ function App() {
   useEffect(() => {
     const handleKeyDown = (event: KeyboardEvent) => {
       if (event.defaultPrevented || isTypingTarget(event)) {
+        return
+      }
+
+      if (isRulebookOpen) {
+        if (event.key === 'Escape') {
+          event.preventDefault()
+          setIsRulebookOpen(false)
+        }
         return
       }
 
@@ -872,7 +882,18 @@ function App() {
     return () => {
       window.removeEventListener('keydown', handleKeyDown)
     }
-  }, [bootstrapConfig, isHistoryModalOpen, isReplayModeOpen, isSettingsPanelOpen, runtime])
+  }, [bootstrapConfig, isHistoryModalOpen, isReplayModeOpen, isRulebookOpen, isSettingsPanelOpen, runtime])
+
+  const handleOpenRulebook = () => {
+    setIsSettingsPanelOpen(false)
+    setIsHistoryModalOpen(false)
+    setIsReplayModeOpen(false)
+    setIsRulebookOpen(true)
+  }
+
+  const handleCloseRulebook = () => {
+    setIsRulebookOpen(false)
+  }
 
   const resetRuntime = (nextConfig = bootstrapConfig) => {
     try {
@@ -2639,10 +2660,12 @@ function App() {
           onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroAId)}
           onOpenDeckEditor={() => handleOpenDeckEditor(0)}
+          onOpenRulebook={handleOpenRulebook}
           onHardReroll={handleHardReroll}
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl
+          isRulebookOpen={isRulebookOpen}
         />
         <PlayerScreen
           key="screen-b"
@@ -2660,12 +2683,16 @@ function App() {
           onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')}
           onPlayCard={createPlayCardHandler(heroBId)}
           onOpenDeckEditor={() => handleOpenDeckEditor(1)}
+          onOpenRulebook={handleOpenRulebook}
           onHardReroll={handleHardReroll}
           isMusicMuted={isMusicMuted}
           onToggleMusic={() => setIsMusicMuted((current) => !current)}
           showMusicControl
+          isRulebookOpen={isRulebookOpen}
         />
       </main>
+
+        <RulebookPanel isOpen={isRulebookOpen} onClose={handleCloseRulebook} />
     </>
   )
 }
