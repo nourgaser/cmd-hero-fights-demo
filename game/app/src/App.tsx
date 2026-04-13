@@ -24,7 +24,7 @@ import { HistoryModal } from './components/HistoryModal/index'
 import { ReplayBar } from './components/ReplayBar/index'
 import {
   ACTION_TOAST_DURATION_MS,
-  MUSIC_SOURCE,
+  MUSIC_TRACKS,
   REPLAY_PLAYBACK_SPEEDS,
   SETTINGS_EXPORT_STORAGE_KEYS,
   SETTINGS_BOOTSTRAP_STORAGE_KEY,
@@ -70,9 +70,13 @@ function App() {
     setAutoPlayDelayMs,
     isMusicMuted,
     setIsMusicMuted,
+    musicTrackId,
+    setMusicTrackId,
     replayBarPosition,
     setReplayBarPosition,
   } = useSettings()
+
+  const selectedMusicTrack = MUSIC_TRACKS.find((track) => track.id === musicTrackId) ?? MUSIC_TRACKS[0]
 
   const [startupError] = useState(() => {
     try {
@@ -213,7 +217,7 @@ function App() {
     if (!musicAudioRef.current) return
     const audio = musicAudioRef.current; audio.loop = true; audio.muted = isMusicMuted
     if (!isMusicMuted) void audio.play().catch(() => {})
-  }, [isMusicMuted])
+  }, [isMusicMuted, selectedMusicTrack.source])
 
   useEffect(() => {
     if (typeof document === 'undefined') return
@@ -392,10 +396,12 @@ function App() {
         autoPlayDelayMs={autoPlayDelayMs}
         autoPlayAutoEndTurnWhenNoLegalMoves={autoPlayAutoEndTurnWhenNoLegalMoves}
         autoPlayUseEntityActives={autoPlayUseEntityActives}
+        musicTrackId={musicTrackId}
         onAutoPlayButtonsVisibleChange={setAutoPlayButtonsVisible}
         onAutoPlayDelayMsChange={setAutoPlayDelayMs}
         onAutoPlayAutoEndTurnWhenNoLegalMovesChange={setAutoPlayAutoEndTurnWhenNoLegalMoves}
         onAutoPlayUseEntityActivesChange={setAutoPlayUseEntityActives}
+        onMusicTrackIdChange={setMusicTrackId}
         onClosePanel={() => setIsSettingsPanelOpen(false)}
         isVisible={isSettingsPanelOpen}
       />
@@ -409,7 +415,7 @@ function App() {
         onSave={handleBootstrapConfigChange}
       />
 
-      <audio ref={musicAudioRef} src={MUSIC_SOURCE} loop autoPlay muted={isMusicMuted} />
+      <audio key={selectedMusicTrack.id} ref={musicAudioRef} src={selectedMusicTrack.source} loop autoPlay muted={isMusicMuted} />
 
       <main key={`battle-${resetEpoch}`} className="dual-screens">
         <PlayerScreen key="screen-a" title="CMD Hero Fights" selfId={heroAId} enemyId={heroBId} selfSideKey="a" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroAId)} onUseEntityActive={createEntityActiveHandler(heroAId)} onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')} onPlayCard={createPlayCardHandler(heroAId)} onOpenDeckEditor={() => handleOpenDeckEditor(0)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} />
