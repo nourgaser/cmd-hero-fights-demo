@@ -8,82 +8,21 @@ import {
   splitTooltipDetailLabel,
   splitDetailTextIntoLines,
 } from '../../utils/render-numeric-text'
+import {
+  formatSignedDelta,
+  formatLayeredValue,
+  numberDeltaClass,
+  getVisualIconStyle,
+  getCardTypeVisual,
+  getRarityLabel,
+  groupContributions,
+} from '../../utils/game-client-format'
 import type { InspectTarget } from '../../inspectable'
 
 type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
-type EntityStats = AppBattlePreview['battlefield']['entitiesById'][string]
-type Contributions = EntityStats['combatNumbers']['attackDamage']['contributions']
-
-// ─── Formatting utilities ────────────────────────────────────────────────────
-
-function formatSignedDelta(value: number): string {
-  const abs = Math.abs(Math.round(value * 100) / 100)
-  return `${value >= 0 ? '+' : '-'}${abs}`
-}
-
-function formatCompactNumber(value: number): string {
-  const rounded = Math.round(value * 100) / 100
-  return `${rounded}`
-}
-
-function formatLayeredStatValue(permanent: number, bonus: number): string {
-  if (bonus === 0) {
-    return formatCompactNumber(permanent)
-  }
-  return `(${formatCompactNumber(permanent)} ${formatSignedDelta(bonus)})`
-}
 
 function formatChancePercent(value: number): string {
   return `${Math.round(value * 100)}%`
-}
-
-function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
-  if (delta > 0) return 'delta-positive'
-  if (delta < 0) return 'delta-negative'
-  return 'delta-neutral'
-}
-
-function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) {
-  const transforms: string[] = []
-  if (meta.hFlip) transforms.push('scaleX(-1)')
-  if (meta.vFlip) transforms.push('scaleY(-1)')
-  if (typeof meta.rotate === 'number' && meta.rotate !== 0) transforms.push(`rotate(${meta.rotate}deg)`)
-  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
-}
-
-function groupContributions(contributions: Contributions): Array<{ sourceId: string; label: string; delta: number }> {
-  const bySource = new Map<string, { sourceId: string; label: string; delta: number }>()
-  for (const c of contributions) {
-    const existing = bySource.get(c.sourceId)
-    if (existing) {
-      existing.delta += c.delta
-    } else {
-      bySource.set(c.sourceId, { sourceId: c.sourceId, label: c.label, delta: c.delta })
-    }
-  }
-  return Array.from(bySource.values())
-    .filter((row) => row.delta !== 0)
-    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
-}
-
-function getCardTypeVisual(cardType: HandBarCard['cardType']): { icon: string; label: string } {
-  switch (cardType) {
-    case 'ability': return { icon: 'game-icons:crossed-swords', label: 'Ability' }
-    case 'weapon': return { icon: 'game-icons:broadsword', label: 'Weapon' }
-    case 'totem': return { icon: 'game-icons:obelisk', label: 'Totem' }
-    case 'companion': return { icon: 'game-icons:wolf-head', label: 'Companion' }
-    default: return { icon: 'game-icons:card-pick', label: 'Card' }
-  }
-}
-
-function getRarityLabel(rarity: HandBarCard['rarity']): string {
-  switch (rarity) {
-    case 'common': return 'Common'
-    case 'rare': return 'Rare'
-    case 'ultimate': return 'Ultimate'
-    case 'general': return 'General'
-    default: return rarity
-  }
 }
 
 // ─── Sub-renderers ───────────────────────────────────────────────────────────
@@ -352,7 +291,7 @@ function EntityInspect({
         <div className="inspect-stat-grid">
           <StatRow
             label="Moves"
-            value={`${entityStats.movePoints} / ${formatLayeredStatValue(entityStats.statLayers.moveCapacity.permanent, entityStats.statLayers.moveCapacity.bonus)}`}
+            value={`${entityStats.movePoints} / ${formatLayeredValue(entityStats.statLayers.moveCapacity.permanent, entityStats.statLayers.moveCapacity.bonus)}`}
             deltaClass={moveCapacityDeltaClass}
             contributions={moveSources}
             shouldShowSources={shouldShowDetailedTooltips}
@@ -404,14 +343,14 @@ function EntityInspect({
         <div className="inspect-stat-grid">
           <StatRow
             label="AD"
-            value={formatLayeredStatValue(entityStats.statLayers.attackDamage.permanent, entityStats.statLayers.attackDamage.bonus)}
+            value={formatLayeredValue(entityStats.statLayers.attackDamage.permanent, entityStats.statLayers.attackDamage.bonus)}
             deltaClass={attackDamageClass}
             contributions={adSources}
             shouldShowSources={shouldShowDetailedTooltips}
           />
           <StatRow
             label="AP"
-            value={formatLayeredStatValue(entityStats.statLayers.abilityPower.permanent, entityStats.statLayers.abilityPower.bonus)}
+            value={formatLayeredValue(entityStats.statLayers.abilityPower.permanent, entityStats.statLayers.abilityPower.bonus)}
             deltaClass={abilityPowerClass}
             contributions={apSources}
             shouldShowSources={shouldShowDetailedTooltips}
@@ -419,7 +358,7 @@ function EntityInspect({
           {attackFlatBonusDamage !== 0 ? (
             <StatRow
               label="ATK+"
-              value={formatLayeredStatValue(entityStats.statLayers.attackFlatBonusDamage.permanent, entityStats.statLayers.attackFlatBonusDamage.bonus)}
+              value={formatLayeredValue(entityStats.statLayers.attackFlatBonusDamage.permanent, entityStats.statLayers.attackFlatBonusDamage.bonus)}
               deltaClass={attackFlatBonusDamageClass}
               contributions={attackFlatSources}
               shouldShowSources={shouldShowDetailedTooltips}
@@ -427,14 +366,14 @@ function EntityInspect({
           ) : null}
           <StatRow
             label="Armor"
-            value={formatLayeredStatValue(entityStats.statLayers.armor.permanent, entityStats.statLayers.armor.bonus)}
+            value={formatLayeredValue(entityStats.statLayers.armor.permanent, entityStats.statLayers.armor.bonus)}
             deltaClass={armorClass}
             contributions={armorSources}
             shouldShowSources={shouldShowDetailedTooltips}
           />
           <StatRow
             label="MR"
-            value={formatLayeredStatValue(entityStats.statLayers.magicResist.permanent, entityStats.statLayers.magicResist.bonus)}
+            value={formatLayeredValue(entityStats.statLayers.magicResist.permanent, entityStats.statLayers.magicResist.bonus)}
             deltaClass={magicResistClass}
             contributions={mrSources}
             shouldShowSources={shouldShowDetailedTooltips}

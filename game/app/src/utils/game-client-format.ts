@@ -8,18 +8,25 @@ export const STAT_METADATA = {
   magicResist: { label: 'magic resist', shortLabel: 'MR', iconId: 'game-icons:shield-reflect' },
   sharpness: { label: 'sharpness', shortLabel: 'Sharp', iconId: 'game-icons:knife' },
   basicAttackSharpness: { label: 'basic attack sharpness', shortLabel: 'BSharp', iconId: 'game-icons:knife' },
+  moveCapacity: { label: 'moves', shortLabel: 'Moves', iconId: 'game-icons:boot-prints' },
 } as const
 
 export type StatKey = keyof typeof STAT_METADATA
 
 export function formatPreviewNumber(value: number): string {
   const rounded = Math.round(value * 100) / 100
-  return Number.isInteger(rounded) ? `${rounded}` : `${rounded}`
+  return `${rounded}`
 }
 
 export function formatSignedDelta(value: number): string {
   const formatted = formatPreviewNumber(Math.abs(value))
   return `${value >= 0 ? '+' : '-'}${formatted}`
+}
+
+export function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
+  if (delta > 0) return 'delta-positive'
+  if (delta < 0) return 'delta-negative'
+  return 'delta-neutral'
 }
 
 export function formatLayeredValue(base: number, delta: number): string {
@@ -28,6 +35,43 @@ export function formatLayeredValue(base: number, delta: number): string {
   }
 
   return `(${formatPreviewNumber(base)} ${formatSignedDelta(delta)})`
+}
+
+export function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) {
+  const transforms: string[] = []
+  if (meta.hFlip) transforms.push('scaleX(-1)')
+  if (meta.vFlip) transforms.push('scaleY(-1)')
+  if (typeof meta.rotate === 'number' && meta.rotate !== 0) transforms.push(`rotate(${meta.rotate}deg)`)
+  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
+}
+
+export function getRarityLabel(rarity: string): string {
+  return rarity.charAt(0).toUpperCase() + rarity.slice(1)
+}
+
+export function getCardTypeVisual(cardType: string): { icon: string; label: string } {
+  switch (cardType) {
+    case 'ability': return { icon: 'game-icons:crossed-swords', label: 'Ability' }
+    case 'weapon': return { icon: 'game-icons:broadsword', label: 'Weapon' }
+    case 'totem': return { icon: 'game-icons:obelisk', label: 'Totem' }
+    case 'companion': return { icon: 'game-icons:wolf-head', label: 'Companion' }
+    default: return { icon: 'game-icons:card-pick', label: 'Card' }
+  }
+}
+
+export function groupContributions(contributions: Array<{ sourceId: string; label: string; delta: number }>): Array<{ sourceId: string; label: string; delta: number }> {
+  const bySource = new Map<string, { sourceId: string; label: string; delta: number }>()
+  for (const c of contributions) {
+    const existing = bySource.get(c.sourceId)
+    if (existing) {
+      existing.delta += c.delta
+    } else {
+      bySource.set(c.sourceId, { sourceId: c.sourceId, label: c.label, delta: c.delta })
+    }
+  }
+  return Array.from(bySource.values())
+    .filter((row) => row.delta !== 0)
+    .sort((a, b) => Math.abs(b.delta) - Math.abs(a.delta))
 }
 
 export function renderTemplatedText(displayText?: {

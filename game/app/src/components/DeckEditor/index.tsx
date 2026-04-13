@@ -4,6 +4,11 @@ import { Icon } from '@iconify/react/offline'
 import { toast } from 'react-hot-toast'
 import type { GameBootstrapConfig } from '../../data/game-bootstrap'
 import { CARD_ICON_META } from '../../data/visual-metadata'
+import {
+  getVisualIconStyle,
+  getCardTypeVisual,
+  getRarityLabel,
+} from '../../utils/game-client-format'
 import './style.css'
 
 const MAX_DECK_SIZE = 15
@@ -55,20 +60,8 @@ const persistSavedDecks = (decks: SavedDeck[]) => {
   window.localStorage.setItem(SAVED_DECKS_STORAGE_KEY, JSON.stringify(decks))
 }
 
-const getVisualIconStyle = (meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) => {
-  const transforms: string[] = []
-  if (meta.hFlip) transforms.push('scaleX(-1)')
-  if (meta.vFlip) transforms.push('scaleY(-1)')
-  if (typeof meta.rotate === 'number' && meta.rotate !== 0) transforms.push(`rotate(${meta.rotate}deg)`)
-  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
-}
-
 const getCardIconMeta = (cardId: string) => {
   return CARD_ICON_META[cardId] || { id: 'game-icons:card-pick' }
-}
-
-const getCardTypeLabel = (type: string) => {
-  return type.charAt(0).toUpperCase() + type.slice(1)
 }
 
 type DeckEditorProps = {
@@ -315,7 +308,7 @@ export function DeckEditor(props: DeckEditorProps) {
                     <span className="deck-editor-gallery-cost">{entry.card.moveCost}</span>
                     <Icon icon={meta.id} style={getVisualIconStyle(meta)} className="deck-editor-gallery-icon" />
                     <span className="deck-editor-gallery-name">{entry.card.name}</span>
-                    <span className="deck-editor-gallery-meta">{getCardTypeLabel(entry.card.type)} · {entry.card.rarity}</span>
+                    <span className="deck-editor-gallery-meta">{getCardTypeVisual(entry.card.type).label} · {getRarityLabel(entry.card.rarity)}</span>
                     <span className="deck-editor-gallery-summary">{entry.card.summaryText || entry.card.effectTexts[0]}</span>
                   </button>
                   <div className="deck-editor-gallery-actions">
@@ -337,7 +330,7 @@ export function DeckEditor(props: DeckEditorProps) {
                 <div className="deck-editor-detail-head">
                   <span className="deck-editor-detail-cost">{selectedDeckCardEntry.card.moveCost}</span>
                   <Icon icon={getCardIconMeta(selectedDeckCardEntry.card.id).id} style={getVisualIconStyle(getCardIconMeta(selectedDeckCardEntry.card.id))} className="deck-editor-detail-icon" />
-                  <div><strong>{selectedDeckCardEntry.card.name}</strong><span>{getCardTypeLabel(selectedDeckCardEntry.card.type)} · {selectedDeckCardEntry.card.rarity}</span></div>
+                  <div><strong>{selectedDeckCardEntry.card.name}</strong><span>{getCardTypeVisual(selectedDeckCardEntry.card.type).label} · {getRarityLabel(selectedDeckCardEntry.card.rarity)}</span></div>
                 </div>
                 <p>{selectedDeckCardEntry.card.summaryText || 'No summary available.'}</p>
                 {selectedDeckCardEntry.card.effectTexts.length > 0 && (
@@ -383,7 +376,7 @@ export function DeckEditor(props: DeckEditorProps) {
                           <Icon icon={getCardIconMeta(e.card.id).id} style={getVisualIconStyle(getCardIconMeta(e.card.id))} className="deck-editor-deck-row-icon" />
                           <span className="deck-editor-card-main">
                             <span className="deck-editor-card-name">{e.card.name}</span>
-                            <span className="deck-editor-card-meta">{getCardTypeLabel(e.card.type)}</span>
+                            <span className="deck-editor-card-meta">{getCardTypeVisual(e.card.type).label}</span>
                           </span>
                           <span className="deck-editor-card-count">{e.inDeck}x</span>
                         </button>

@@ -2,33 +2,11 @@ import { Icon } from '@iconify/react/offline'
 import './style.css'
 import type { AppBattlePreview } from '../../game-client'
 import { CARD_ICON_META, ENTITY_ICON_META, LUCK_VISUALS } from '../../data/visual-metadata'
-
-function numberDeltaClass(delta: number): 'delta-positive' | 'delta-negative' | 'delta-neutral' {
-  if (delta > 0) return 'delta-positive'
-  if (delta < 0) return 'delta-negative'
-  return 'delta-neutral'
-}
-
-function formatCompactNumber(value: number): string {
-  const rounded = Math.round(value * 100) / 100
-  return `${rounded}`
-}
-
-function getVisualIconStyle(meta: { rotate?: number; hFlip?: boolean; vFlip?: boolean }) {
-  const transforms: string[] = []
-
-  if (meta.hFlip) {
-    transforms.push('scaleX(-1)')
-  }
-  if (meta.vFlip) {
-    transforms.push('scaleY(-1)')
-  }
-  if (typeof meta.rotate === 'number' && meta.rotate !== 0) {
-    transforms.push(`rotate(${meta.rotate}deg)`)
-  }
-
-  return transforms.length > 0 ? { transform: transforms.join(' ') } : undefined
-}
+import {
+  numberDeltaClass,
+  getVisualIconStyle,
+  formatPreviewNumber,
+} from '../../utils/game-client-format'
 
 type BattlefieldGridProps = {
   preview: AppBattlePreview
@@ -337,7 +315,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                     <span className="entity-stats-row" aria-hidden="true">
                       <span className={`entity-stat-pill ${attackDamageClass}`.trim()}>
                         <Icon icon="game-icons:broadsword" />
-                        {formatCompactNumber(entityStats.statLayers.attackDamage.permanent + entityStats.statLayers.attackDamage.bonus)}
+                        {formatPreviewNumber(entityStats.statLayers.attackDamage.permanent + entityStats.statLayers.attackDamage.bonus)}
                       </span>
                       {attackFlatBonusDamage !== 0 ? (
                         <span className={`entity-stat-pill ${attackFlatBonusDamageClass}`.trim()}>
@@ -347,7 +325,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                       ) : null}
                       <span className={`entity-stat-pill ${armorClass}`.trim()}>
                         <Icon icon="game-icons:checked-shield" />
-                        {formatCompactNumber(entityStats.statLayers.armor.permanent + entityStats.statLayers.armor.bonus)}
+                        {formatPreviewNumber(entityStats.statLayers.armor.permanent + entityStats.statLayers.armor.bonus)}
                       </span>
                     </span>
                     <span className="entity-healthbar" aria-hidden="true">
