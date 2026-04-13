@@ -305,7 +305,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                   </span>
                 ) : null}
 
-                <span className="hint-wrap entity-icon-hint" tabIndex={-1} aria-hidden="true">
+                <span className="hint-wrap entity-icon-hint" aria-hidden="true">
                   <Icon icon={meta.id} className="occupier-icon" style={getVisualIconStyle(meta)} aria-hidden="true" />
                   <span className="hover-card entity-name-hover" role="tooltip">{entityStats?.displayName ?? meta.label ?? occupier.kind}</span>
                 </span>
