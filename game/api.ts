@@ -7,12 +7,13 @@ import {
   type ResolveActionResult,
 } from "./engine/actions/resolve-action";
 import { resolveEffectiveNumber } from "./engine/core/number-resolver";
-import { type BattleRng, type BattleRngCheckpoint } from "./engine/core/rng";
+import { type BattleRng, type BattleRngCheckpoint, createBattleRngFromCheckpoint } from "./engine/core/rng";
 
 export {
   createBattle,
   resolveAction,
   resolveEffectiveNumber,
+  createBattleRngFromCheckpoint,
   GAME_CONTENT_REGISTRY,
 };
 

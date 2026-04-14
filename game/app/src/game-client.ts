@@ -4,8 +4,10 @@ import type {
   resolveAction,
   createBattle,
   resolveEffectiveNumber,
+  createBattleRngFromCheckpoint,
   GAME_CONTENT_REGISTRY,
 } from '../../api'
+import type { GameBootstrapConfig } from './data/game-bootstrap'
 
 export type {
   AppBattlePreview,
@@ -52,14 +54,17 @@ export type AppBattleApi = {
   createBattle: typeof createBattle;
   resolveAction: typeof resolveAction;
   resolveEffectiveNumber: typeof resolveEffectiveNumber;
+  createBattleRngFromCheckpoint: typeof createBattleRngFromCheckpoint;
   GAME_CONTENT_REGISTRY: typeof GAME_CONTENT_REGISTRY;
 }
 
 export type AppBattleSession = {
+  config: GameBootstrapConfig
   gameApi: AppBattleApi
   state: BattleState
   battleRng: BattleRng
   nextSequence: number
+  actionLog: BattleAction[]
   history: AppActionHistoryEntry[]
   snapshots: AppBattleSnapshot[]
   activeSnapshotId: number | null

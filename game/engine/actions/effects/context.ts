@@ -55,9 +55,4 @@ export type EffectExecutionContext = {
   lastSummonedEntityId: string | undefined;
   effectSourceEntityId: string | undefined;
   registry: ContentRegistry;
-  createSummonedEntityId: (context: {
-    ownerHeroEntityId: string;
-    entityDefinitionId: string;
-    sequence: number;
-  }) => string;
 };

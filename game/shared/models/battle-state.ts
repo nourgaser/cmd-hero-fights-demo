@@ -127,5 +127,15 @@ export const BattleStateSchema = z.object({
    */
   activePassiveRules: z.array(PassiveRuleSchema).default([]),
   activeAuras: z.array(AuraInstanceSchema).default([]),
+  /**
+   * Monotonically increasing summon counts per (ownerHeroEntityId:entityDefinitionId) key.
+   * Used to generate stable, session-independent entity IDs for summoned entities.
+   */
+  summonCounters: z.record(z.string(), z.number().int().nonnegative()).default({}),
+  /**
+   * Monotonically increasing draw counts per heroEntityId for cards drawn via effects.
+   * Used to generate stable, session-independent hand card IDs for effect-drawn cards.
+   */
+  drawCounters: z.record(EntityIdSchema, z.number().int().nonnegative()).default({}),
 });
 export type BattleState = z.infer<typeof BattleStateSchema>;

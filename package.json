@@ -2,8 +2,11 @@
   "name": "cmd-hero-fights-demo-game",
   "type": "module",
   "private": true,
+  "scripts": {
+    "test:replay": "bun test tests/replay-determinism.test.ts"
+  },
   "devDependencies": {
-    "@types/bun": "latest",
+    "@types/bun": "^1.3.12",
     "@types/seedrandom": "^3.0.8"
   },
   "peerDependencies": {

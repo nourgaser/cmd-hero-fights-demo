@@ -154,6 +154,28 @@ function App() {
     catch { showActionErrorToast('Failed to copy replay payload.') }
   }, [runtime, bootstrapConfig, showActionSuccessToast, showActionErrorToast])
 
+  const handleCopyHistoryJson = useCallback(async () => {
+    if (!runtime) return
+    const replayPayload = createReplayUrlPayload({
+      bootstrapConfig,
+      seed: runtime.session.state.seed,
+      actionLog: createActionLogFromSession(runtime.session),
+      timelineIndex: getReplayPayloadTimelineIndex(runtime.session),
+    })
+
+    const historyDump = {
+      replayPayload,
+      activeActionSnapshotId,
+      activeActionSnapshotIndex,
+      currentState: runtime.session.state,
+      activeSnapshot: activeActionSnapshot,
+      history: runtime.session.history,
+    }
+
+    try { await navigator.clipboard.writeText(JSON.stringify(historyDump, null, 2)); showActionSuccessToast('History JSON copied to clipboard.', []) }
+    catch { showActionErrorToast('Failed to copy history JSON.') }
+  }, [runtime, bootstrapConfig, activeActionSnapshotId, activeActionSnapshotIndex, activeActionSnapshot, showActionSuccessToast, showActionErrorToast])
+
   const handleValidateReplayDeterminism = useCallback(() => {
     if (activeActionSnapshotIndex < 0 || !activeActionSnapshot || !runtime) { showActionErrorToast('Select a snapshot before validating replay determinism.'); return }
     const res = replaySessionFromActionLog({
@@ -378,6 +400,7 @@ function App() {
         activeActionSnapshotId={activeActionSnapshotId}
         onClose={() => setIsHistoryModalOpen(false)}
         onOpenReplayBar={() => { setIsReplayModeOpen(true); setIsHistoryModalOpen(false) }}
+        onCopyHistoryJson={() => void handleCopyHistoryJson()}
         onBranchFromSnapshot={() => handleBranchFromSnapshot(activeActionSnapshotId)}
         onCopyReplayPayload={() => void handleCopyReplayPayload()}
         onValidateReplayDeterminism={handleValidateReplayDeterminism}

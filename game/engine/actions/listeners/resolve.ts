@@ -30,11 +30,6 @@ export function resolveTriggeredListeners(options: {
   nextSequence: number;
   battleRng: BattleRng;
   registry: ContentRegistry;
-  createSummonedEntityId: (context: {
-    ownerHeroEntityId: string;
-    entityDefinitionId: string;
-    sequence: number;
-  }) => string;
 }): {
   ok: true;
   state: BattleState;
@@ -50,7 +45,6 @@ export function resolveTriggeredListeners(options: {
     nextSequence,
     battleRng,
     registry,
-    createSummonedEntityId,
   } = options;
 
   let nextState = state;
@@ -108,7 +102,6 @@ export function resolveTriggeredListeners(options: {
           lastSummonedEntityId,
           effectSourceEntityId: listener.sourceEntityId ?? listener.ownerHeroEntityId,
           registry,
-          createSummonedEntityId,
         });
 
         if (!execution.ok) {

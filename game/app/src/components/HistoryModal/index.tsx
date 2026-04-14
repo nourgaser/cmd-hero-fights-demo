@@ -8,6 +8,7 @@ type HistoryModalProps = {
   activeActionSnapshotId: number | null
   onClose: () => void
   onOpenReplayBar: () => void
+  onCopyHistoryJson: () => void
   onBranchFromSnapshot: () => void
   onCopyReplayPayload: () => void
   onValidateReplayDeterminism: () => void
@@ -24,6 +25,7 @@ export function HistoryModal(props: HistoryModalProps) {
     activeActionSnapshotId,
     onClose,
     onOpenReplayBar,
+    onCopyHistoryJson,
     renderTimelineControls,
     renderTimelineSnapshotList,
   } = props
@@ -73,6 +75,12 @@ export function HistoryModal(props: HistoryModalProps) {
         <header className="history-modal-head">
           <strong>Action History</strong>
           <div className="history-modal-head-actions">
+            <button
+              type="button"
+              onClick={onCopyHistoryJson}
+            >
+              Copy JSON
+            </button>
             <button
               type="button"
               onClick={onOpenReplayBar}

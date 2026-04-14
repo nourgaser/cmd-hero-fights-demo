@@ -63,11 +63,6 @@ export function resolveUseEntityActiveAction(options: {
   nextSequence: number;
   battleRng: BattleRng;
   registry: ContentRegistry;
-  createSummonedEntityId: (context: {
-    ownerHeroEntityId: string;
-    entityDefinitionId: string;
-    sequence: number;
-  }) => string;
 }): ResolveUseEntityActiveResult {
   const {
     state,
@@ -75,7 +70,6 @@ export function resolveUseEntityActiveAction(options: {
     nextSequence,
     battleRng,
     registry,
-    createSummonedEntityId,
   } = options;
 
   const actorResolution = resolveActiveActorHeroForAction({
@@ -166,7 +160,6 @@ export function resolveUseEntityActiveAction(options: {
         lastSummonedEntityId,
         effectSourceEntityId: source.entityId,
         registry,
-        createSummonedEntityId,
       });
 
       if (!execution.ok) {

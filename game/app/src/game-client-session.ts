@@ -12,6 +12,7 @@ import {
   type AppBattleSession,
   type AppBattleSnapshot,
   type AppBattleApi,
+  type AppRngCheckpoint,
 } from './game-client'
 
 import { type GameBootstrapConfig } from './data/game-bootstrap'
@@ -24,12 +25,116 @@ function cloneSerializable<T>(value: T): T {
   return JSON.parse(JSON.stringify(value)) as T
 }
 
-function createSummonedEntityId(context: {
-  ownerHeroEntityId: string
-  entityDefinitionId: string
-  sequence: number
-}) {
-  return `${context.ownerHeroEntityId}:summon:${context.entityDefinitionId}:${context.sequence}`
+function buildPreview(session: AppBattleSession): AppBattlePreview {
+  return buildPreviewFromState({ gameApi: session.gameApi, state: session.state })
+}
+
+function buildInitialSnapshot(options: {
+  config: GameBootstrapConfig
+  activeHeroEntityId: string
+  state: AppBattleSession['state']
+}): AppBattleSnapshot {
+  const { config, activeHeroEntityId, state } = options
+
+  return {
+    id: 0,
+    phase: 'pre',
+    turnNumber: 1,
+    actorHeroEntityId: activeHeroEntityId,
+    actionKind: 'endTurn',
+    action: { kind: 'endTurn', actorHeroEntityId: activeHeroEntityId },
+    state: cloneSerializable(state),
+    nextSequence: 0,
+    resultMessage: 'Battle started.',
+    success: true,
+    events: [],
+    rngCheckpoint: {
+      seed: config.seed,
+      stepCount: 0,
+    },
+  }
+}
+
+function rebuildRuntimeFromActionLog(options: {
+  gameApi: AppBattleApi
+  config: GameBootstrapConfig
+  actionLog: ReplayActionLogEntry[]
+}): {
+  session: AppBattleSession
+  preview: AppBattlePreview
+} {
+  let runtime = createInitialBattleSession({
+    gameApi: options.gameApi,
+    config: options.config,
+  })
+
+  for (const action of options.actionLog) {
+    const result = resolveSessionAction({
+      session: runtime.session,
+      action,
+    })
+
+    runtime = {
+      session: result.session,
+      preview: result.preview,
+    }
+  }
+
+  return runtime
+}
+
+function getReplayPrefixCountForSnapshot(options: {
+  session: AppBattleSession
+  snapshot: AppBattleSnapshot
+}): number | null {
+  const { session, snapshot } = options
+  if (snapshot.id === 0) {
+    return 0
+  }
+
+  if (snapshot.phase === 'post') {
+    const historyIndex = session.history.findIndex((entry) => entry.postSnapshotId === snapshot.id)
+    return historyIndex >= 0 ? historyIndex + 1 : null
+  }
+
+  const historyIndex = session.history.findIndex((entry) => entry.preSnapshotId === snapshot.id)
+  return historyIndex >= 0 ? historyIndex : null
+}
+
+function buildSessionAtSnapshot(options: {
+  session: AppBattleSession
+  snapshotId: number
+}): SnapshotSessionResult {
+  if (!options.session.snapshots.find((snapshot) => snapshot.id === options.snapshotId)) {
+    return { ok: false, reason: `Snapshot ${options.snapshotId} not found.` }
+  }
+
+  const rebuilt = rebuildRuntimeFromActionLog({
+    gameApi: options.session.gameApi,
+    config: options.session.config,
+    actionLog: options.session.actionLog,
+  })
+  const rebuiltSnapshot = rebuilt.session.snapshots.find((snapshot) => snapshot.id === options.snapshotId)
+  if (!rebuiltSnapshot) {
+    return {
+      ok: false,
+      reason: `Snapshot ${options.snapshotId} was not rebuilt from the canonical action log.`,
+    }
+  }
+
+  const nextSession: AppBattleSession = {
+    ...rebuilt.session,
+    state: cloneSerializable(rebuiltSnapshot.state),
+    nextSequence: rebuiltSnapshot.nextSequence,
+    battleRng: options.session.gameApi.createBattleRngFromCheckpoint(rebuiltSnapshot.rngCheckpoint),
+    activeSnapshotId: rebuiltSnapshot.id,
+  }
+
+  return {
+    ok: true,
+    session: nextSession,
+    preview: buildPreview(nextSession),
+  }
 }
 
 export function createInitialBattleSession(options: {
@@ -71,31 +176,21 @@ export function createInitialBattleSession(options: {
     registry: gameApi.GAME_CONTENT_REGISTRY,
   })
 
-  const initialSnapshot: AppBattleSnapshot = {
-    id: 0,
-    phase: 'pre',
-    turnNumber: 1,
-    actorHeroEntityId: createdBattle.state.turn.activeHeroEntityId,
-    actionKind: 'endTurn', // Placeholder
-    action: { kind: 'endTurn', actorHeroEntityId: createdBattle.state.turn.activeHeroEntityId },
-    state: createdBattle.state,
-    nextSequence: 0,
-    resultMessage: 'Battle started.',
-    success: true,
-    events: [],
-    rngCheckpoint: {
-      seed: config.seed,
-      stepCount: 0,
-    },
-  }
-
   const session: AppBattleSession = {
+    config: cloneSerializable(config),
     gameApi,
     state: createdBattle.state,
     battleRng: createdBattle.rng,
     nextSequence: 0,
+    actionLog: [],
     history: [],
-    snapshots: [initialSnapshot],
+    snapshots: [
+      buildInitialSnapshot({
+        config,
+        activeHeroEntityId: createdBattle.state.turn.activeHeroEntityId,
+        state: createdBattle.state,
+      }),
+    ],
     activeSnapshotId: null,
     nextHistoryEntryId: 1,
     nextSnapshotId: 1,
@@ -103,7 +198,7 @@ export function createInitialBattleSession(options: {
 
   return {
     session,
-    preview: buildPreviewFromState({ gameApi, state: createdBattle.state }),
+    preview: buildPreview(session),
   }
 }
 
@@ -120,14 +215,23 @@ export function resolveSessionAction(options: {
   const preSnapshotId = session.nextSnapshotId
   const postSnapshotId = session.nextSnapshotId + 1
   const turnNumber = session.state.turn.turnNumber
+  const actionEntry = cloneSerializable(action)
+
+  const preRngCheckpoint: AppRngCheckpoint = {
+    seed: session.battleRng.seed,
+    stepCount: session.battleRng.stepCount,
+  }
+
+  // Resolve against a fresh RNG clone so the input session stays immutable.
+  // React may invoke state updaters more than once in development.
+  const workingBattleRng = session.gameApi.createBattleRngFromCheckpoint(preRngCheckpoint)
 
   const result = session.gameApi.resolveAction({
     state: session.state,
     action,
     nextSequence: session.nextSequence,
-    battleRng: session.battleRng,
+    battleRng: workingBattleRng,
     registry: session.gameApi.GAME_CONTENT_REGISTRY,
-    createSummonedEntityId,
   })
 
   const historyEntry: AppActionHistoryEntry = {
@@ -149,17 +253,14 @@ export function resolveSessionAction(options: {
     turnNumber,
     actorHeroEntityId: action.actorHeroEntityId,
     actionKind: action.kind,
-    action: cloneSerializable(action),
+    action: actionEntry,
     state: cloneSerializable(session.state),
     nextSequence: session.nextSequence,
     resultMessage: historyEntry.resultMessage,
     success: historyEntry.success,
     failureReason: historyEntry.failureReason,
     events: [],
-    rngCheckpoint: {
-      seed: session.battleRng.seed,
-      stepCount: session.battleRng.stepCount,
-    },
+    rngCheckpoint: preRngCheckpoint,
   }
 
   if (!result.ok) {
@@ -169,21 +270,24 @@ export function resolveSessionAction(options: {
       turnNumber,
       actorHeroEntityId: action.actorHeroEntityId,
       actionKind: action.kind,
-      action: cloneSerializable(action),
+      action: actionEntry,
       state: cloneSerializable(result.state),
       nextSequence: session.nextSequence,
-      resultMessage: !result.ok ? result.reason : '',
+      resultMessage: result.reason,
       success: false,
-      failureReason: !result.ok ? result.reason : undefined,
+      failureReason: result.reason,
       events: [],
       rngCheckpoint: {
-        seed: session.battleRng.seed,
-        stepCount: session.battleRng.stepCount,
+        seed: workingBattleRng.seed,
+        stepCount: workingBattleRng.stepCount,
       },
     }
 
     const nextSession: AppBattleSession = {
       ...session,
+      state: result.state,
+      battleRng: workingBattleRng,
+      actionLog: [...session.actionLog, actionEntry],
       history: [...session.history, historyEntry],
       snapshots: [...session.snapshots, preSnapshot, postSnapshot],
       nextHistoryEntryId: session.nextHistoryEntryId + 1,
@@ -192,9 +296,9 @@ export function resolveSessionAction(options: {
 
     return {
       ok: false,
-      reason: !result.ok ? result.reason : 'Unknown error',
+      reason: result.reason,
       session: nextSession,
-      preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
+      preview: buildPreview(nextSession),
     }
   }
 
@@ -204,22 +308,24 @@ export function resolveSessionAction(options: {
     turnNumber,
     actorHeroEntityId: action.actorHeroEntityId,
     actionKind: action.kind,
-    action: cloneSerializable(action),
+    action: actionEntry,
     state: cloneSerializable(result.state),
     nextSequence: result.nextSequence,
     resultMessage: result.resultMessage,
     success: true,
-    events: result.events,
+    events: cloneSerializable(result.events),
     rngCheckpoint: {
-      seed: session.battleRng.seed,
-      stepCount: session.battleRng.stepCount,
+      seed: workingBattleRng.seed,
+      stepCount: workingBattleRng.stepCount,
     },
   }
 
   const nextSession: AppBattleSession = {
     ...session,
     state: result.state,
+    battleRng: workingBattleRng,
     nextSequence: result.nextSequence,
+    actionLog: [...session.actionLog, actionEntry],
     history: [...session.history, historyEntry],
     snapshots: [...session.snapshots, preSnapshot, postSnapshot],
     nextHistoryEntryId: session.nextHistoryEntryId + 1,
@@ -229,7 +335,7 @@ export function resolveSessionAction(options: {
   return {
     ok: true,
     session: nextSession,
-    preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
+    preview: buildPreview(nextSession),
     events: result.events,
     resultMessage: result.resultMessage,
   }
@@ -316,212 +422,42 @@ export function jumpSessionToSnapshot(options: {
   session: AppBattleSession
   snapshotId: number
 }): SnapshotSessionResult {
-  const { session, snapshotId } = options
-  const snapshot = session.snapshots.find((s) => s.id === snapshotId)
-  if (!snapshot) {
-    return { ok: false, reason: `Snapshot ${snapshotId} not found.` }
-  }
-
-  const nextSession: AppBattleSession = {
-    ...session,
-    state: snapshot.state,
-    nextSequence: snapshot.nextSequence,
-    activeSnapshotId: snapshotId,
-  }
-
-  return {
-    ok: true,
-    session: nextSession,
-    preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
-  }
+  return buildSessionAtSnapshot(options)
 }
 
 export function branchSessionFromSnapshot(options: {
   session: AppBattleSession
   snapshotId: number
 }): SnapshotSessionResult {
-  const { session, snapshotId } = options
-  const snapshot = session.snapshots.find((s) => s.id === snapshotId)
-  if (!snapshot) {
-    return { ok: false, reason: `Snapshot ${snapshotId} not found.` }
+  const sourceSnapshot = options.session.snapshots.find((snapshot) => snapshot.id === options.snapshotId)
+  if (!sourceSnapshot) {
+    return { ok: false, reason: `Snapshot ${options.snapshotId} not found.` }
   }
 
-  const nextSession: AppBattleSession = {
-    ...session,
-    state: snapshot.state,
-    nextSequence: snapshot.nextSequence,
-    activeSnapshotId: null,
-    history: session.history.filter((h) => h.postSnapshotId <= snapshotId),
-    snapshots: session.snapshots.filter((s) => s.id <= snapshotId),
-    nextSnapshotId: snapshotId + 1,
+  const replayPrefixCount = getReplayPrefixCountForSnapshot({
+    session: options.session,
+    snapshot: sourceSnapshot,
+  })
+  if (replayPrefixCount === null) {
+    return {
+      ok: false,
+      reason: `Snapshot ${options.snapshotId} could not be mapped to an action-log position.`,
+    }
   }
+
+  const rebuilt = rebuildRuntimeFromActionLog({
+    gameApi: options.session.gameApi,
+    config: options.session.config,
+    actionLog: options.session.actionLog.slice(0, replayPrefixCount),
+  })
 
   return {
     ok: true,
-    session: nextSession,
-    preview: buildPreviewFromState({ gameApi: session.gameApi, state: nextSession.state }),
-  }
-}
-
-function applyReplayedBattleAction(
-  runtime: { session: AppBattleSession; preview: AppBattlePreview },
-  action: BattleAction,
-): SessionResolutionResult {
-  return resolveSessionAction({
-    session: runtime.session,
-    action,
-  })
-}
-
-function repairReplayedActionAgainstState(
-  state: AppBattleSession['state'],
-  action: BattleAction,
-): BattleAction {
-  const pickDeterministicTarget = (targetIds: string[], preferredPrefix?: string): string | null => {
-    const existingTargetIds = targetIds
-      .filter((targetId) => !!state.entitiesById[targetId])
-      .sort((left, right) => left.localeCompare(right))
-
-    if (existingTargetIds.length === 0) {
-      return null
-    }
-
-    if (preferredPrefix) {
-      const preferred = existingTargetIds.find((targetId) => targetId.startsWith(preferredPrefix))
-      if (preferred) {
-        return preferred
-      }
-    }
-
-    return existingTargetIds[0] ?? null
-  }
-
-  if (action.kind === 'playCard') {
-    const actor = state.entitiesById[action.actorHeroEntityId]
-    if (!actor || actor.kind !== 'hero') {
-      return action
-    }
-
-    const exactHandCard = actor.handCards.find((entry) => entry.id === action.handCardId)
-    const playableFallbackHandCard = actor.handCards
-      .filter((entry) => entry.isPlayable)
-      .sort((left, right) => left.id.localeCompare(right.id))[0]
-    const anyFallbackHandCard = [...actor.handCards]
-      .sort((left, right) => left.id.localeCompare(right.id))[0]
-    const repairedHandCard = exactHandCard ?? playableFallbackHandCard ?? anyFallbackHandCard
-    if (!repairedHandCard) {
-      return action
-    }
-
-    let repairedTargetEntityId = action.selection.targetEntityId
-    if (repairedTargetEntityId && !state.entitiesById[repairedTargetEntityId]) {
-      const preferredPrefix = repairedTargetEntityId.includes(':')
-        ? `${repairedTargetEntityId.split(':')[0]}:`
-        : undefined
-      repairedTargetEntityId = pickDeterministicTarget(repairedHandCard.validTargetEntityIds ?? [], preferredPrefix) ?? repairedTargetEntityId
-    }
-
-    if (!repairedTargetEntityId && (repairedHandCard.validTargetEntityIds?.length ?? 0) > 0) {
-      repairedTargetEntityId = pickDeterministicTarget(repairedHandCard.validTargetEntityIds ?? []) ?? undefined
-    }
-
-    return {
-      ...action,
-      handCardId: repairedHandCard.id,
-      selection: {
-        ...action.selection,
-        targetEntityId: repairedTargetEntityId,
-      },
-    }
-  }
-
-  if (action.kind === 'basicAttack') {
-    const existingTarget = state.entitiesById[action.selection.targetEntityId]
-    if (existingTarget) {
-      return action
-    }
-
-    const attacker = state.entitiesById[action.attackerEntityId]
-    if (!attacker || attacker.kind !== 'hero') {
-      return action
-    }
-
-    const preferredPrefix = action.selection.targetEntityId.includes(':')
-      ? `${action.selection.targetEntityId.split(':')[0]}:`
-      : undefined
-
-    const repairedTargetEntityId = pickDeterministicTarget(
-      attacker.basicAttackTargetEntityIds ?? [],
-      preferredPrefix,
-    )
-    if (!repairedTargetEntityId) {
-      return action
-    }
-
-    return {
-      ...action,
-      selection: {
-        targetEntityId: repairedTargetEntityId,
-      },
-    }
-  }
-
-  if (action.kind !== 'useEntityActive') {
-    return action
-  }
-
-  const existingSource = state.entitiesById[action.sourceEntityId]
-  if (existingSource && existingSource.kind !== 'hero') {
-    return action
-  }
-
-  const actor = state.entitiesById[action.actorHeroEntityId]
-  if (!actor || actor.kind !== 'hero') {
-    return action
-  }
-
-  const targetEntityId = action.selection.targetEntityId
-  const options = actor.entityActiveOptions ?? []
-
-  const matchingCandidates = options
-    .filter((entry) => {
-      if (!targetEntityId) {
-        return true
-      }
-      return entry.validTargetEntityIds.includes(targetEntityId)
-    })
-    .map((entry) => entry.sourceEntityId)
-    .sort((left, right) => left.localeCompare(right))
-
-  const fallbackCandidates = options
-    .map((entry) => entry.sourceEntityId)
-    .sort((left, right) => left.localeCompare(right))
-
-  const repairedSourceEntityId = matchingCandidates[0] ?? fallbackCandidates[0]
-  if (!repairedSourceEntityId) {
-    return action
-  }
-
-  let repairedTargetEntityId = action.selection.targetEntityId
-  if (repairedTargetEntityId) {
-    const existingTarget = state.entitiesById[repairedTargetEntityId]
-    if (!existingTarget) {
-      const sourceOption = options.find((entry) => entry.sourceEntityId === repairedSourceEntityId)
-      const preferredPrefix = repairedTargetEntityId.includes(':')
-        ? `${repairedTargetEntityId.split(':')[0]}:`
-        : undefined
-      const fallbackTarget = pickDeterministicTarget(sourceOption?.validTargetEntityIds ?? [], preferredPrefix)
-      repairedTargetEntityId = fallbackTarget ?? repairedTargetEntityId
-    }
-  }
-
-  return {
-    ...action,
-    sourceEntityId: repairedSourceEntityId,
-    selection: {
-      ...action.selection,
-      targetEntityId: repairedTargetEntityId,
+    session: {
+      ...rebuilt.session,
+      activeSnapshotId: null,
     },
+    preview: rebuilt.preview,
   }
 }
 
@@ -547,7 +483,6 @@ function jumpSessionToTimelineIndex(options: {
   })
 }
 
-
 export function replaySessionFromActionLog(options: {
   gameApi: AppBattleApi
   config: GameBootstrapConfig
@@ -555,43 +490,12 @@ export function replaySessionFromActionLog(options: {
   timelineIndex: number | null
 }): SnapshotSessionResult {
   const { gameApi, config, actionLog, timelineIndex } = options
-  let runtime = createInitialBattleSession({ gameApi, config })
 
-  for (let index = 0; index < actionLog.length; index += 1) {
-    const entry = actionLog[index]!
-    const repairedAction = repairReplayedActionAgainstState(runtime.session.state, entry.action)
-    const result = applyReplayedBattleAction(runtime, repairedAction)
-
-    // Strict transcript replay: any mismatch between expected and rebuilt outcome
-    // indicates nondeterminism or incompatible action payloads.
-    if (entry.success && !result.ok) {
-      return {
-        ok: false,
-        reason: `Replay diverged at step #${index + 1} (${entry.action.kind}): expected success, got failure (${result.reason}).`,
-      }
-    }
-
-    if (!entry.success && result.ok) {
-      return {
-        ok: false,
-        reason: `Replay diverged at step #${index + 1} (${entry.action.kind}): expected failure, got success.`,
-      }
-    }
-
-    if (!result.ok) {
-      // Expected failure path: keep session snapshots/history consistent with live capture.
-      runtime = {
-        session: result.session,
-        preview: result.preview,
-      }
-      continue
-    }
-
-    runtime = {
-      session: result.session,
-      preview: result.preview,
-    }
-  }
+  const runtime = rebuildRuntimeFromActionLog({
+    gameApi,
+    config,
+    actionLog,
+  })
 
   if (timelineIndex !== null) {
     return jumpSessionToTimelineIndex({

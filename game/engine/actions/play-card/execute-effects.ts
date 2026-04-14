@@ -32,11 +32,6 @@ export function executePlayCardEffects(options: {
   nextSequence: number;
   battleRng: BattleRng;
   registry: ContentRegistry;
-  createSummonedEntityId: (context: {
-    ownerHeroEntityId: string;
-    entityDefinitionId: string;
-    sequence: number;
-  }) => string;
 }): ExecutePlayCardEffectsResult {
   const {
     state,
@@ -46,7 +41,6 @@ export function executePlayCardEffects(options: {
     nextSequence,
     battleRng,
     registry,
-    createSummonedEntityId,
   } = options;
 
   let nextState = state;
@@ -79,7 +73,6 @@ export function executePlayCardEffects(options: {
       lastSummonedEntityId,
       effectSourceEntityId: actorHeroEntityId,
       registry,
-      createSummonedEntityId,
     });
 
     if (!execution.ok) {

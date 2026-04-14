@@ -49,16 +49,21 @@ export function handleDrawCardsEffect(
   const drawnCardIds = target.deckCardIds.slice(0, drawCount);
   const remainingDeck = target.deckCardIds.slice(drawCount);
 
+  const currentDrawOrdinal = state.drawCounters[target.entityId] ?? 0;
   const nextHandCards = [
     ...target.handCards,
     ...drawnCardIds.map((cardDefinitionId, index) => ({
-      id: `${target.entityId}:hand:draw:${sequence}:${index + 1}`,
+      id: `${target.entityId}:hand:draw:${currentDrawOrdinal + index + 1}`,
       cardDefinitionId,
     })),
   ];
 
   const nextState = {
     ...state,
+    drawCounters: {
+      ...state.drawCounters,
+      [target.entityId]: currentDrawOrdinal + drawCount,
+    },
     entitiesById: {
       ...state.entitiesById,
       [target.entityId]: {

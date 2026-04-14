@@ -31,11 +31,9 @@ export function handleSummonEffect(
     return { ok: false, reason: "Summon effect execution is missing entity blueprint resolution." };
   }
 
-  const summonedEntityId = context.createSummonedEntityId({
-    ownerHeroEntityId: actorHero.entityId,
-    entityDefinitionId: effect.payload.entityDefinitionId,
-    sequence,
-  });
+  const summonCounterKey = `${actorHero.entityId}:${effect.payload.entityDefinitionId}`;
+  const summonOrdinal = (state.summonCounters[summonCounterKey] ?? 0) + 1;
+  const summonedEntityId = `${actorHero.entityId}:summon:${effect.payload.entityDefinitionId}:${summonOrdinal}`;
 
   const footprint = blueprint.footprint ?? SingleCellFootprint;
   const maxMovesPerTurn = Math.min(blueprint.maxMovesPerTurn ?? blueprint.remainingMoves, MOVE_POINTS_CAP);
@@ -99,6 +97,10 @@ export function handleSummonEffect(
     ok: true,
     state: {
       ...state,
+      summonCounters: {
+        ...state.summonCounters,
+        [summonCounterKey]: summonOrdinal,
+      },
       entitiesById: {
         ...state.entitiesById,
         [summonedEntityId]: summonedEntity,

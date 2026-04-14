@@ -6,9 +6,19 @@ const REPLAY_PARAM_KEY = 'replay'
 type ReplayHistoryMode = 'push' | 'replace'
 
 export type ReplayUrlPayload = {
-  version: 4
+  version: 5
   bootstrapConfig: GameBootstrapConfig
   actionLog: ReplayActionLogEntry[]
+  timelineIndex: number | null
+}
+
+type LegacyReplayUrlPayload = {
+  version: 4
+  bootstrapConfig: GameBootstrapConfig
+  actionLog: Array<{
+    action: ReplayActionLogEntry
+    success: boolean
+  }>
   timelineIndex: number | null
 }
 
@@ -41,19 +51,16 @@ export function createReplayUrlPayload(options: {
   timelineIndex: number | null
 }): ReplayUrlPayload {
   const validatedActionLog: ReplayActionLogEntry[] = options.actionLog.map((entry, index) => {
-    const parsedAction = BattleActionSchema.safeParse(entry.action)
+    const parsedAction = BattleActionSchema.safeParse(entry)
     if (!parsedAction.success) {
       throw new Error(`Invalid replay action at step #${index + 1}.`)
     }
 
-    return {
-      action: parsedAction.data,
-      success: entry.success,
-    }
+    return parsedAction.data
   })
 
   return {
-    version: 4,
+    version: 5,
     bootstrapConfig: {
       ...options.bootstrapConfig,
       seed: options.seed,
@@ -73,37 +80,31 @@ export function decodeReplayUrlPayload(encoded: string): ReplayUrlPayload | null
   try {
     const compressed = base64UrlDecodeBytes(encoded)
     const decompressed = inflateSync(compressed)
-    const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload
-    if (parsed.version !== 4 || !Array.isArray(parsed.actionLog)) {
+    const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload | LegacyReplayUrlPayload
+    if ((parsed.version !== 4 && parsed.version !== 5) || !Array.isArray(parsed.actionLog)) {
       return null
     }
 
     const validatedActionLog: ReplayActionLogEntry[] = []
     for (let index = 0; index < parsed.actionLog.length; index += 1) {
       const rawEntry = parsed.actionLog[index]
-      if (!rawEntry || typeof rawEntry !== 'object') {
-        return null
-      }
-
-      const entry = rawEntry as Partial<ReplayActionLogEntry>
-      if (typeof entry.success !== 'boolean') {
-        return null
-      }
-
-      const parsedAction = BattleActionSchema.safeParse(entry.action)
+      const parsedAction = BattleActionSchema.safeParse(
+        parsed.version === 4 && rawEntry && typeof rawEntry === 'object' && 'action' in rawEntry
+          ? rawEntry.action
+          : rawEntry,
+      )
       if (!parsedAction.success) {
         return null
       }
 
-      validatedActionLog.push({
-        action: parsedAction.data,
-        success: entry.success,
-      })
+      validatedActionLog.push(parsedAction.data)
     }
 
     return {
-      ...parsed,
+      version: 5,
+      bootstrapConfig: parsed.bootstrapConfig,
       actionLog: validatedActionLog,
+      timelineIndex: parsed.timelineIndex,
     }
   } catch {
     return null

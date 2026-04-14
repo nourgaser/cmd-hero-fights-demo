@@ -245,6 +245,8 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
     activeModifiers: [],
     activePassiveRules: [],
     activeAuras: [],
+    summonCounters: {},
+    drawCounters: {},
   };
 
   const annotatedState = annotateBattleStateWithActionOptions({

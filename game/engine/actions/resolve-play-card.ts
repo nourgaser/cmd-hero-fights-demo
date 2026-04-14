@@ -28,11 +28,6 @@ export function resolvePlayCardAction(options: {
   registry: ContentRegistry;
   nextSequence: number;
   battleRng: BattleRng;
-  createSummonedEntityId: (context: {
-    ownerHeroEntityId: string;
-    entityDefinitionId: string;
-    sequence: number;
-  }) => string;
 }): ResolvePlayCardResult {
   const {
     state,
@@ -40,7 +35,6 @@ export function resolvePlayCardAction(options: {
     registry,
     nextSequence,
     battleRng,
-    createSummonedEntityId,
   } = options;
 
   const validation = validatePlayCardAction({
@@ -103,7 +97,6 @@ export function resolvePlayCardAction(options: {
     nextSequence: sequence,
     battleRng,
     registry,
-    createSummonedEntityId,
   });
   if (!effectsExecution.ok) {
     return {

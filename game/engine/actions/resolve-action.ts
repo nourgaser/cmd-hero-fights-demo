@@ -49,11 +49,6 @@ export function resolveAction(options: {
   nextSequence: number;
   battleRng: BattleRng;
   registry: ContentRegistry;
-  createSummonedEntityId: (context: {
-    ownerHeroEntityId: string;
-    entityDefinitionId: string;
-    sequence: number;
-  }) => string;
 }): ResolveActionResult {
   const {
     state,
@@ -61,7 +56,6 @@ export function resolveAction(options: {
     nextSequence,
     battleRng,
     registry,
-    createSummonedEntityId,
   } = options;
 
   let baseResult: ResolveActionResult;
@@ -74,7 +68,6 @@ export function resolveAction(options: {
         registry,
         nextSequence,
         battleRng,
-        createSummonedEntityId,
       });
 
       if (!result.ok) {
@@ -130,7 +123,6 @@ export function resolveAction(options: {
         action,
         nextSequence,
         battleRng,
-        createSummonedEntityId,
         registry,
       });
 
@@ -160,7 +152,6 @@ export function resolveAction(options: {
     seedActionEvents: eventsAfterCleanup,
     nextSequence: cleanup.nextSequence,
     battleRng,
-    createSummonedEntityId,
     registry,
   });
 

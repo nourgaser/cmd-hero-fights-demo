@@ -12,6 +12,7 @@ import {
   createBattle,
   resolveAction,
   resolveEffectiveNumber,
+  createBattleRngFromCheckpoint,
   GAME_CONTENT_REGISTRY,
 } from '../../../api'
 import type { ReplayActionLogEntry } from '../../../shared/models'
@@ -33,6 +34,7 @@ export function createRuntimeFromReplayPayload(replayPayload: ReplayUrlPayload):
     createBattle,
     resolveAction,
     resolveEffectiveNumber,
+    createBattleRngFromCheckpoint,
     GAME_CONTENT_REGISTRY,
   }
 
@@ -58,6 +60,7 @@ export function createRuntimeFromConfig(config: GameBootstrapConfig): AppRuntime
     createBattle,
     resolveAction,
     resolveEffectiveNumber,
+    createBattleRngFromCheckpoint,
     GAME_CONTENT_REGISTRY,
   }
 
@@ -87,49 +90,36 @@ export function getActionTimelineSnapshots(session: AppBattleSession): AppBattle
 }
 
 export function getReplayPayloadTimelineIndex(session: AppBattleSession): number | null {
-  if (session.activeSnapshotId === null) {
-    // Live mode — no paused position to encode. Reconstruction will replay all
-    // actions and leave activeSnapshotId null, restoring live mode correctly.
+  const timelineSnapshots = getActionTimelineSnapshots(session)
+  if (timelineSnapshots.length === 0) {
     return null
+  }
+
+  if (session.activeSnapshotId === null) {
+    // Even in live mode, the user is currently looking at the latest resolved
+    // timeline frame. Encode that latest index so copied URLs always rebuild
+    // the exact board state currently visible in the UI.
+    return timelineSnapshots.length - 1
   }
 
   const currentSnapshot = session.snapshots.find((snapshot) => snapshot.id === session.activeSnapshotId) ?? null
 
   if (!currentSnapshot) {
-    return null
+    return timelineSnapshots.length - 1
   }
 
   if (currentSnapshot.phase === 'pre') {
     return 0
   }
 
-  const timelineSnapshots = getActionTimelineSnapshots(session)
   const timelineIndex = timelineSnapshots.findIndex((snapshot) => snapshot.id === currentSnapshot.id)
-  return timelineIndex >= 0 ? timelineIndex : null
+  return timelineIndex >= 0 ? timelineIndex : timelineSnapshots.length - 1
 }
 
 export function createActionLogFromSession(
   session: AppBattleSession,
 ): ReplayActionLogEntry[] {
-  return session.history.map((entry, index) => {
-    const preSnapshot = session.snapshots.find((s) => s.id === entry.preSnapshotId)
-    if (!preSnapshot) {
-      throw new Error(`Missing pre-snapshot ${entry.preSnapshotId} while rebuilding replay log.`)
-    }
-
-    // Reject malformed transcript actions before they are encoded into replay URLs.
-    if (preSnapshot.action.kind === 'useEntityActive') {
-      const source = preSnapshot.state.entitiesById[preSnapshot.action.sourceEntityId]
-      if (!source || source.kind === 'hero') {
-        throw new Error(`Invalid replay action at step #${index + 1}: useEntityActive source must be a summoned entity.`)
-      }
-    }
-
-    return {
-      action: preSnapshot.action,
-      success: entry.success,
-    }
-  })
+  return session.actionLog.map((action) => JSON.parse(JSON.stringify(action)) as ReplayActionLogEntry)
 }
 
 export function ensureSessionReadyForAction(session: AppBattleSession):
