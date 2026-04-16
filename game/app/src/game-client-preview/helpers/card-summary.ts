@@ -207,6 +207,7 @@ export function describeNumericCardText(options: {
       summaryText,
       summaryDetailText: detailLines.join('\n'),
       summaryTone: 'neutral',
+      targetPreview: null,
     }
   }
 
