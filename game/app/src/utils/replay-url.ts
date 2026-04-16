@@ -127,12 +127,28 @@ async function resolveReplayShortlinkUrl(text: string): Promise<string | null> {
     return null
   }
 
+  const shortCode = url.pathname.replace(/^\//, '').trim()
+  if (!shortCode) {
+    return null
+  }
+
   try {
-    const response = await fetch(url.toString(), {
-      redirect: 'follow',
+    const params = new URLSearchParams({
+      format: 'json',
+      shorturl: shortCode,
+    })
+    const response = await fetch(`https://is.gd/forward.php?${params.toString()}`, {
       credentials: 'omit',
     })
-    return response.url || null
+
+    if (!response.ok) {
+      return null
+    }
+
+    const payload = (await response.json()) as { url?: unknown }
+    return typeof payload.url === 'string' && payload.url.length > 0
+      ? payload.url
+      : null
   } catch {
     return null
   }
