@@ -6,6 +6,7 @@ type HistoryModalProps = {
   snapshots: AppBattleSnapshot[]
   history: AppActionHistoryEntry[]
   activeActionSnapshotId: number | null
+  onJumpToSnapshot: (snapshotId: number) => void
   onClose: () => void
   onOpenReplayBar: () => void
   onCopyHistoryJson: () => void
@@ -23,6 +24,7 @@ export function HistoryModal(props: HistoryModalProps) {
     snapshots,
     history,
     activeActionSnapshotId,
+    onJumpToSnapshot,
     onClose,
     onOpenReplayBar,
     onCopyHistoryJson,
@@ -40,8 +42,36 @@ export function HistoryModal(props: HistoryModalProps) {
   }).length
 
   const renderHistoryRow = (entry: AppActionHistoryEntry, index: number) => {
+    const isActive = entry.postSnapshotId === activeActionSnapshotId
+    const handleJump = () => onJumpToSnapshot(entry.postSnapshotId)
+
     return (
-      <li key={entry.id} className={`history-entry ${entry.success ? 'history-entry-success' : 'history-entry-failure'}`}>
+      <li
+        key={entry.id}
+        className={`history-entry ${entry.success ? 'history-entry-success' : 'history-entry-failure'} ${isActive ? 'history-entry-active' : ''}`}
+        role="button"
+        tabIndex={0}
+        onClick={handleJump}
+        onKeyDown={(event) => {
+          if (event.key === 'Enter' || event.key === ' ') {
+            event.preventDefault()
+            handleJump()
+          }
+        }}
+        aria-label={`Jump to step ${activeHistoryLength - index}`}
+      >
+        <button
+          type="button"
+          className="history-entry-jump-button"
+          onClick={(event) => {
+            event.stopPropagation()
+            handleJump()
+          }}
+          aria-label={`Jump to step ${activeHistoryLength - index}`}
+          title="Jump to this step"
+        >
+          Jump
+        </button>
         <div className="history-entry-head">
           <strong>Turn {entry.turnNumber}</strong>
           <span>{entry.actionKind}</span>
