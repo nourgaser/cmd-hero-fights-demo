@@ -26,6 +26,7 @@ export type MusicTrackId = (typeof MUSIC_TRACKS)[number]['id']
 
 export const MUSIC_SOURCE = MUSIC_TRACKS[0].source
 export const ACTION_TOAST_ID = 'action-feedback'
+export const EVENT_TOAST_ID = 'battle-event-feedback'
 export const ACTION_TOAST_DURATION_MS = 7000
 export const EVENT_TOAST_DURATION_MS = 4500
 export const AUTO_PLAY_DEFAULT_DELAY_MS = 200

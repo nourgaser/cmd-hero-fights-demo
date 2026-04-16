@@ -33,7 +33,7 @@ import {
   SETTINGS_SEED_STORAGE_KEY,
 } from './app-shell/constants'
 import { useSettings } from './app-shell/useSettings'
-import { useActionsFeedback } from './app-shell/useActionsFeedback'
+import { type LastActionFeedback, useActionsFeedback } from './app-shell/useActionsFeedback'
 import { useAutoplay } from './app-shell/useAutoplay'
 import { useReplayHistory } from './app-shell/useReplayHistory'
 import { useAppActions } from './app-shell/useAppActions'
@@ -107,6 +107,7 @@ function App() {
   const [isReplayModeOpen, setIsReplayModeOpen] = useState(false)
   const [isReplayPlaying, setIsReplayPlaying] = useState(false)
   const [replayPlaybackSpeedIndex, setReplayPlaybackSpeedIndex] = useState(0)
+  const [lastActionFeedback, setLastActionFeedback] = useState<LastActionFeedback | null>(null)
 
   const musicAudioRef = useRef<HTMLAudioElement | null>(null)
   const replayTimelineListRef = useRef<HTMLUListElement | null>(null)
@@ -120,6 +121,7 @@ function App() {
   const { showActionErrorToast, showActionSuccessToast, showBattleEventToast, showReplaySnapshotToasts } = useActionsFeedback({
     announce,
     shouldShowDetailedTooltips: isShiftHeld || showDetailedTooltips,
+    onLastActionFeedback: setLastActionFeedback,
   })
 
   const { createBasicAttackHandler, createEntityActiveHandler, createPlayCardHandler, createSimpleActionHandler, handleJumpToSnapshot, handleBranchFromSnapshot } = useAppActions({
@@ -413,6 +415,7 @@ function App() {
         snapshots={snapshots}
         history={runtime.session.history}
         activeActionSnapshotId={activeActionSnapshotId}
+        onJumpToSnapshot={handleJumpToSnapshot}
         onClose={() => setIsHistoryModalOpen(false)}
         onOpenReplayBar={() => { setIsReplayModeOpen(true); setIsHistoryModalOpen(false) }}
         onCopyHistoryJson={() => void handleCopyHistoryJson()}
@@ -469,8 +472,8 @@ function App() {
 
       <main key={`battle-${resetEpoch}`} className="dual-screens">
         {gameOverMessage ? <div className="game-over-banner" role="status" aria-live="polite">{gameOverMessage}</div> : null}
-        <PlayerScreen key="screen-a" title="CMD Hero Fights" selfId={heroAId} enemyId={heroBId} selfSideKey="a" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroAId)} onUseEntityActive={createEntityActiveHandler(heroAId)} onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')} onPlayCard={createPlayCardHandler(heroAId)} onOpenDeckEditor={() => handleOpenDeckEditor(0)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} />
-        <PlayerScreen key="screen-b" title="CMD Hero Fights" selfId={heroBId} enemyId={heroAId} selfSideKey="b" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroBId)} onUseEntityActive={createEntityActiveHandler(heroBId)} onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')} onPlayCard={createPlayCardHandler(heroBId)} onOpenDeckEditor={() => handleOpenDeckEditor(1)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} />
+        <PlayerScreen key="screen-a" title="CMD Hero Fights" selfId={heroAId} enemyId={heroBId} selfSideKey="a" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroAId)} onUseEntityActive={createEntityActiveHandler(heroAId)} onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')} onPlayCard={createPlayCardHandler(heroAId)} onOpenDeckEditor={() => handleOpenDeckEditor(0)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} lastActionFeedback={lastActionFeedback} />
+        <PlayerScreen key="screen-b" title="CMD Hero Fights" selfId={heroBId} enemyId={heroAId} selfSideKey="b" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroBId)} onUseEntityActive={createEntityActiveHandler(heroBId)} onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')} onPlayCard={createPlayCardHandler(heroBId)} onOpenDeckEditor={() => handleOpenDeckEditor(1)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} lastActionFeedback={lastActionFeedback} />
       </main>
       <RulebookPanel isOpen={isRulebookOpen} onClose={handleCloseRulebook} />
     </>

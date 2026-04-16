@@ -8,6 +8,7 @@ import { ScreenHeader } from './ScreenHeader'
 import { PassiveEffectsStrip } from './PassiveEffectsStrip'
 import { usePlayerScreenState } from './usePlayerScreenState'
 import { useKeyboardShortcuts } from './useKeyboardShortcuts'
+import type { LastActionFeedback } from '../../app-shell/useActionsFeedback'
 import './style.css'
 
 type PlayerScreenProps = {
@@ -38,6 +39,7 @@ type PlayerScreenProps = {
   onToggleSettings?: () => void
   showSettingsControl?: boolean
   isRulebookOpen?: boolean
+  lastActionFeedback: LastActionFeedback | null
 }
 
 export function PlayerScreen(props: PlayerScreenProps) {
@@ -65,6 +67,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     onToggleSettings,
     showSettingsControl,
     isRulebookOpen,
+    lastActionFeedback,
   } = props
   const screenRef = useRef<HTMLElement | null>(null)
 
@@ -221,6 +224,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
       <PassiveEffectsStrip
         activePassiveEffects={selfActivePassiveEffects}
         isCoarsePointer={isCoarsePointer}
+        lastActionFeedback={lastActionFeedback}
       />
 
       <section className="battle-overlay-layer">

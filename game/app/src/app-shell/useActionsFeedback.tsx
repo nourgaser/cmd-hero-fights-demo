@@ -1,15 +1,27 @@
-import { useCallback } from 'react'
+import { useCallback, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../../shared/models'
 import type { AppBattleSnapshot } from '../game-client'
 import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from '../utils/render-numeric-text'
-import { ACTION_TOAST_ID, ACTION_TOAST_DURATION_MS, EVENT_TOAST_DURATION_MS } from './constants'
+import { ACTION_TOAST_ID, ACTION_TOAST_DURATION_MS, EVENT_TOAST_DURATION_MS, EVENT_TOAST_ID } from './constants'
+
+export type LastActionFeedback = {
+  summary: string
+  detail: string | null
+  isError: boolean
+  updatedAt: number
+}
 
 export function useActionsFeedback(options: {
   announce: (text: string) => void
   shouldShowDetailedTooltips: boolean
+  onLastActionFeedback?: (feedback: LastActionFeedback) => void
 }) {
-  const { announce, shouldShowDetailedTooltips } = options
+  const { announce, shouldShowDetailedTooltips, onLastActionFeedback } = options
+  const eventToastMemoryRef = useRef<{ signature: string; updatedAt: number }>({
+    signature: '',
+    updatedAt: 0,
+  })
 
   const renderStructuredToast = useCallback((summary: string, detail: string | null, showDetail: boolean) => {
     return (
@@ -23,12 +35,19 @@ export function useActionsFeedback(options: {
   }, [])
 
   const showActionErrorToast = useCallback((message: string) => {
-    announce(message)
+    const split = splitSummaryAndDetail(message)
+    onLastActionFeedback?.({
+      summary: split.summary,
+      detail: split.detail,
+      isError: true,
+      updatedAt: Date.now(),
+    })
+    announce(split.summary)
     toast.error(message, {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
     })
-  }, [announce])
+  }, [announce, onLastActionFeedback])
 
   const showActionSuccessToast = useCallback((message: string, events: BattleEvent[]) => {
     const split = splitSummaryAndDetail(message)
@@ -56,11 +75,18 @@ export function useActionsFeedback(options: {
       detail = `Luck balance ${luckEvent.previousBalance} -> ${luckEvent.nextBalance}.`
     }
 
+    onLastActionFeedback?.({
+      summary: split.summary,
+      detail,
+      isError: false,
+      updatedAt: Date.now(),
+    })
+
     toast.success(renderStructuredToast(split.summary, detail, shouldShowDetailedTooltips), {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
     })
-  }, [announce, renderStructuredToast, shouldShowDetailedTooltips])
+  }, [announce, onLastActionFeedback, renderStructuredToast, shouldShowDetailedTooltips])
 
   const showBattleEventToast = useCallback((event: BattleEvent) => {
     // Action success toasts already summarize these outcomes (including roll/luck detail),
@@ -96,10 +122,23 @@ export function useActionsFeedback(options: {
       return
     }
 
+    const signature = `${event.kind}:${summary}:${detail ?? ''}`
+    const now = Date.now()
+    if (
+      eventToastMemoryRef.current.signature === signature
+      && now - eventToastMemoryRef.current.updatedAt < 700
+    ) {
+      return
+    }
+    eventToastMemoryRef.current = {
+      signature,
+      updatedAt: now,
+    }
+
     announce(summary)
 
     toast(renderStructuredToast(summary, detail, shouldShowDetailedTooltips), {
-      id: `battle-event-${event.sequence}`,
+      id: EVENT_TOAST_ID,
       duration: EVENT_TOAST_DURATION_MS,
     })
   }, [announce, renderStructuredToast, shouldShowDetailedTooltips])

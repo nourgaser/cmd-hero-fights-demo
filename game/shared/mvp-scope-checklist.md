@@ -25,5 +25,5 @@ Current progress (2026-04-13): player-facing formatting lives in `game/app/src/u
 
 - [x] Add game-over state when one of the heroes dies.
 - [ ] Review "destroy" armor mechanics which currently don't work well because most armor in the game is derived not part of the unit's base stats.
-- [ ] Add card range indicators on target selection pre-confirmation, Xcom-style. This takes into account the final range including the target's resistances and/or shields or any other effects (e.g. immunity).
-- [ ] Prevent toast spam when playing multiple actions quickly (especially on mobile where they fill up the screen).
+- [ ] Add card range indicators on target selection pre-confirmation, Xcom-style. This takes into account the final range including the target's resistances and/or shields or any other effects (e.g. immunity, reflect, etc. and dodge chance and so on, basically all I need to consider before confirming the target / comparing with other targets).
+- [x] Prevent toast spam when playing multiple actions quickly (especially on mobile where they fill up the screen).
