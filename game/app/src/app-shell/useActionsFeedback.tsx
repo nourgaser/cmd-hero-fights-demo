@@ -63,6 +63,12 @@ export function useActionsFeedback(options: {
   }, [announce, renderStructuredToast, shouldShowDetailedTooltips])
 
   const showBattleEventToast = useCallback((event: BattleEvent) => {
+    // Action success toasts already summarize these outcomes (including roll/luck detail),
+    // so showing event toasts for them creates duplicate feedback.
+    if (event.kind === 'damageApplied' || event.kind === 'luckBalanceChanged') {
+      return
+    }
+
     let summary: string | null = null
     let detail: string | null = null
 
@@ -73,22 +79,11 @@ export function useActionsFeedback(options: {
       const split = splitSummaryAndDetail(event.message)
       summary = split.summary
       detail = split.detail
-    } else if (event.kind === 'damageApplied') {
-      summary = event.wasDodged
-        ? `${event.damageType} attack was dodged.`
-        : `${event.amount} ${event.damageType} damage applied.`
-      const detailParts = [
-        event.rngRawRoll !== undefined ? `raw ${event.rngRawRoll.toFixed(2)}` : null,
-        event.rngAdjustedRoll !== undefined ? `luck-adjusted ${event.rngAdjustedRoll.toFixed(2)}` : null,
-        event.rngFinalRoll !== undefined ? `final ${event.rngFinalRoll.toFixed(2)}` : null,
-        event.rngDodgeRoll !== undefined ? `dodge ${event.rngDodgeRoll.toFixed(2)}` : null,
-      ].filter((part): part is string => !!part)
-      detail = detailParts.length > 0 ? `Roll detail: ${detailParts.join(' -> ')}.` : null
     } else if (event.kind === 'healApplied') {
+      if (event.amount <= 0) {
+        return
+      }
       summary = `Restored ${event.amount} HP.`
-    } else if (event.kind === 'luckBalanceChanged') {
-      summary = `Luck shifted to ${event.nextBalance}.`
-      detail = `Balance changed from ${event.previousBalance} to ${event.nextBalance}.`
     } else if (event.kind === 'auraApplied') {
       summary = `Aura applied (${event.auraKind}).`
       detail = `Stacks: ${event.stackCount}. Expires on turn ${event.expiresOnTurnNumber}.`
