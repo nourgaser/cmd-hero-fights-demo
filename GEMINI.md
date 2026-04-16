@@ -52,10 +52,18 @@ bun install
 
 ### Absolute Constraints (from AGENTS.md)
 1. **No Overengineering**: Only implement what is immediately needed. No "future-proofing."
-2. **No Tests**: Do not add unit, integration, or any other test scaffolding.
-3. **No Logging/Debugging Systems**: Avoid adding logs or debug tools to the engine.
-4. **No Content Compilation**: Content is manually authored in TypeScript. No automated pipelines.
-5. **No Reference Imports**: Never import from the root `content/` directory.
+2. **No Logging/Debugging Systems**: Avoid adding logs or debug tools to the engine.
+3. **No Content Compilation**: Content is manually authored in TypeScript. No automated pipelines.
+4. **No Reference Imports**: Never import from the root `content/` directory.
+
+#### No Complex or Unecessary Tests
+
+* Only critical tests.
+* 1 'unit test' for each card / effect / summon / mechanic in the game.
+* 1 'determinism and replays' test.
+* No more tests.
+* All tests must introduce 0 maintenance overhead; they should be long-lived and isolated.
+* Tests should be engine-level only; no UI or client-side testing.
 
 ### Engineering Standards
 - **Deterministic Engine**: All randomness must be seeded through a centralized RNG (`game/engine/core/rng.ts`).

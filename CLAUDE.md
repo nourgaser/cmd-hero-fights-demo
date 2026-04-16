@@ -84,9 +84,18 @@ content/         # Read-only design reference — never import from here
 
 ## Absolute Constraints (from AGENTS.md)
 
-- **No tests** — no unit, integration, or test scaffolding of any kind.
 - **No logging/debugging systems** — engine may be structurally loggable later, but no implementation now.
 - **No overengineering** — no systems "for future use", no premature generalization, no speculative abstractions.
 - **No content compilation** — no pipelines, no automated reading from `content/`, no schema bridges.
+
+### No Complex or Unecessary Tests
+
+* Only critical tests.
+* 1 'unit test' for each card / effect / summon / mechanic in the game.
+* 1 'determinism and replays' test.
+* No more tests.
+* All tests must introduce 0 maintenance overhead; they should be long-lived and isolated.
+* Tests should be engine-level only; no UI or client-side testing.
+
 
 When in doubt: choose simpler, smaller, more direct. Ask for clarification rather than assuming scope.

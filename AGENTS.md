@@ -35,11 +35,14 @@ Agents must:
 * Do NOT generalize prematurely
 * Do NOT introduce abstraction unless it is immediately useful
 
-### 2. No Tests
+### 2. No Complex or Unecessary Tests
 
-* Do NOT add unit tests
-* Do NOT add integration tests
-* Do NOT add test scaffolding
+* Only critical tests.
+* 1 'unit test' for each card / effect / summon / mechanic in the game.
+* 1 'determinism and replays' test.
+* No more tests.
+* All tests must introduce 0 maintenance overhead; they should be long-lived and isolated.
+* Tests should be engine-level only; no UI or client-side testing.
 
 ### 3. No Logging / Debugging Systems
 

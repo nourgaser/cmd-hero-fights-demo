@@ -20,3 +20,10 @@ Current progress (2026-04-13): player-facing formatting lives in `game/app/src/u
 - [ ] Make player-facing text, calculations, and card implementation details derive from the same typed source so UI summaries cannot drift from engine behavior.
 - [ ] Preserve consistent logging and player-facing information by keeping event emission, inspect surfaces, and toast/debug messaging aligned with the underlying action resolution order.
 - [x] Split and simplify the app-facing preview surface by moving `game-client-preview` into grouped modules (hero, battlefield, and helpers) with a small compatibility barrel.
+
+## Gameplay
+
+- [ ] Add game-over state when one of the heroes dies.
+- [ ] Review "destroy" armor mechanics which currently don't work well because most armor in the game is derived not part of the unit's base stats.
+- [ ] Add card range indicators on target selection pre-confirmation, Xcom-style. This takes into account the final range including the target's resistances and/or shields or any other effects (e.g. immunity).
+- [ ] Prevent toast spam when playing multiple actions quickly (especially on mobile where they fill up the screen).

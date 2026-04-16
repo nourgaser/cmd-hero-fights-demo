@@ -43,7 +43,7 @@ Then open the web UI in your browser.
 
 - **Action-driven** — All gameplay happens through explicit player actions
 - **Deterministic** — Reproducible game state with seeded randomness
-- **Minimal** — Only essential features; no over-engineering or test frameworks
+- **Minimal** — Only essential features; no over-engineering or comprex test frameworks
 - **UI-agnostic** — Engine is independent of UI layer
 
 See [AGENTS.md](AGENTS.md) and [system-design.md](system-design.md) for architecture details.
