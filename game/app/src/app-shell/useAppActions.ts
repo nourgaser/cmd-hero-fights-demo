@@ -1,5 +1,6 @@
 import { useCallback } from 'react'
 import type { BattleEvent } from '../../../shared/models'
+import type { AppBattleEventDisplay } from '../game-client'
 import {
   branchSessionFromSnapshot,
   jumpSessionToSnapshot,
@@ -18,7 +19,7 @@ export function useAppActions(options: {
   setRuntime: React.Dispatch<React.SetStateAction<AppRuntime | null>>
   announce: (text: string) => void
   showActionErrorToast: (message: string) => void
-  showActionSuccessToast: (message: string, events: BattleEvent[]) => void
+  showActionSuccessToast: (message: string, eventTrail: AppBattleEventDisplay[]) => void
   showBattleEventToast: (event: BattleEvent) => void
 }) {
   const {
@@ -33,6 +34,7 @@ export function useAppActions(options: {
     return (input: { targetEntityId: string }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let eventTrail: AppBattleEventDisplay[] = []
       let events: BattleEvent[] = []
       let branchNotice: string | null = null
 
@@ -58,6 +60,7 @@ export function useAppActions(options: {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          eventTrail = result.eventTrail
           events = result.events
         }
 
@@ -68,7 +71,7 @@ export function useAppActions(options: {
         showActionErrorToast(`Basic attack failed: ${failureReason}`)
       } else if (resultMessage) {
         if (branchNotice) announce(branchNotice)
-        showActionSuccessToast(resultMessage, events)
+        showActionSuccessToast(resultMessage, eventTrail)
         for (const event of events) showBattleEventToast(event)
       }
     }
@@ -78,6 +81,7 @@ export function useAppActions(options: {
     return (input: { sourceEntityId: string; targetEntityId?: string }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let eventTrail: AppBattleEventDisplay[] = []
       let events: BattleEvent[] = []
       let branchNotice: string | null = null
 
@@ -103,6 +107,7 @@ export function useAppActions(options: {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          eventTrail = result.eventTrail
           events = result.events
         }
 
@@ -113,7 +118,7 @@ export function useAppActions(options: {
         showActionErrorToast(`Entity active failed: ${failureReason}`)
       } else if (resultMessage) {
         if (branchNotice) announce(branchNotice)
-        showActionSuccessToast(resultMessage, events)
+        showActionSuccessToast(resultMessage, eventTrail)
         for (const event of events) showBattleEventToast(event)
       }
     }
@@ -127,6 +132,7 @@ export function useAppActions(options: {
     }) => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let eventTrail: AppBattleEventDisplay[] = []
       let events: BattleEvent[] = []
       let branchNotice: string | null = null
 
@@ -153,6 +159,7 @@ export function useAppActions(options: {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          eventTrail = result.eventTrail
           events = result.events
         }
 
@@ -163,7 +170,7 @@ export function useAppActions(options: {
         showActionErrorToast(`Play card failed: ${failureReason}`)
       } else if (resultMessage) {
         if (branchNotice) announce(branchNotice)
-        showActionSuccessToast(resultMessage, events)
+        showActionSuccessToast(resultMessage, eventTrail)
         for (const event of events) showBattleEventToast(event)
       }
     }
@@ -173,6 +180,7 @@ export function useAppActions(options: {
     return () => {
       let failureReason: string | null = null
       let resultMessage: string | null = null
+      let eventTrail: AppBattleEventDisplay[] = []
       let events: BattleEvent[] = []
       let branchNotice: string | null = null
 
@@ -197,6 +205,7 @@ export function useAppActions(options: {
           failureReason = result.reason
         } else {
           resultMessage = result.resultMessage
+          eventTrail = result.eventTrail
           events = result.events
         }
 
@@ -207,7 +216,7 @@ export function useAppActions(options: {
         showActionErrorToast(`${kind} failed: ${failureReason}`)
       } else if (resultMessage) {
         if (branchNotice) announce(branchNotice)
-        showActionSuccessToast(resultMessage, events)
+        showActionSuccessToast(resultMessage, eventTrail)
         for (const event of events) showBattleEventToast(event)
       }
     }

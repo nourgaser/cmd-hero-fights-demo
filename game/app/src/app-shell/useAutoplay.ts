@@ -2,6 +2,7 @@ import { useCallback, useEffect, useState } from 'react'
 import { toast } from 'react-hot-toast'
 import { LUCK_BALANCE_LIMIT } from '../../../shared/game-constants'
 import type { BattleEvent } from '../../../shared/models'
+import type { AppBattleEventDisplay } from '../game-client'
 import {
   resolveSessionBasicAttack,
   resolveSessionPlayCard,
@@ -46,7 +47,7 @@ export function useAutoplay(options: {
   autoPlayDelayMs: number
   autoPlayAutoEndTurnWhenNoLegalMoves: boolean
   autoPlayUseEntityActives: boolean
-  showActionSuccessToast: (message: string, events: BattleEvent[]) => void
+  showActionSuccessToast: (message: string, eventTrail: AppBattleEventDisplay[]) => void
   showBattleEventToast: (event: BattleEvent) => void
 }) {
   const {
@@ -67,7 +68,7 @@ export function useAutoplay(options: {
 
   const runAutoPlayStep = useCallback((side: 'a' | 'b') => {
     let failureReason: string | null = null
-    let successResult: { resultMessage: string; events: BattleEvent[] } | null = null
+    let successResult: { resultMessage: string; events: BattleEvent[]; eventTrail: AppBattleEventDisplay[] } | null = null
 
     setRuntime((prev) => {
       if (!prev) {
@@ -229,7 +230,11 @@ export function useAutoplay(options: {
           })
 
           if (fallbackResult.ok) {
-            successResult = { resultMessage: fallbackResult.resultMessage, events: fallbackResult.events }
+            successResult = {
+              resultMessage: fallbackResult.resultMessage,
+              events: fallbackResult.events,
+              eventTrail: fallbackResult.eventTrail,
+            }
             return {
               session: fallbackResult.session,
               preview: fallbackResult.preview,
@@ -241,7 +246,7 @@ export function useAutoplay(options: {
         return prev
       }
 
-      successResult = { resultMessage: result.resultMessage, events: result.events }
+      successResult = { resultMessage: result.resultMessage, events: result.events, eventTrail: result.eventTrail }
       return {
         session: result.session,
         preview: result.preview,
@@ -249,7 +254,7 @@ export function useAutoplay(options: {
     })
 
     const capturedFailureReason = failureReason
-    const capturedSuccessResult = successResult as { resultMessage: string; events: BattleEvent[] } | null
+    const capturedSuccessResult = successResult as { resultMessage: string; events: BattleEvent[]; eventTrail: AppBattleEventDisplay[] } | null
     if (capturedFailureReason) {
       if (side === 'a') {
         setIsAutoPlayAEnabled(false)
@@ -261,7 +266,7 @@ export function useAutoplay(options: {
         duration: ACTION_TOAST_DURATION_MS,
       })
     } else if (capturedSuccessResult) {
-      showActionSuccessToast(capturedSuccessResult.resultMessage, capturedSuccessResult.events)
+      showActionSuccessToast(capturedSuccessResult.resultMessage, capturedSuccessResult.eventTrail)
       for (const event of capturedSuccessResult.events) {
         showBattleEventToast(event)
       }
