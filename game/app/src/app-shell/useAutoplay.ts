@@ -72,6 +72,10 @@ export function useAutoplay(options: {
         return prev
       }
 
+      if (prev.preview.gameOver) {
+        return prev
+      }
+
       const [currentHeroAId, currentHeroBId] = prev.preview.heroEntityIds
       const heroEntityId = side === 'a' ? currentHeroAId : currentHeroBId
       if (prev.preview.activeHeroEntityId !== heroEntityId) {
@@ -263,7 +267,22 @@ export function useAutoplay(options: {
   }, [autoPlayAutoEndTurnWhenNoLegalMoves, autoPlayUseEntityActives, setRuntime, showActionSuccessToast, showBattleEventToast])
 
   useEffect(() => {
+    if (runtime?.preview.gameOver) {
+      if (isAutoPlayAEnabled) {
+        setIsAutoPlayAEnabled(false)
+      }
+      if (isAutoPlayBEnabled) {
+        setIsAutoPlayBEnabled(false)
+      }
+    }
+  }, [runtime?.preview.gameOver, isAutoPlayAEnabled, isAutoPlayBEnabled])
+
+  useEffect(() => {
     if (!runtime || !autoPlayButtonsVisible) {
+      return
+    }
+
+    if (runtime.preview.gameOver) {
       return
     }
 

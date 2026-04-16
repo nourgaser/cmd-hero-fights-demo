@@ -83,7 +83,8 @@ export function PlayerScreen(props: PlayerScreenProps) {
     delta: 0,
     contributions: [],
   }
-  const isActivePlayer = preview.activeHeroEntityId === selfId
+  const isGameOver = preview.gameOver !== null
+  const isActivePlayer = !isGameOver && preview.activeHeroEntityId === selfId
 
   const [isCoarsePointer, setIsCoarsePointer] = useState(false)
 
@@ -244,6 +245,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
       <HandBar
         cards={selfHandCards}
         isActivePlayer={isActivePlayer}
+        isGameOver={isGameOver}
         deckSize={selfDeckSize}
         handSize={selfHandSize}
         movePoints={selfMovePoints}

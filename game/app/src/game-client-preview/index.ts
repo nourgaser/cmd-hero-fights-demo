@@ -24,6 +24,7 @@ export function buildPreviewFromState(options: {
     seed: state.seed,
     heroEntityIds: state.heroEntityIds as [string, string],
     activeHeroEntityId: state.turn.activeHeroEntityId,
+    gameOver: state.gameOver,
     turn: {
       turnNumber: state.turn.turnNumber,
       pressLuckUsedThisTurn: state.turn.pressLuckUsedThisTurn,

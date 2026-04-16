@@ -16,6 +16,11 @@ export type AppBattlePreview = {
   seed: string
   heroEntityIds: [string, string]
   activeHeroEntityId: string
+  gameOver: {
+    winnerHeroEntityId: string | null
+    loserHeroEntityId: string | null
+    endedOnTurnNumber: number
+  } | null
   turn: {
     turnNumber: number
     pressLuckUsedThisTurn: boolean

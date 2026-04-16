@@ -9,6 +9,7 @@ export type HandBarCard = AppBattlePreview['heroHands'][number]['cards'][number]
 type HandBarProps = {
   cards: HandBarCard[]
   isActivePlayer: boolean
+  isGameOver: boolean
   deckSize: number
   handSize: number
   movePoints: number
@@ -83,6 +84,7 @@ export function HandBar(props: HandBarProps) {
   const {
     cards,
     isActivePlayer,
+    isGameOver,
     deckSize,
     handSize,
     movePoints,
@@ -194,6 +196,8 @@ export function HandBar(props: HandBarProps) {
             <button type="button" className="hand-pill hand-pill-button" onClick={onEndTurn}>
               End turn
             </button>
+          ) : isGameOver ? (
+            <span className="hand-pill">Game over</span>
           ) : (
             <span className="hand-pill">Waiting turn</span>
           )}

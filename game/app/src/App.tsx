@@ -340,6 +340,21 @@ function App() {
 
   const heroAId = runtime.preview.heroEntityIds[0]
   const heroBId = runtime.preview.heroEntityIds[1]
+  const gameOver = runtime.preview.gameOver
+
+  const gameOverMessage = (() => {
+    if (!gameOver) return null
+
+    if (gameOver.winnerHeroEntityId && gameOver.loserHeroEntityId) {
+      const winner = runtime.preview.heroDetailsByEntityId[gameOver.winnerHeroEntityId]
+      const loser = runtime.preview.heroDetailsByEntityId[gameOver.loserHeroEntityId]
+      const winnerName = winner?.heroName ?? gameOver.winnerHeroEntityId
+      const loserName = loser?.heroName ?? gameOver.loserHeroEntityId
+      return `${winnerName} wins. ${loserName} has fallen.`
+    }
+
+    return 'Battle ended in a draw.'
+  })()
 
   const renderHistoryControlIcon = (kind: 'first' | 'previous' | 'next' | 'play' | 'pause' | 'speed' | 'latest' | 'branch' | 'copy' | 'validate') => {
     switch (kind) {
@@ -390,8 +405,8 @@ function App() {
       <button type="button" className="history-button" onClick={() => setIsHistoryModalOpen(true)} aria-haspopup="dialog" aria-expanded={isHistoryModalOpen || isReplayModeOpen}>History ({playerFacingHistoryCount})</button>
       <button type="button" className={`history-button settings-launch-button ${isSettingsPanelOpen ? 'settings-launch-button-active' : ''}`} onClick={() => setIsSettingsPanelOpen((c) => !c)} aria-haspopup="dialog" aria-expanded={isSettingsPanelOpen} title="Toggle settings (S)">Settings</button>
       <button type="button" className="history-button shortlink-launch-button" onClick={() => void handleCopyShortlink()} title="Copy shortlink">Copy Shortlink</button>
-      {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-a ${isAutoPlayAEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayAEnabled((c) => !c)} aria-pressed={isAutoPlayAEnabled} title={`Auto-play A (${autoPlayDelayMs}ms)`}>Auto Play A</button>}
-      {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-b ${isAutoPlayBEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayBEnabled((c) => !c)} aria-pressed={isAutoPlayBEnabled} title={`Auto-play B (${autoPlayDelayMs}ms)`}>Auto Play B</button>}
+      {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-a ${isAutoPlayAEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayAEnabled((c) => !c)} aria-pressed={isAutoPlayAEnabled} title={`Auto-play A (${autoPlayDelayMs}ms)`} disabled={!!gameOver}>Auto Play A</button>}
+      {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-b ${isAutoPlayBEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayBEnabled((c) => !c)} aria-pressed={isAutoPlayBEnabled} title={`Auto-play B (${autoPlayDelayMs}ms)`} disabled={!!gameOver}>Auto Play B</button>}
 
       <HistoryModal
         isOpen={isHistoryModalOpen}
@@ -453,6 +468,7 @@ function App() {
       <audio key={selectedMusicTrack.id} ref={musicAudioRef} src={selectedMusicTrack.source} loop autoPlay muted={isMusicMuted} />
 
       <main key={`battle-${resetEpoch}`} className="dual-screens">
+        {gameOverMessage ? <div className="game-over-banner" role="status" aria-live="polite">{gameOverMessage}</div> : null}
         <PlayerScreen key="screen-a" title="CMD Hero Fights" selfId={heroAId} enemyId={heroBId} selfSideKey="a" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroAId)} onUseEntityActive={createEntityActiveHandler(heroAId)} onPressLuck={createSimpleActionHandler(heroAId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroAId, 'endTurn')} onPlayCard={createPlayCardHandler(heroAId)} onOpenDeckEditor={() => handleOpenDeckEditor(0)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} />
         <PlayerScreen key="screen-b" title="CMD Hero Fights" selfId={heroBId} enemyId={heroAId} selfSideKey="b" preview={runtime.preview} shouldShowDetailedTooltips={isShiftHeld || showDetailedTooltips} showDetailedTooltipsToggle={showDetailedTooltips} onToggleDetailedTooltips={() => setShowDetailedTooltips((c) => !c)} onBasicAttack={createBasicAttackHandler(heroBId)} onUseEntityActive={createEntityActiveHandler(heroBId)} onPressLuck={createSimpleActionHandler(heroBId, 'pressLuck')} onEndTurn={createSimpleActionHandler(heroBId, 'endTurn')} onPlayCard={createPlayCardHandler(heroBId)} onOpenDeckEditor={() => handleOpenDeckEditor(1)} onOpenRulebook={handleOpenRulebook} onHardReroll={handleHardReroll} isMusicMuted={isMusicMuted} onToggleMusic={() => setIsMusicMuted((c) => !c)} showMusicControl isRulebookOpen={isRulebookOpen} />
       </main>

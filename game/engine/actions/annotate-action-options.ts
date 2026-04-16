@@ -13,6 +13,36 @@ export function annotateBattleStateWithActionOptions(options: {
   registry: ContentRegistry;
 }): BattleState {
   const { state, registry } = options;
+
+  if (state.gameOver) {
+    const nextEntitiesById: BattleState["entitiesById"] = {};
+
+    for (const [entityId, entity] of Object.entries(state.entitiesById)) {
+      if (entity.kind !== "hero") {
+        nextEntitiesById[entityId] = entity;
+        continue;
+      }
+
+      nextEntitiesById[entityId] = {
+        ...entity,
+        handCards: entity.handCards.map((handCard) => ({
+          id: handCard.id,
+          cardDefinitionId: handCard.cardDefinitionId,
+          isPlayable: false,
+          validTargetEntityIds: undefined,
+          validPlacementPositions: undefined,
+        })),
+        basicAttackTargetEntityIds: [],
+        entityActiveOptions: [],
+      };
+    }
+
+    return {
+      ...state,
+      entitiesById: nextEntitiesById,
+    };
+  }
+
   const activeHeroEntityId = state.turn.activeHeroEntityId;
 
   const nextEntitiesById: BattleState["entitiesById"] = {};

@@ -107,12 +107,20 @@ export const TurnStateSchema = z.object({
 });
 export type TurnState = z.infer<typeof TurnStateSchema>;
 
+export const BattleGameOverStateSchema = z.object({
+  winnerHeroEntityId: EntityIdSchema.nullable(),
+  loserHeroEntityId: EntityIdSchema.nullable(),
+  endedOnTurnNumber: z.number().int().positive(),
+});
+export type BattleGameOverState = z.infer<typeof BattleGameOverStateSchema>;
+
 export const BattleStateSchema = z.object({
   battleId: BattleIdSchema,
   seed: z.string().min(1),
   heroEntityIds: z.tuple([EntityIdSchema, EntityIdSchema]),
   luck: BattleLuckStateSchema,
   turn: TurnStateSchema,
+  gameOver: BattleGameOverStateSchema.nullable().default(null),
   entitiesById: z.record(EntityIdSchema, BattlefieldEntityStateSchema),
   battlefieldOccupancy: BattlefieldOccupancySchema,
   activeListeners: z.array(ListenerDefinitionSchema),

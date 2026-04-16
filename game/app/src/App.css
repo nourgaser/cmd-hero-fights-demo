@@ -160,3 +160,30 @@
     transform: none;
   }
 }
+
+.game-over-banner {
+  position: fixed;
+  top: 70px;
+  left: 50%;
+  transform: translateX(-50%);
+  z-index: 70;
+  padding: 10px 16px;
+  border-radius: 12px;
+  border: 2px solid color-mix(in srgb, #25140d 78%, #ffffff 22%);
+  background: linear-gradient(180deg, #ffebb0 0%, #f7c86d 100%);
+  color: #2d1a0c;
+  font-family: var(--display);
+  font-size: clamp(15px, 1.1vw, 18px);
+  font-weight: 700;
+  letter-spacing: 0.2px;
+  box-shadow: 0 8px 22px rgba(0, 0, 0, 0.24);
+  text-align: center;
+}
+
+@media (max-width: 900px) {
+  .game-over-banner {
+    top: 62px;
+    width: min(92vw, 520px);
+    font-size: 15px;
+  }
+}

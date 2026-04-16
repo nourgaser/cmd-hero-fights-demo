@@ -236,6 +236,7 @@ export function createBattle(input: CreateBattleInput): CreatedBattle {
       pressLuckUsedThisTurn: false,
       damageTakenThisTurnByHeroEntityId: {},
     },
+    gameOver: null,
     entitiesById: {
       [heroAState.entityId]: heroAState,
       [heroBState.entityId]: heroBState,

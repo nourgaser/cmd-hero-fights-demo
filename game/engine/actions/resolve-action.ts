@@ -43,6 +43,54 @@ export type ResolveActionResult =
       reason: string;
     };
 
+function resolveGameOverState(state: BattleState): BattleState["gameOver"] {
+  const defeatedHeroIds = (state.heroEntityIds as string[]).filter((heroEntityId) => {
+    const hero = state.entitiesById[heroEntityId];
+    return hero?.kind === "hero" && hero.currentHealth <= 0;
+  });
+
+  if (defeatedHeroIds.length === 0) {
+    return null;
+  }
+
+  if (defeatedHeroIds.length === 1) {
+    const loserHeroEntityId = defeatedHeroIds[0]!;
+    const winnerHeroEntityId = (state.heroEntityIds as string[]).find(
+      (heroEntityId) => heroEntityId !== loserHeroEntityId,
+    );
+
+    return {
+      winnerHeroEntityId: winnerHeroEntityId ?? null,
+      loserHeroEntityId,
+      endedOnTurnNumber: state.turn.turnNumber,
+    };
+  }
+
+  return {
+    winnerHeroEntityId: null,
+    loserHeroEntityId: null,
+    endedOnTurnNumber: state.turn.turnNumber,
+  };
+}
+
+function buildGameOverMessage(options: {
+  state: BattleState;
+  gameOver: NonNullable<BattleState["gameOver"]>;
+}): string {
+  const { state, gameOver } = options;
+
+  if (!gameOver.winnerHeroEntityId || !gameOver.loserHeroEntityId) {
+    return "Battle ended in a draw.";
+  }
+
+  const winner = state.entitiesById[gameOver.winnerHeroEntityId];
+  if (winner?.kind === "hero") {
+    return `${winner.heroDefinitionId} wins the battle.`;
+  }
+
+  return `${gameOver.winnerHeroEntityId} wins the battle.`;
+}
+
 export function resolveAction(options: {
   state: BattleState;
   action: BattleAction;
@@ -57,6 +105,14 @@ export function resolveAction(options: {
     battleRng,
     registry,
   } = options;
+
+  if (state.gameOver) {
+    return {
+      ok: false,
+      state,
+      reason: "Battle is already over.",
+    };
+  }
 
   let baseResult: ResolveActionResult;
 
@@ -163,14 +219,24 @@ export function resolveAction(options: {
     };
   }
 
+  const nextGameOver = resolveGameOverState(listenerResolution.state);
+  const nextState = nextGameOver
+    ? {
+        ...listenerResolution.state,
+        gameOver: nextGameOver,
+      }
+    : listenerResolution.state;
+
   return {
     ok: true,
     state: annotateBattleStateWithActionOptions({
-      state: listenerResolution.state,
+      state: nextState,
       registry,
     }),
     events: [...eventsAfterCleanup, ...listenerResolution.events],
     nextSequence: listenerResolution.nextSequence,
-    resultMessage: baseResult.resultMessage,
+    resultMessage: nextGameOver
+      ? `${baseResult.resultMessage} ${buildGameOverMessage({ state: nextState, gameOver: nextGameOver })}`
+      : baseResult.resultMessage,
   };
 }
