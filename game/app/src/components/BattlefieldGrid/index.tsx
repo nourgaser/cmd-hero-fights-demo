@@ -17,7 +17,7 @@ type BattlefieldGridProps = {
   highlightedTargetEntityIds?: string[]
   selectedTargetEntityId?: string | null
   selectedEntityConfirmId?: string | null
-  targetSelectionPreviewsByEntityId?: Record<string, { text: string; tone: 'neutral' | 'positive' | 'negative'; detail: string }>
+  targetSelectionPreviewsByEntityId?: Record<string, { text: string; subtext?: string; tone: 'neutral' | 'positive' | 'negative'; detail: string }>
   onSelectTargetEntityId?: (entityId: string) => void
   onSelectEntityId?: (entityId: string) => void
   onInspectEntity?: (entityId: string) => void
@@ -289,6 +289,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
                 {targetSelectionPreview && isSelectableTarget ? (
                   <span className={`target-selection-badge ${targetSelectionPreview.tone}`.trim()} title={targetSelectionPreview.detail} aria-hidden="true">
                     {targetSelectionPreview.text}
+                    {targetSelectionPreview.subtext ? <span className="target-selection-badge-subtext">{targetSelectionPreview.subtext}</span> : null}
                   </span>
                 ) : null}
 

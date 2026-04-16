@@ -28,16 +28,24 @@
   top: 106px;
 }
 
+.shortlink-copy-button {
+  top: 106px;
+}
+
+.shortlink-paste-button {
+  top: 150px;
+}
+
 .auto-play-button {
   min-width: 112px;
 }
 
 .auto-play-button-a {
-  top: 150px;
+  top: 194px;
 }
 
 .auto-play-button-b {
-  top: 194px;
+  top: 238px;
 }
 
 .auto-play-button-active {

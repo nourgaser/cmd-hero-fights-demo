@@ -66,6 +66,95 @@ export function encodeReplayUrlPayload(payload: ReplayUrlPayload): string {
   return base64UrlEncodeBytes(compressed)
 }
 
+function findUrlLikeText(text: string): string | null {
+  return text.match(/https?:\/\/[^\s]+/i)?.[0] ?? null
+}
+
+function isIsGdShortlinkUrl(text: string): boolean {
+  try {
+    return new URL(text).hostname === 'is.gd'
+  } catch {
+    return false
+  }
+}
+
+export function extractReplayHashFromText(text: string): string | null {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  if (trimmed.startsWith('#')) {
+    return trimmed
+  }
+
+  if (trimmed.startsWith('replay=')) {
+    return `#${trimmed}`
+  }
+
+  const urlLikeText = findUrlLikeText(trimmed)
+  if (urlLikeText) {
+    try {
+      const url = new URL(urlLikeText)
+      return url.hash || null
+    } catch {
+      return null
+    }
+  }
+
+  const hashIndex = trimmed.indexOf('#')
+  if (hashIndex >= 0) {
+    return trimmed.slice(hashIndex)
+  }
+
+  return null
+}
+
+async function resolveReplayShortlinkUrl(text: string): Promise<string | null> {
+  const urlLikeText = findUrlLikeText(text)
+  if (!urlLikeText) {
+    return null
+  }
+
+  let url: URL
+  try {
+    url = new URL(urlLikeText)
+  } catch {
+    return null
+  }
+
+  if (!isIsGdShortlinkUrl(url.toString())) {
+    return null
+  }
+
+  try {
+    const response = await fetch(url.toString(), {
+      redirect: 'follow',
+      credentials: 'omit',
+    })
+    return response.url || null
+  } catch {
+    return null
+  }
+}
+
+export async function resolveReplayHashFromClipboardText(text: string): Promise<string | null> {
+  const trimmed = text.trim()
+  if (!trimmed) {
+    return null
+  }
+
+  const resolvedShortlinkUrl = await resolveReplayShortlinkUrl(trimmed)
+  if (resolvedShortlinkUrl) {
+    const resolvedHash = extractReplayHashFromText(resolvedShortlinkUrl)
+    if (resolvedHash) {
+      return resolvedHash
+    }
+  }
+
+  return extractReplayHashFromText(trimmed)
+}
+
 export function decodeReplayUrlPayload(encoded: string): ReplayUrlPayload | null {
   try {
     const compressed = base64UrlDecodeBytes(encoded)

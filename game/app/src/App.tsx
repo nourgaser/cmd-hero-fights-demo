@@ -39,7 +39,7 @@ import { useReplayHistory } from './app-shell/useReplayHistory'
 import { useAppActions } from './app-shell/useAppActions'
 import { useTimeline } from './app-shell/useTimeline'
 import { DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from './data/game-bootstrap'
-import { createReplayUrlPayload } from './utils/replay-url'
+import { createReplayUrlPayload, resolveReplayHashFromClipboardText } from './utils/replay-url'
 import { replaySessionFromActionLog } from './game-client-session'
 
 type IsGdCreateResponse = {
@@ -349,7 +349,31 @@ function App() {
   const handleReplayBarDragStart = (e: React.MouseEvent | React.TouchEvent) => { if ((e.target as HTMLElement).closest('button, input, a')) return; let cX: number, cY: number; if ('touches' in e) { if (!e.touches[0]) return; cX = e.touches[0].clientX; cY = e.touches[0].clientY } else { cX = e.clientX; cY = e.clientY }; replayBarDragStateRef.current = { isDragging: true, startX: cX, startY: cY, offsetX: replayBarPosition.x, offsetY: replayBarPosition.y } }
   const handleReplayBarResetPosition = () => { setReplayBarPosition({ x: 0, y: 0 }); window.localStorage.removeItem('REPLAY_BAR_POSITION'); replayBarDragStateRef.current = { isDragging: false, startX: 0, startY: 0, offsetX: 0, offsetY: 0 } }
 
-  const handleCopyShortlink = async () => { const url = typeof window !== 'undefined' ? window.location.href : ''; if (!url) { showActionErrorToast('Cannot copy shortlink outside browser mode.'); return }; const src = url.includes('#replay=') ? url.slice(url.indexOf('#replay=') + 8) : url; const hex = await sha256Hex(src); if (!hex) { try { await navigator.clipboard.writeText(url); showActionErrorToast('Failed to hash replay for shortlink. Copied full replay URL instead.') } catch { showActionErrorToast('Failed to hash replay for shortlink and failed to copy fallback replay URL.') }; return }; const alias = buildReplayShortAlias(hex); const sl = buildIsGdShortlink(alias); try { const params = new URLSearchParams({ format: 'json', url, shorturl: alias }); const resp = await fetch(`https://is.gd/create.php?${params.toString()}`); const p = (await resp.json()) as IsGdCreateResponse; if (typeof p.shorturl === 'string' && p.shorturl.length > 0) { await navigator.clipboard.writeText(p.shorturl); showActionSuccessToast('Shortlink copied to clipboard.', []); return }; if (p.errorcode === 2 && /taken|already|in use|exists/i.test(p.errormessage ?? '')) { await navigator.clipboard.writeText(sl); showActionSuccessToast('Existing shortlink copied to clipboard.', []); return }; throw new Error(p.errormessage) } catch { try { await navigator.clipboard.writeText(url); showActionErrorToast('Failed to create shortlink. Copied full replay URL instead.') } catch { showActionErrorToast('Failed to create shortlink and failed to copy fallback replay URL.') } } }
+  const handleCopyShortlink = async () => { const url = typeof window !== 'undefined' ? window.location.href : ''; if (!url) { showActionErrorToast('Cannot copy match outside browser mode.'); return }; const src = url.includes('#replay=') ? url.slice(url.indexOf('#replay=') + 8) : url; const hex = await sha256Hex(src); if (!hex) { try { await navigator.clipboard.writeText(url); showActionErrorToast('Failed to hash match for shortlink. Copied full replay URL instead.') } catch { showActionErrorToast('Failed to hash match for shortlink and failed to copy fallback replay URL.') }; return }; const alias = buildReplayShortAlias(hex); const sl = buildIsGdShortlink(alias); try { const params = new URLSearchParams({ format: 'json', url, shorturl: alias }); const resp = await fetch(`https://is.gd/create.php?${params.toString()}`); const p = (await resp.json()) as IsGdCreateResponse; if (typeof p.shorturl === 'string' && p.shorturl.length > 0) { await navigator.clipboard.writeText(p.shorturl); showActionSuccessToast('Match copied to clipboard.', []); return }; if (p.errorcode === 2 && /taken|already|in use|exists/i.test(p.errormessage ?? '')) { await navigator.clipboard.writeText(sl); showActionSuccessToast('Existing match link copied to clipboard.', []); return }; throw new Error(p.errormessage) } catch { try { await navigator.clipboard.writeText(url); showActionErrorToast('Failed to create match shortlink. Copied full replay URL instead.') } catch { showActionErrorToast('Failed to create match shortlink and failed to copy fallback replay URL.') } } }
+
+  const handlePasteShortlink = async () => {
+    if (typeof window === 'undefined') {
+      showActionErrorToast('Cannot paste match outside browser mode.')
+      return
+    }
+
+    try {
+      const clipboardText = await navigator.clipboard.readText()
+      const replayHash = await resolveReplayHashFromClipboardText(clipboardText)
+      if (!replayHash) {
+        showActionErrorToast('Clipboard does not contain a match link or hash.')
+        return
+      }
+
+      const normalizedHash = replayHash.startsWith('#') ? replayHash : `#${replayHash}`
+      if (window.location.hash !== normalizedHash) {
+        window.location.hash = normalizedHash
+      }
+      showActionSuccessToast('Match pasted from clipboard.', [])
+    } catch {
+      showActionErrorToast('Failed to paste match from clipboard.')
+    }
+  }
 
   if (!runtime) return <main className="dual-screens"><section className="screen"><h1>CMD Hero Fights</h1><p>Something went wrong.</p><pre className="preview">{startupError ?? 'Failed to create battle preview.'}</pre></section></main>
 
@@ -419,7 +443,8 @@ function App() {
       <div key={`announcement-${liveAnnouncement.id}`} className="sr-only" aria-live="polite" aria-atomic="true">{liveAnnouncement.text}</div>
       <button type="button" className="history-button" onClick={() => setIsHistoryModalOpen(true)} aria-haspopup="dialog" aria-expanded={isHistoryModalOpen || isReplayModeOpen}>History ({playerFacingHistoryCount})</button>
       <button type="button" className={`history-button settings-launch-button ${isSettingsPanelOpen ? 'settings-launch-button-active' : ''}`} onClick={() => setIsSettingsPanelOpen((c) => !c)} aria-haspopup="dialog" aria-expanded={isSettingsPanelOpen} title="Toggle settings (S)">Settings</button>
-      <button type="button" className="history-button shortlink-launch-button" onClick={() => void handleCopyShortlink()} title="Copy shortlink">Copy Shortlink</button>
+      <button type="button" className="history-button shortlink-launch-button shortlink-copy-button" onClick={() => void handleCopyShortlink()} title="Copy match link">Copy Match</button>
+      <button type="button" className="history-button shortlink-launch-button shortlink-paste-button" onClick={() => void handlePasteShortlink()} title="Paste match link from clipboard">Paste Match</button>
       {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-a ${isAutoPlayAEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayAEnabled((c) => !c)} aria-pressed={isAutoPlayAEnabled} title={`Auto-play A (${autoPlayDelayMs}ms)`} disabled={!!gameOver}>Auto Play A</button>}
       {autoPlayButtonsVisible && <button type="button" className={`history-button auto-play-button auto-play-button-b ${isAutoPlayBEnabled ? 'auto-play-button-active' : ''}`} onClick={() => setIsAutoPlayBEnabled((c) => !c)} aria-pressed={isAutoPlayBEnabled} title={`Auto-play B (${autoPlayDelayMs}ms)`} disabled={!!gameOver}>Auto Play B</button>}
 

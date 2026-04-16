@@ -15,6 +15,7 @@ import './style.css'
 
 type TargetSelectionPreview = {
   text: string
+  subtext?: string
   tone: 'neutral' | 'positive' | 'negative'
   detail: string
 }
@@ -39,19 +40,20 @@ function buildTargetSelectionPreview(options: {
     const missingHealth = Math.max(0, targetStats.maxHealth - targetStats.currentHealth)
     const minimum = Math.max(0, Math.round(Math.min(sourcePreview.minimum, missingHealth)))
     const maximum = Math.max(0, Math.round(Math.min(sourcePreview.maximum, missingHealth)))
-    const rangeText = minimum === maximum
-      ? `${formatPreviewNumber(minimum)} HP`
-      : `${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)} HP`
     const remainingMinimum = Math.min(targetStats.maxHealth, targetStats.currentHealth + minimum)
     const remainingMaximum = Math.min(targetStats.maxHealth, targetStats.currentHealth + maximum)
     const remainingText = remainingMinimum === remainingMaximum
       ? `${formatPreviewNumber(remainingMinimum)} HP`
       : `${formatPreviewNumber(remainingMinimum)}-${formatPreviewNumber(remainingMaximum)} HP`
+    const compactText = minimum === maximum
+      ? `+${formatPreviewNumber(minimum)}`
+      : `+${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)}`
 
     return {
-      text: `+${rangeText}`,
+      text: compactText,
+      subtext: sourcePreview.canBeDodged ? `${formatPreviewNumber(Math.round((1 - targetStats.effectiveDodgeChance) * 100))}% hit` : undefined,
       tone: 'positive',
-      detail: `Heals ${rangeText}. Ends at ${remainingText}.`,
+      detail: `Heals ${minimum === maximum ? `+${formatPreviewNumber(minimum)}` : `+${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)}`} HP. Ends at ${remainingText}.`,
     }
   }
 
@@ -73,17 +75,14 @@ function buildTargetSelectionPreview(options: {
     : 0
   const minimum = Math.max(0, Math.round(sourcePreview.minimum - resistance) + Math.round(sourceFlatBonusDamage))
   const maximum = Math.max(0, Math.round(sourcePreview.maximum - resistance) + Math.round(sourceFlatBonusDamage))
-  const rangeText = minimum === maximum
-    ? `${formatPreviewNumber(minimum)} damage`
-    : `${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)} damage`
   const remainingMinimum = Math.max(0, targetStats.currentHealth - maximum)
   const remainingMaximum = Math.max(0, targetStats.currentHealth - minimum)
   const remainingText = remainingMinimum === remainingMaximum
     ? `${formatPreviewNumber(remainingMinimum)} HP left`
     : `${formatPreviewNumber(remainingMinimum)}-${formatPreviewNumber(remainingMaximum)} HP left`
-  const hitChanceText = sourcePreview.canBeDodged
-    ? `, ${formatPreviewNumber(Math.round((1 - targetStats.effectiveDodgeChance) * 100))}% hit`
-    : ''
+  const compactText = minimum === maximum
+    ? `${formatPreviewNumber(minimum)}`
+    : `${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)}`
   const reactionNotes = [
     targetStats.activeListeners.some((listener) => /reflect/i.test(listener.listenerId) || /reflect/i.test(listener.label))
       ? 'reflect'
@@ -91,7 +90,8 @@ function buildTargetSelectionPreview(options: {
   ].filter((part): part is string => !!part)
 
   return {
-    text: `${rangeText}${hitChanceText}`,
+    text: compactText,
+    subtext: sourcePreview.canBeDodged ? `${formatPreviewNumber(Math.round((1 - targetStats.effectiveDodgeChance) * 100))}% hit` : undefined,
     tone: maximum > 0 ? 'positive' : 'negative',
     detail: [
       `After resistance${sourcePreview.canBeDodged ? ' and dodge' : ''}.`,
