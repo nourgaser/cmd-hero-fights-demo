@@ -1,4 +1,4 @@
-import { describe, expect, it } from 'bun:test'
+import { describe, expect, it } from 'vitest'
 import seedrandom from 'seedrandom'
 
 import {
@@ -21,7 +21,7 @@ import {
   decodeReplayUrlPayload,
   encodeReplayUrlPayload,
 } from '../game/app/src/utils/replay-url'
-import { DEFAULT_GAME_BOOTSTRAP_CONFIG } from '../game/app/src/data/game-bootstrap'
+import { CARD_IDS, DEFAULT_GAME_BOOTSTRAP_CONFIG, type GameBootstrapConfig } from '../game/app/src/data/game-bootstrap'
 
 type Runtime = ReturnType<typeof createRuntimeFromConfig>
 
@@ -44,6 +44,27 @@ type PlannedAction =
   | {
       kind: 'pressLuck' | 'endTurn'
     }
+
+// Every card in CARD_IDS to exercise all effect types, listeners, auras,
+// random targeting selectors, and cast conditions under replay.
+const FULL_COVERAGE_DECK = Object.values(CARD_IDS)
+
+function createFullCoverageConfig(seed: string): GameBootstrapConfig {
+  return {
+    ...DEFAULT_GAME_BOOTSTRAP_CONFIG,
+    seed,
+    heroes: [
+      {
+        ...DEFAULT_GAME_BOOTSTRAP_CONFIG.heroes[0],
+        openingDeckCardIds: [...FULL_COVERAGE_DECK],
+      },
+      {
+        ...DEFAULT_GAME_BOOTSTRAP_CONFIG.heroes[1],
+        openingDeckCardIds: [...FULL_COVERAGE_DECK],
+      },
+    ],
+  }
+}
 
 function pick<T>(rng: seedrandom.PRNG, items: T[]): T | null {
   if (items.length === 0) {
@@ -267,7 +288,7 @@ describe('replay determinism', () => {
         seed: `replay-seed-${run}`,
       })
 
-      for (let step = 0; step < 20; step += 1) {
+      for (let step = 0; step < 50; step += 1) {
         runtime = applyPlannedAction(runtime, planAction(runtime, rng))
         const timelineSnapshots = getActionTimelineSnapshots(runtime.session)
         const timelineIndex = Math.floor(rng() * timelineSnapshots.length)
@@ -284,7 +305,7 @@ describe('replay determinism', () => {
         seed: `replay-live-seed-${run}`,
       })
 
-      for (let step = 0; step < 20; step += 1) {
+      for (let step = 0; step < 50; step += 1) {
         runtime = applyPlannedAction(runtime, planAction(runtime, rng))
         expectReplayRoundtripMatchesCurrentView(runtime)
       }
@@ -344,11 +365,67 @@ describe('replay determinism', () => {
       seed: 'replay-all-snapshots-seed',
     })
 
-    for (let step = 0; step < 24; step += 1) {
+    for (let step = 0; step < 60; step += 1) {
       runtime = applyPlannedAction(runtime, planAction(runtime, rng))
     }
 
     expectReplayRoundtripMatchesEverySnapshot(runtime)
+  })
+
+  it('roundtrips the initial state before any actions are taken', () => {
+    const runtime = createRuntimeFromConfig({
+      ...DEFAULT_GAME_BOOTSTRAP_CONFIG,
+      seed: 'initial-state-seed',
+    })
+    expectReplayRoundtripMatchesSnapshot({ runtime, timelineIndex: 0 })
+  })
+
+  it('roundtrips with the full card pool covering all effect types and selectors', () => {
+    for (let run = 0; run < 4; run += 1) {
+      const rng = seedrandom(`full-coverage-${run}`)
+      let runtime = createRuntimeFromConfig(createFullCoverageConfig(`full-coverage-seed-${run}`))
+
+      for (let step = 0; step < 80; step += 1) {
+        runtime = applyPlannedAction(runtime, planAction(runtime, rng))
+        const timelineSnapshots = getActionTimelineSnapshots(runtime.session)
+        const timelineIndex = Math.floor(rng() * timelineSnapshots.length)
+        expectReplayRoundtripMatchesSnapshot({ runtime, timelineIndex })
+      }
+    }
+  })
+
+  it('roundtrips every snapshot with the full card pool', () => {
+    const rng = seedrandom('full-coverage-all-snapshots')
+    let runtime = createRuntimeFromConfig(createFullCoverageConfig('full-coverage-all-snapshots-seed'))
+
+    for (let step = 0; step < 80; step += 1) {
+      runtime = applyPlannedAction(runtime, planAction(runtime, rng))
+    }
+
+    expectReplayRoundtripMatchesEverySnapshot(runtime)
+  })
+
+  it('roundtrips matches that reach low hero health (castCondition and endgame states)', () => {
+    // Run many steps with aggressive seeds to push heroes toward low health,
+    // exercising castCondition-gated cards (chaaarge requires health < 15)
+    // and verifying replay determinism when entity health reaches 0.
+    for (let run = 0; run < 3; run += 1) {
+      const rng = seedrandom(`endgame-${run}`)
+      let runtime = createRuntimeFromConfig(createFullCoverageConfig(`endgame-seed-${run}`))
+
+      for (let step = 0; step < 150; step += 1) {
+        runtime = applyPlannedAction(runtime, planAction(runtime, rng))
+      }
+
+      expectReplayRoundtripMatchesCurrentView(runtime)
+
+      // Verify a spread of snapshots rather than every one to stay within timeout.
+      const timelineSnapshots = getActionTimelineSnapshots(runtime.session)
+      const sampleIndices = [0, Math.floor(timelineSnapshots.length / 4), Math.floor(timelineSnapshots.length / 2), Math.floor(timelineSnapshots.length * 3 / 4), timelineSnapshots.length - 1]
+      for (const timelineIndex of sampleIndices) {
+        expectReplayRoundtripMatchesSnapshot({ runtime, timelineIndex })
+      }
+    }
   })
 
   it('does not mutate the source session when resolving the same action twice', () => {
