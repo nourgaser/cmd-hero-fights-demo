@@ -2,7 +2,7 @@ import { LUCK_STEP_RATIO } from '../../../../shared/game-constants'
 import { luckBiasForHero } from '../../../../engine/core/luck'
 import { renderEffectDisplayText } from '../../../../shared/models'
 import { formatPreviewNumber, formatSignedDelta } from '../../utils/game-client-format'
-import type { AppNumberTrace } from '../types'
+import type { AppNumberTrace, AppTargetPreview } from '../types'
 import {
   numberTraceToDetailLine,
 } from './number-trace'
@@ -71,6 +71,7 @@ export function buildHeroBasicAttackSummary(options: {
   summaryDetailText: string
   summaryTone: 'neutral' | 'positive' | 'negative'
   currentRangeText: string
+  targetPreview: AppTargetPreview
 } {
   const {
     heroName,
@@ -143,6 +144,16 @@ export function buildHeroBasicAttackSummary(options: {
           ? 'negative'
           : 'neutral',
     currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage before dodge and resistance.`,
+    targetPreview: {
+      kind: 'damage',
+      minimum: adjusted.minimum,
+      maximum: adjusted.maximum,
+      damageType: attack.damageType,
+      canBeDodged: true,
+      summaryText,
+      summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${attackFlatBonusDamageTrace.effective !== 0 ? `\nFlat attack bonus is added after resistance: +${formatPreviewNumber(attackFlatBonusDamageTrace.effective)}.` : ''}${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
+      currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} damage before dodge and resistance.`,
+    },
   }
 }
 
@@ -182,6 +193,7 @@ export function buildEntityActiveSummary(options: {
   summaryDetailText: string | null
   summaryTone: 'neutral' | 'positive' | 'negative'
   currentRangeText: string
+  targetPreview: AppTargetPreview | null
 } {
   const {
     rollingHeroEntityId,
@@ -204,6 +216,7 @@ export function buildEntityActiveSummary(options: {
       summaryDetailText: summary,
       summaryTone: 'neutral',
       currentRangeText: summary,
+      targetPreview: null,
     }
   }
 
@@ -268,5 +281,15 @@ export function buildEntityActiveSummary(options: {
           ? 'negative'
           : 'neutral',
     currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
+    targetPreview: {
+      kind: 'damage',
+      minimum: adjusted.minimum,
+      maximum: adjusted.maximum,
+      damageType: attack.damageType,
+      canBeDodged: attack.canBeDodged,
+      summaryText,
+      summaryDetailText: `${summaryText}\nCurrent pre-luck range: ${formatPreviewNumber(minimum)} to ${formatPreviewNumber(maximum)}.\nLuck shift: ${adjusted.shift !== 0 ? formatSignedDelta(adjusted.shift) : 'none'}.${attackFlatBonusDamageTrace.effective !== 0 ? `\nFlat attack bonus is added after resistance: +${formatPreviewNumber(attackFlatBonusDamageTrace.effective)}.` : ''}${detailRows.length > 0 ? `\n${detailRows.join('\n')}` : ''}`,
+      currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${attack.damageType} before resistance${attack.canBeDodged ? ' and dodge' : ''}.`,
+    },
   }
 }

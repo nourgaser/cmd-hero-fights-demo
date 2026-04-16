@@ -218,6 +218,49 @@
   pointer-events: none;
 }
 
+.target-selection-badge {
+  position: absolute;
+  right: 4px;
+  bottom: 24px;
+  max-width: calc(100% - 8px);
+  padding: 2px 6px;
+  border-radius: 999px;
+  border: 1px solid color-mix(in srgb, #243140 40%, transparent);
+  background: color-mix(in srgb, #eff6ff 86%, #ffffff 14%);
+  color: #0f1d2f;
+  font-size: 10px;
+  font-weight: 800;
+  letter-spacing: 0.02em;
+  line-height: 1.1;
+  text-transform: uppercase;
+  white-space: nowrap;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  box-shadow:
+    0 2px 6px rgba(0, 0, 0, 0.18),
+    inset 0 1px 0 rgba(255, 255, 255, 0.55);
+  z-index: var(--layer-badge);
+  pointer-events: none;
+}
+
+.target-selection-badge.positive {
+  border-color: color-mix(in srgb, #1f7a34 56%, transparent);
+  background: color-mix(in srgb, #daf4df 82%, #ffffff 18%);
+  color: #135422;
+}
+
+.target-selection-badge.negative {
+  border-color: color-mix(in srgb, #8b2b22 56%, transparent);
+  background: color-mix(in srgb, #f8ddd8 82%, #ffffff 18%);
+  color: #74231d;
+}
+
+.target-selection-badge.neutral {
+  border-color: color-mix(in srgb, #243140 40%, transparent);
+  background: color-mix(in srgb, #eff6ff 86%, #ffffff 14%);
+  color: #0f1d2f;
+}
+
 .entity-luck-clovers {
   position: absolute;
   top: 8px;

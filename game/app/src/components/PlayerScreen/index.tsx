@@ -1,5 +1,6 @@
 import { useEffect, useRef, useState, type CSSProperties } from 'react'
 import type { AppBattlePreview } from '../../game-client'
+import type { AppTargetPreview } from '../../game-client-preview/types'
 import { SIDE_VISUALS } from '../../data/visual-metadata'
 import { BattlefieldGrid } from '../BattlefieldGrid/index'
 import { HandBar } from '../HandBar/index'
@@ -9,7 +10,96 @@ import { PassiveEffectsStrip } from './PassiveEffectsStrip'
 import { usePlayerScreenState } from './usePlayerScreenState'
 import { useKeyboardShortcuts } from './useKeyboardShortcuts'
 import type { LastActionFeedback } from '../../app-shell/useActionsFeedback'
+import { formatPreviewNumber } from '../../utils/game-client-format'
 import './style.css'
+
+type TargetSelectionPreview = {
+  text: string
+  tone: 'neutral' | 'positive' | 'negative'
+  detail: string
+}
+
+function buildTargetSelectionPreview(options: {
+  preview: AppBattlePreview
+  sourceEntityId: string | null
+  sourcePreview: AppTargetPreview | null
+  targetEntityId: string
+}): TargetSelectionPreview | null {
+  const { preview, sourceEntityId, sourcePreview, targetEntityId } = options
+  if (!sourcePreview) {
+    return null
+  }
+
+  const targetStats = preview.battlefield.entitiesById[targetEntityId]
+  if (!targetStats) {
+    return null
+  }
+
+  if (sourcePreview.kind === 'heal') {
+    const missingHealth = Math.max(0, targetStats.maxHealth - targetStats.currentHealth)
+    const minimum = Math.max(0, Math.round(Math.min(sourcePreview.minimum, missingHealth)))
+    const maximum = Math.max(0, Math.round(Math.min(sourcePreview.maximum, missingHealth)))
+    const rangeText = minimum === maximum
+      ? `${formatPreviewNumber(minimum)} HP`
+      : `${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)} HP`
+    const remainingMinimum = Math.min(targetStats.maxHealth, targetStats.currentHealth + minimum)
+    const remainingMaximum = Math.min(targetStats.maxHealth, targetStats.currentHealth + maximum)
+    const remainingText = remainingMinimum === remainingMaximum
+      ? `${formatPreviewNumber(remainingMinimum)} HP`
+      : `${formatPreviewNumber(remainingMinimum)}-${formatPreviewNumber(remainingMaximum)} HP`
+
+    return {
+      text: `+${rangeText}`,
+      tone: 'positive',
+      detail: `Heals ${rangeText}. Ends at ${remainingText}.`,
+    }
+  }
+
+  if (targetStats.isImmune) {
+    return {
+      text: 'Immune',
+      tone: 'negative',
+      detail: 'Target is immune to damage.',
+    }
+  }
+
+  const resistance = sourcePreview.damageType === 'physical'
+    ? targetStats.armor
+    : sourcePreview.damageType === 'magic'
+      ? targetStats.magicResist
+      : 0
+  const sourceFlatBonusDamage = sourceEntityId
+    ? preview.battlefield.entitiesById[sourceEntityId]?.combatNumbers.attackFlatBonusDamage.effective ?? 0
+    : 0
+  const minimum = Math.max(0, Math.round(sourcePreview.minimum - resistance) + Math.round(sourceFlatBonusDamage))
+  const maximum = Math.max(0, Math.round(sourcePreview.maximum - resistance) + Math.round(sourceFlatBonusDamage))
+  const rangeText = minimum === maximum
+    ? `${formatPreviewNumber(minimum)} damage`
+    : `${formatPreviewNumber(minimum)}-${formatPreviewNumber(maximum)} damage`
+  const remainingMinimum = Math.max(0, targetStats.currentHealth - maximum)
+  const remainingMaximum = Math.max(0, targetStats.currentHealth - minimum)
+  const remainingText = remainingMinimum === remainingMaximum
+    ? `${formatPreviewNumber(remainingMinimum)} HP left`
+    : `${formatPreviewNumber(remainingMinimum)}-${formatPreviewNumber(remainingMaximum)} HP left`
+  const hitChanceText = sourcePreview.canBeDodged
+    ? `, ${formatPreviewNumber(Math.round((1 - targetStats.effectiveDodgeChance) * 100))}% hit`
+    : ''
+  const reactionNotes = [
+    targetStats.activeListeners.some((listener) => /reflect/i.test(listener.listenerId) || /reflect/i.test(listener.label))
+      ? 'reflect'
+      : null,
+  ].filter((part): part is string => !!part)
+
+  return {
+    text: `${rangeText}${hitChanceText}`,
+    tone: maximum > 0 ? 'positive' : 'negative',
+    detail: [
+      `After resistance${sourcePreview.canBeDodged ? ' and dodge' : ''}.`,
+      `Leaves target at ${remainingText}.`,
+      reactionNotes.length > 0 ? `Status: ${reactionNotes.join(', ')}.` : null,
+    ].filter((part): part is string => !!part).join(' '),
+  }
+}
 
 type PlayerScreenProps = {
   title: string
@@ -103,6 +193,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
     basicAttackTargetEntityIds,
     entityActiveSourceIds,
     selectedEntityConfirmId,
+    entityActiveTargetEntityIds,
     highlightedPlacementPositions,
     highlightedTargetEntityIds,
     pressLuckMoveCost,
@@ -142,6 +233,39 @@ export function PlayerScreen(props: PlayerScreenProps) {
     focusedCard.isPlayable &&
     (focusedCard.validTargetEntityIds.length === 0 || !!selectedTargetEntityId) &&
     (focusedCard.validPlacementPositions.length === 0 || !!selectedPlacementPosition)
+
+  const activeTargetPreview = focusedCard?.targetPreview ?? (pendingActionMode === 'entityActiveTarget'
+    ? selectedEntityActiveSourceId === selfId
+      ? selfHeroDetails?.basicAttack.targetPreview ?? null
+      : selectedEntityActiveSourceId
+        ? preview.battlefield.entitiesById[selectedEntityActiveSourceId]?.activeAbility?.targetPreview ?? null
+        : null
+    : null)
+
+  const targetSelectionPreviewsByEntityId = (() => {
+    const targetEntityIds = focusedCard
+      ? focusedCard.validTargetEntityIds
+      : pendingActionMode === 'entityActiveTarget'
+        ? entityActiveTargetEntityIds
+        : []
+
+    if (!activeTargetPreview || targetEntityIds.length === 0) {
+      return {}
+    }
+
+    return targetEntityIds.reduce<Record<string, TargetSelectionPreview>>((result, targetEntityId) => {
+      const previewInfo = buildTargetSelectionPreview({
+        preview,
+        sourceEntityId: focusedCard ? selfId : selectedEntityActiveSourceId,
+        sourcePreview: activeTargetPreview,
+        targetEntityId,
+      })
+      if (previewInfo) {
+        result[targetEntityId] = previewInfo
+      }
+      return result
+    }, {})
+  })()
 
   useKeyboardShortcuts({
     isActivePlayer,
@@ -237,6 +361,7 @@ export function PlayerScreen(props: PlayerScreenProps) {
           highlightedTargetEntityIds={isActivePlayer ? highlightedTargetEntityIds : []}
           selectedTargetEntityId={selectedTargetEntityId}
           selectedEntityConfirmId={selectedEntityConfirmId}
+          targetSelectionPreviewsByEntityId={targetSelectionPreviewsByEntityId}
           onSelectTargetEntityId={isActivePlayer ? handleSelectTarget : undefined}
           onSelectEntityId={isActivePlayer ? handleSelectBattlefieldEntity : undefined}
           onInspectEntity={id => setInspectTarget({ kind: 'entity', entityId: id })}

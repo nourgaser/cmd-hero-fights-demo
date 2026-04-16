@@ -5,7 +5,7 @@ import {
   formatSignedDelta,
   renderTemplatedText,
 } from '../../utils/game-client-format'
-import type { AppNumberTrace } from '../types'
+import type { AppNumberTrace, AppTargetPreview } from '../types'
 import {
   makeStaticNumberTrace,
   numberTraceToDetailLine,
@@ -42,6 +42,7 @@ export function describeNumericCardText(options: {
   summaryText: string
   summaryDetailText: string | null
   summaryTone: 'neutral' | 'positive' | 'negative'
+  targetPreview: AppTargetPreview | null
 } {
   const { card, actorHero, actorNumberTraces, state, gameApi, sourceEntityId, viewMode = 'card', luck } = options
   const firstEffect = card.effects[0]
@@ -55,6 +56,7 @@ export function describeNumericCardText(options: {
       summaryText: defaultSummary,
       summaryDetailText: null,
       summaryTone: 'neutral',
+      targetPreview: null,
     }
   }
 
@@ -160,6 +162,16 @@ export function describeNumericCardText(options: {
           : adjusted.minimum < minimum || adjusted.maximum < maximum
             ? 'negative'
             : 'neutral',
+      targetPreview: {
+        kind: 'damage',
+        minimum: adjusted.minimum,
+        maximum: adjusted.maximum,
+        damageType: damagePayload.damageType,
+        canBeDodged: true,
+        summaryText,
+        summaryDetailText: `${detailLines.length > 0 ? `${detailLines.join('\n')}\n` : ''}Formula: ${detailParts.join(' + ')}.`,
+        currentRangeText: `Current range: ${formatPreviewNumber(adjusted.minimum)} to ${formatPreviewNumber(adjusted.maximum)} ${damagePayload.damageType} damage before dodge and resistance.`,
+      },
     }
   }
 
@@ -243,6 +255,15 @@ export function describeNumericCardText(options: {
       summaryText,
       summaryDetailText: `${detailLines.length > 0 ? `${detailLines.join('\n')}\n` : ''}Heals from ${formatPreviewNumber(effectiveMinimum)} to ${formatPreviewNumber(effectiveMaximum)} HP.`,
       summaryTone: 'positive',
+      targetPreview: {
+        kind: 'heal',
+        minimum: effectiveMinimum,
+        maximum: effectiveMaximum,
+        canBeDodged: false,
+        summaryText,
+        summaryDetailText: `${detailLines.length > 0 ? `${detailLines.join('\n')}\n` : ''}Heals from ${formatPreviewNumber(effectiveMinimum)} to ${formatPreviewNumber(effectiveMaximum)} HP.`,
+        currentRangeText: `Current range: ${formatPreviewNumber(effectiveMinimum)} to ${formatPreviewNumber(effectiveMaximum)} HP.`,
+      },
     }
   }
 
@@ -277,6 +298,7 @@ export function describeNumericCardText(options: {
             : statPayload.amount < 0
               ? 'negative'
               : 'neutral',
+        targetPreview: null,
     }
   }
 
@@ -303,6 +325,7 @@ export function describeNumericCardText(options: {
       summaryText: `Draw ${effectiveAmount} card${effectiveAmount === 1 ? '' : 's'}.`,
       summaryDetailText: `${drawTrace ? `${numberTraceToDetailLine('Draw amount', drawTrace)}\n` : ''}Target: ${String(drawPayload.target)}.`,
       summaryTone: 'positive',
+      targetPreview: null,
     }
   }
 
@@ -327,9 +350,10 @@ export function describeNumericCardText(options: {
 
     if (viewMode === 'entity') {
       return {
-          summaryText: postSummonEffectText ?? passiveFromSummary ?? '',
+        summaryText: postSummonEffectText ?? passiveFromSummary ?? '',
         summaryDetailText: null,
         summaryTone: 'neutral',
+        targetPreview: null,
       }
     }
 
@@ -337,6 +361,7 @@ export function describeNumericCardText(options: {
       summaryText: summonSummary,
       summaryDetailText: null,
       summaryTone: 'neutral',
+      targetPreview: null,
     }
   }
 
@@ -344,6 +369,7 @@ export function describeNumericCardText(options: {
     summaryText: defaultSummary,
     summaryDetailText: null,
     summaryTone: 'neutral',
+    targetPreview: null,
   }
 }
 

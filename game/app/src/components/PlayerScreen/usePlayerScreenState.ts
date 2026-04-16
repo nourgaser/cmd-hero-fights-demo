@@ -269,6 +269,7 @@ export function usePlayerScreenState(options: {
     canUseHeroBasicAttackSource,
     entityActiveSourceIds,
     selectedEntityConfirmId,
+    entityActiveTargetEntityIds,
     highlightedPlacementPositions,
     highlightedTargetEntityIds,
     pressLuckMoveCost,

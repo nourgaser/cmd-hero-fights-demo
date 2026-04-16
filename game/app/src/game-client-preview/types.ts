@@ -11,6 +11,17 @@ export type AppNumberTrace = {
   contributions: AppNumberContributionPreview[]
 }
 
+export type AppTargetPreview = {
+  kind: 'damage' | 'heal'
+  minimum: number
+  maximum: number
+  damageType?: 'physical' | 'magic' | 'true'
+  canBeDodged: boolean
+  summaryText: string
+  summaryDetailText: string | null
+  currentRangeText: string
+}
+
 export type AppBattlePreview = {
   battleId: string
   seed: string
@@ -74,6 +85,7 @@ export type AppBattlePreview = {
         summaryDetailText: string | null
         summaryTone: 'neutral' | 'positive' | 'negative'
         currentRangeText: string
+        targetPreview: AppTargetPreview
       }
     }
   >
@@ -95,6 +107,7 @@ export type AppBattlePreview = {
       summaryDetailText: string | null
       summaryTone: 'neutral' | 'positive' | 'negative'
       castConditionText: string | null
+      targetPreview: AppTargetPreview | null
       isPlayable: boolean
       targeting: 'none' | 'selectedAny' | 'selectedAnyExceptEnemyHero' | 'selectedEnemy' | 'selectedAlly' | 'selectedAllyCompanion'
       validTargetEntityIds: string[]
@@ -210,6 +223,7 @@ export type AppBattlePreview = {
           summaryDetailText: string | null
           summaryTone: 'neutral' | 'positive' | 'negative'
           currentRangeText: string
+          targetPreview: AppTargetPreview | null
         }
       }
     >

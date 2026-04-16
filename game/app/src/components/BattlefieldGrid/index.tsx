@@ -17,6 +17,7 @@ type BattlefieldGridProps = {
   highlightedTargetEntityIds?: string[]
   selectedTargetEntityId?: string | null
   selectedEntityConfirmId?: string | null
+  targetSelectionPreviewsByEntityId?: Record<string, { text: string; tone: 'neutral' | 'positive' | 'negative'; detail: string }>
   onSelectTargetEntityId?: (entityId: string) => void
   onSelectEntityId?: (entityId: string) => void
   onInspectEntity?: (entityId: string) => void
@@ -35,6 +36,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
     highlightedTargetEntityIds = [],
     selectedTargetEntityId,
     selectedEntityConfirmId,
+    targetSelectionPreviewsByEntityId = {},
     onSelectTargetEntityId,
     onSelectEntityId,
     onInspectEntity,
@@ -241,6 +243,7 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
             const attackFlatBonusDamage = combatTraces?.attackFlatBonusDamage.effective ?? 0
             const attackFlatBonusDamageClass = combatTraces ? numberDeltaClass(combatTraces.attackFlatBonusDamage.delta) : 'delta-neutral'
             const armorClass = combatTraces ? numberDeltaClass(combatTraces.armor.delta) : 'delta-neutral'
+            const targetSelectionPreview = targetSelectionPreviewsByEntityId[occupier.entityId] ?? null
 
             return (
               <div
@@ -281,6 +284,12 @@ export function BattlefieldGrid(props: BattlefieldGridProps) {
 
                 {isSelectedConfirmEntity ? (
                   <span className="source-armed-badge" aria-hidden="true">Armed</span>
+                ) : null}
+
+                {targetSelectionPreview && isSelectableTarget ? (
+                  <span className={`target-selection-badge ${targetSelectionPreview.tone}`.trim()} title={targetSelectionPreview.detail} aria-hidden="true">
+                    {targetSelectionPreview.text}
+                  </span>
                 ) : null}
 
                 {luckCloverCount > 0 && luckIsFavored !== null ? (

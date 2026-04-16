@@ -12,16 +12,6 @@ export type ReplayUrlPayload = {
   timelineIndex: number | null
 }
 
-type LegacyReplayUrlPayload = {
-  version: 4
-  bootstrapConfig: GameBootstrapConfig
-  actionLog: Array<{
-    action: ReplayActionLogEntry
-    success: boolean
-  }>
-  timelineIndex: number | null
-}
-
 function base64UrlEncodeBytes(bytes: Uint8Array): string {
   let binary = ''
   for (const byte of bytes) {
@@ -80,19 +70,15 @@ export function decodeReplayUrlPayload(encoded: string): ReplayUrlPayload | null
   try {
     const compressed = base64UrlDecodeBytes(encoded)
     const decompressed = inflateSync(compressed)
-    const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload | LegacyReplayUrlPayload
-    if ((parsed.version !== 4 && parsed.version !== 5) || !Array.isArray(parsed.actionLog)) {
+    const parsed = JSON.parse(new TextDecoder().decode(decompressed)) as ReplayUrlPayload
+    if (parsed.version !== 5 || !Array.isArray(parsed.actionLog)) {
       return null
     }
 
     const validatedActionLog: ReplayActionLogEntry[] = []
     for (let index = 0; index < parsed.actionLog.length; index += 1) {
       const rawEntry = parsed.actionLog[index]
-      const parsedAction = BattleActionSchema.safeParse(
-        parsed.version === 4 && rawEntry && typeof rawEntry === 'object' && 'action' in rawEntry
-          ? rawEntry.action
-          : rawEntry,
-      )
+      const parsedAction = BattleActionSchema.safeParse(rawEntry)
       if (!parsedAction.success) {
         return null
       }

@@ -78,6 +78,7 @@ export function buildHeroDetailsByEntityId(options: {
         summaryDetailText: basicAttackWithCombinedFlatBonus.summaryDetailText,
         summaryTone: basicAttackWithCombinedFlatBonus.summaryTone,
         currentRangeText: basicAttackWithCombinedFlatBonus.currentRangeText,
+        targetPreview: basicAttackWithCombinedFlatBonus.targetPreview,
       },
     }
   }
