@@ -3,7 +3,8 @@
   "type": "module",
   "private": true,
   "scripts": {
-    "test:replay": "bun test --timeout 30000 tests/replay-determinism.test.ts"
+    "test:replay": "bun test --timeout 30000 tests/replay-determinism.test.ts",
+    "test:cards": "bun test --timeout 10000 tests/cards/"
   },
   "devDependencies": {
     "@types/bun": "^1.3.12",
