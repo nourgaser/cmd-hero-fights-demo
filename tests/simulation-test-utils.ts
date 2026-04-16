@@ -44,7 +44,7 @@ type CreateSimOptions = {
   openingMovePoints?: number
 }
 
-export function createSim(optionsOrConfig?: CreateSimOptions | GameBootstrapConfig): Sim {
+function createSim(optionsOrConfig?: CreateSimOptions | GameBootstrapConfig): Sim {
   const config =
     optionsOrConfig && 'battleId' in optionsOrConfig
       ? optionsOrConfig
@@ -103,9 +103,15 @@ function advanceSim(sim: Sim, result: SessionResolutionResult, expectFailure: bo
   }
 }
 
+export const TEST_SIM = {
+  createSim,
+  buildConfig,
+  advanceSim,
+}
+
 // ── Actions ─────────────────────────────────────────────────────────────────
 
-export function playCard(
+function playCard(
   sim: Sim,
   cardDefinitionId: string,
   options?: {
@@ -163,7 +169,7 @@ export function playCard(
   return advanceSim(sim, result, options?.expectFailure ?? false)
 }
 
-export function basicAttack(sim: Sim, targetEntityId: string): Sim {
+function basicAttack(sim: Sim, targetEntityId: string): Sim {
   const heroEntityId = sim.preview.activeHeroEntityId
   const result = resolveSessionBasicAttack({
     session: sim.session,
@@ -174,7 +180,7 @@ export function basicAttack(sim: Sim, targetEntityId: string): Sim {
   return advanceSim(sim, result, false)
 }
 
-export function useEntityActive(sim: Sim, sourceEntityId: string, targetEntityId?: string): Sim {
+function useEntityActive(sim: Sim, sourceEntityId: string, targetEntityId?: string): Sim {
   const result = resolveSessionUseEntityActive({
     session: sim.session,
     actorHeroEntityId: sim.preview.activeHeroEntityId,
@@ -184,7 +190,7 @@ export function useEntityActive(sim: Sim, sourceEntityId: string, targetEntityId
   return advanceSim(sim, result, false)
 }
 
-export function endTurn(sim: Sim): Sim {
+function endTurn(sim: Sim): Sim {
   const result = resolveSessionSimpleAction({
     session: sim.session,
     actorHeroEntityId: sim.preview.activeHeroEntityId,
@@ -193,7 +199,7 @@ export function endTurn(sim: Sim): Sim {
   return advanceSim(sim, result, false)
 }
 
-export function pressLuck(sim: Sim): Sim {
+function pressLuck(sim: Sim): Sim {
   const result = resolveSessionSimpleAction({
     session: sim.session,
     actorHeroEntityId: sim.preview.activeHeroEntityId,
@@ -202,9 +208,17 @@ export function pressLuck(sim: Sim): Sim {
   return advanceSim(sim, result, false)
 }
 
+export const TEST_ACTIONS = {
+  playCard,
+  basicAttack,
+  useEntityActive,
+  endTurn,
+  pressLuck,
+}
+
 // ── Queries ─────────────────────────────────────────────────────────────────
 
-export function getEntity(sim: Sim, entityId: string): BattlefieldEntityState {
+function getEntity(sim: Sim, entityId: string): BattlefieldEntityState {
   const entity = sim.session.state.entitiesById[entityId]
   if (!entity) {
     throw new Error(`Entity ${entityId} not found in state`)
@@ -212,7 +226,7 @@ export function getEntity(sim: Sim, entityId: string): BattlefieldEntityState {
   return entity
 }
 
-export function getEntityPreview(sim: Sim, entityId: string) {
+function getEntityPreview(sim: Sim, entityId: string) {
   const entity = sim.preview.battlefield.entitiesById[entityId]
   if (!entity) {
     throw new Error(`Entity ${entityId} not found in preview`)
@@ -220,13 +234,13 @@ export function getEntityPreview(sim: Sim, entityId: string) {
   return entity
 }
 
-export function findEntitiesByCard(sim: Sim, cardDefinitionId: string): SummonedEntityState[] {
+function findEntitiesByCard(sim: Sim, cardDefinitionId: string): SummonedEntityState[] {
   return Object.values(sim.session.state.entitiesById).filter(
     (e): e is SummonedEntityState => e.kind !== 'hero' && e.definitionCardId === cardDefinitionId,
   )
 }
 
-export function findEntityByCard(sim: Sim, cardDefinitionId: string): SummonedEntityState {
+function findEntityByCard(sim: Sim, cardDefinitionId: string): SummonedEntityState {
   const entities = findEntitiesByCard(sim, cardDefinitionId)
   if (entities.length === 0) {
     throw new Error(`No summoned entity found for card ${cardDefinitionId}`)
@@ -234,15 +248,15 @@ export function findEntityByCard(sim: Sim, cardDefinitionId: string): SummonedEn
   return entities[0]!
 }
 
-export function getActiveHero(sim: Sim): string {
+function getActiveHero(sim: Sim): string {
   return sim.preview.activeHeroEntityId
 }
 
-export function getOpponentHero(sim: Sim): string {
+function getOpponentHero(sim: Sim): string {
   return sim.preview.heroEntityIds.find((id) => id !== sim.preview.activeHeroEntityId)!
 }
 
-export function getHand(sim: Sim, heroEntityId?: string) {
+function getHand(sim: Sim, heroEntityId?: string) {
   const id = heroEntityId ?? sim.preview.activeHeroEntityId
   const hand = sim.preview.heroHands.find((h) => h.heroEntityId === id)
   if (!hand) {
@@ -251,40 +265,60 @@ export function getHand(sim: Sim, heroEntityId?: string) {
   return hand.cards
 }
 
-export function getHandCardIds(sim: Sim, heroEntityId?: string): string[] {
+function getHandCardIds(sim: Sim, heroEntityId?: string): string[] {
   return getHand(sim, heroEntityId).map((c) => c.cardDefinitionId)
 }
 
-export function eventsOfKind<K extends BattleEvent['kind']>(
+function eventsOfKind<K extends BattleEvent['kind']>(
   events: BattleEvent[],
   kind: K,
 ): Extract<BattleEvent, { kind: K }>[] {
   return events.filter((e): e is Extract<BattleEvent, { kind: K }> => e.kind === kind)
 }
 
+function expectEventsOfKind<K extends BattleEvent['kind']>(
+  events: BattleEvent[],
+  kind: K,
+) {
+  return expect(eventsOfKind(events, kind))
+}
+
+export const TEST_QUERIES = {
+  getEntity,
+  getEntityPreview,
+  findEntitiesByCard,
+  findEntityByCard,
+  getActiveHero,
+  getOpponentHero,
+  getHand,
+  getHandCardIds,
+  eventsOfKind,
+  expectEventsOfKind,
+}
+
 // ── Assertions ──────────────────────────────────────────────────────────────
 
-export function expectHealth(sim: Sim, entityId: string, expected: number): void {
+function expectHealth(sim: Sim, entityId: string, expected: number): void {
   expect(getEntity(sim, entityId).currentHealth).toBe(expected)
 }
 
-export function expectArmor(sim: Sim, entityId: string, expected: number): void {
+function expectArmor(sim: Sim, entityId: string, expected: number): void {
   expect(getEntity(sim, entityId).armor).toBe(expected)
 }
 
-export function expectAttackDamage(sim: Sim, entityId: string, expected: number): void {
+function expectAttackDamage(sim: Sim, entityId: string, expected: number): void {
   expect(getEntity(sim, entityId).attackDamage).toBe(expected)
 }
 
-export function expectEntityExists(sim: Sim, entityId: string): void {
+function expectEntityExists(sim: Sim, entityId: string): void {
   expect(sim.session.state.entitiesById[entityId]).toBeDefined()
 }
 
-export function expectEntityRemoved(sim: Sim, entityId: string): void {
+function expectEntityRemoved(sim: Sim, entityId: string): void {
   expect(sim.session.state.entitiesById[entityId]).toBeUndefined()
 }
 
-export function expectDamageDealt(
+function expectDamageDealt(
   events: BattleEvent[],
   opts: {
     targetEntityId: string
@@ -306,7 +340,7 @@ export function expectDamageDealt(
   if (opts.wasCritical !== undefined) expect(event.wasCritical).toBe(opts.wasCritical)
 }
 
-export function expectHealApplied(
+function expectHealApplied(
   events: BattleEvent[],
   opts: {
     targetEntityId: string
@@ -321,7 +355,7 @@ export function expectHealApplied(
   if (opts.amount !== undefined) expect(matches[0]!.amount).toBe(opts.amount)
 }
 
-export function expectEntitySummoned(
+function expectEntitySummoned(
   events: BattleEvent[],
   opts?: { ownerHeroEntityId?: string },
 ) {
@@ -332,32 +366,32 @@ export function expectEntitySummoned(
   return matches[0]!
 }
 
-export function expectListenerTriggered(events: BattleEvent[], listenerId: string): void {
+function expectListenerTriggered(events: BattleEvent[], listenerId: string): void {
   const matches = eventsOfKind(events, 'listenerTriggered').filter(
     (e) => e.listenerId === listenerId,
   )
   expect(matches.length).toBeGreaterThan(0)
 }
 
-export function expectActiveListener(sim: Sim, listenerId: string): void {
+function expectActiveListener(sim: Sim, listenerId: string): void {
   expect(sim.session.state.activeListeners.some((l) => l.listenerId === listenerId)).toBe(true)
 }
 
-export function expectNoActiveListener(sim: Sim, listenerId: string): void {
+function expectNoActiveListener(sim: Sim, listenerId: string): void {
   expect(sim.session.state.activeListeners.some((l) => l.listenerId === listenerId)).toBe(false)
 }
 
-export function expectActiveAura(sim: Sim, auraKind: string): void {
+function expectActiveAura(sim: Sim, auraKind: string): void {
   expect(sim.session.state.activeAuras.some((a) => a.kind === auraKind)).toBe(true)
 }
 
-export function expectHandSize(sim: Sim, heroEntityId: string, expected: number): void {
+function expectHandSize(sim: Sim, heroEntityId: string, expected: number): void {
   const counts = sim.preview.heroHandCounts.find((h) => h.heroEntityId === heroEntityId)
   expect(counts).toBeDefined()
   expect(counts!.handSize).toBe(expected)
 }
 
-export function expectTurn(
+function expectTurn(
   sim: Sim,
   expected: { turnNumber?: number; activeHeroEntityId?: string },
 ): void {
@@ -367,4 +401,23 @@ export function expectTurn(
   if (expected.activeHeroEntityId !== undefined) {
     expect(sim.preview.activeHeroEntityId).toBe(expected.activeHeroEntityId)
   }
+}
+
+export const TEST_ASSERTIONS = {
+  expectHealth,
+  expectArmor,
+  expectAttackDamage,
+  expectEntityExists,
+  expectEntityRemoved,
+  expectDamageDealt,
+  expectHealApplied,
+  expectEntitySummoned,
+  expectListenerTriggered,
+  expectActiveListener,
+  expectNoActiveListener,
+  expectActiveAura,
+  expectHandSize,
+  expectTurn,
+  eventsOfKind,
+  expectEventsOfKind,
 }

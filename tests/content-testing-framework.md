@@ -14,6 +14,7 @@ This repo already has the two base pieces we should build on:
 
 - `tests/replay-determinism.test.ts`
 - `tests/simulation-test-utils.ts`
+- `tests/cards/content-test-coverage.test.ts`
 
 Everything else should be small "unit tests" around a single gameplay promise.
 
@@ -53,6 +54,7 @@ Keep replay coverage separate and keep all small unit tests together.
 
 - `tests/replay-determinism.test.ts`
 - `tests/simulation-test-utils.ts`
+- `tests/cards/content-test-coverage.test.ts`
 - `tests/cards/card.<slug>.test.ts`
 - `tests/cards/mechanic.<slug>.test.ts`
 - `tests/cards/effect.<slug>.test.ts` only when card coverage is not the clearest shared proof
@@ -169,6 +171,9 @@ Default shape:
 5. if it has an active, use it once
 6. if it has a passive, assert the passive works as expected
 
+If battlefield placement matters, choose it explicitly.
+Example: place a summon away from the hero when you want to test the card's own stat buff without unrelated adjacency contributions.
+
 Defining property examples:
 
 - aura or stat bonus while present
@@ -208,24 +213,39 @@ Mechanic tests should still stay small. They are not integration scenarios.
 
 This file is the standard public test API. Prefer importing from it instead of reaching into app or engine internals from every test.
 
-Available helpers:
+Current shape:
 
-- `createSim(...)`
-- `playCard(...)`
-- `basicAttack(...)`
-- `useEntityActive(...)`
-- `endTurn(...)`
-- `pressLuck(...)`
-- `getEntity(...)`
-- `getEntityPreview(...)`
-- `findEntityByCard(...)`
-- `findEntitiesByCard(...)`
-- `getActiveHero(...)`
+- `TEST_SIM`
+- `TEST_ACTIONS`
+- `TEST_QUERIES`
+- `TEST_ASSERTIONS`
 - `CARD_IDS`
 - `HERO_IDS`
 - `STARTER_DECKS`
 - `DEFAULT_GAME_BOOTSTRAP_CONFIG`
 - `SUMMON_ENTITY_IDS`
+
+Common members:
+
+- `TEST_SIM.createSim(...)`
+- `TEST_ACTIONS.playCard(...)`
+- `TEST_ACTIONS.basicAttack(...)`
+- `TEST_ACTIONS.useEntityActive(...)`
+- `TEST_ACTIONS.endTurn(...)`
+- `TEST_ACTIONS.pressLuck(...)`
+- `TEST_QUERIES.getEntity(...)`
+- `TEST_QUERIES.getEntityPreview(...)`
+- `TEST_QUERIES.findEntityByCard(...)`
+- `TEST_QUERIES.findEntitiesByCard(...)`
+- `TEST_QUERIES.getActiveHero(...)`
+- `TEST_QUERIES.getOpponentHero(...)`
+- `TEST_QUERIES.getHandCardIds(...)`
+- `TEST_ASSERTIONS.expectHandSize(...)`
+- `TEST_ASSERTIONS.eventsOfKind(...)`
+- `TEST_ASSERTIONS.expectEventsOfKind(...)`
+
+Use `eventsOfKind(...)` when you want the filtered array.
+Use `expectEventsOfKind(...)` when you want an assertion chain such as `.toHaveLength(...)`.
 
 Useful patterns:
 
@@ -240,15 +260,14 @@ Useful patterns:
 import { describe, expect, it } from 'vitest'
 import {
   CARD_IDS,
-  createSim,
-  getActiveHero,
-  getEntity,
-  playCard,
+  TEST_ACTIONS,
+  TEST_QUERIES,
+  TEST_SIM,
 } from '../simulation-test-utils'
 
 describe('card.iron-skin', () => {
   it('gives the active hero 1 armor', () => {
-    let sim = createSim({
+    let sim = TEST_SIM.createSim({
       seed: 'iron-skin',
       deck: [CARD_IDS.ironSkin],
       opponentDeck: [CARD_IDS.ironSkin],
@@ -256,13 +275,12 @@ describe('card.iron-skin', () => {
       openingMovePoints: 6,
     })
 
-    const heroId = getActiveHero(sim)
-    const before = getEntity(sim, heroId)
+    const heroId = TEST_QUERIES.getActiveHero(sim)
+    const beforeArmor = TEST_QUERIES.getEntityPreview(sim, heroId).armor
 
-    sim = playCard(sim, CARD_IDS.ironSkin)
+    sim = TEST_ACTIONS.playCard(sim, CARD_IDS.ironSkin)
 
-    const after = getEntity(sim, heroId)
-    expect(after.armor).toBe(before.armor + 1)
+    expect(TEST_QUERIES.getEntityPreview(sim, heroId).armor).toBe(beforeArmor + 1)
   })
 })
 ```
@@ -273,21 +291,14 @@ describe('card.iron-skin', () => {
 import { describe, expect, it } from 'vitest'
 import {
   CARD_IDS,
-  createSim,
-  findEntityByCard,
-  playCard,
-  useEntityActive,
+  TEST_ACTIONS,
+  TEST_QUERIES,
+  TEST_SIM,
 } from '../simulation-test-utils'
-
-function getEnemyHeroId(sim: ReturnType<typeof createSim>): string {
-  const activeHeroId = sim.preview.activeHeroEntityId
-  const [heroA, heroB] = sim.session.state.heroEntityIds
-  return activeHeroId === heroA ? heroB : heroA
-}
 
 describe('card.corroded-shortsword', () => {
   it('summons the weapon and lets it attack once', () => {
-    let sim = createSim({
+    let sim = TEST_SIM.createSim({
       seed: 'corroded-shortsword',
       deck: [CARD_IDS.corrodedShortsword],
       opponentDeck: [CARD_IDS.corrodedShortsword],
@@ -295,14 +306,18 @@ describe('card.corroded-shortsword', () => {
       openingMovePoints: 6,
     })
 
-    sim = playCard(sim, CARD_IDS.corrodedShortsword)
-    const weapon = findEntityByCard(sim, CARD_IDS.corrodedShortsword)
+    sim = TEST_ACTIONS.playCard(sim, CARD_IDS.corrodedShortsword)
+    const weapon = TEST_QUERIES.findEntityByCard(sim, CARD_IDS.corrodedShortsword)
 
     expect(weapon.currentHealth).toBeGreaterThan(0)
 
-    sim = useEntityActive(sim, weapon.entityId, getEnemyHeroId(sim))
+    sim = TEST_ACTIONS.useEntityActive(
+      sim,
+      weapon.entityId,
+      TEST_QUERIES.getOpponentHero(sim),
+    )
 
-    const damageEvent = sim.lastEvents.find((event) => event.kind === 'damageApplied')
+    const damageEvent = TEST_QUERIES.eventsOfKind(sim.lastEvents, 'damageApplied')[0]
     expect(damageEvent).toBeDefined()
   })
 })
@@ -313,41 +328,47 @@ describe('card.corroded-shortsword', () => {
 ```ts
 import { describe, expect, it } from 'vitest'
 import {
-  basicAttack,
-  createSim,
-  getActiveHero,
-  pressLuck,
+  TEST_ACTIONS,
+  TEST_QUERIES,
+  TEST_SIM,
 } from '../simulation-test-utils'
-
-function getEnemyHeroId(sim: ReturnType<typeof createSim>): string {
-  const activeHeroId = getActiveHero(sim)
-  const [heroA, heroB] = sim.session.state.heroEntityIds
-  return activeHeroId === heroA ? heroB : heroA
-}
-
-function getLastDamage(sim: ReturnType<typeof createSim>): number {
-  const event = sim.lastEvents.find((entry) => entry.kind === 'damageApplied')
-  if (!event || event.kind !== 'damageApplied') {
-    throw new Error('Expected a damageApplied event')
-  }
-  return event.amount
-}
 
 describe('mechanic.luck', () => {
   it('pressLuck shifts the next roll in favor of the active player', () => {
-    let neutral = createSim({ seed: 'luck-basic', openingHandSize: 0, openingMovePoints: 6 })
-    let favored = createSim({ seed: 'luck-basic', openingHandSize: 0, openingMovePoints: 6 })
+    let neutral = TEST_SIM.createSim({ seed: 'luck-basic', openingHandSize: 0, openingMovePoints: 6 })
+    let favored = TEST_SIM.createSim({ seed: 'luck-basic', openingHandSize: 0, openingMovePoints: 6 })
 
-    favored = pressLuck(favored)
+    favored = TEST_ACTIONS.pressLuck(favored)
     expect(favored.session.state.luck.balance).toBeGreaterThan(neutral.session.state.luck.balance)
 
-    neutral = basicAttack(neutral, getEnemyHeroId(neutral))
-    favored = basicAttack(favored, getEnemyHeroId(favored))
+    neutral = TEST_ACTIONS.basicAttack(neutral, TEST_QUERIES.getOpponentHero(neutral))
+    favored = TEST_ACTIONS.basicAttack(favored, TEST_QUERIES.getOpponentHero(favored))
 
-    expect(getLastDamage(favored)).toBeGreaterThanOrEqual(getLastDamage(neutral))
+    const neutralDamage = TEST_QUERIES.eventsOfKind(neutral.lastEvents, 'damageApplied')[0]
+    const favoredDamage = TEST_QUERIES.eventsOfKind(favored.lastEvents, 'damageApplied')[0]
+
+    expect(favoredDamage?.amount).toBeGreaterThanOrEqual(neutralDamage?.amount ?? 0)
   })
 })
 ```
+
+## Coverage Guard
+
+`tests/cards/content-test-coverage.test.ts` is the suite-level guard for runtime content coverage.
+
+Rules:
+
+- cards in `game/content/**/cards/*.ts` should have a matching `tests/cards/card.<slug>.test.ts`
+- summon files should usually be covered by that same card test
+- summon-only test files should be rare and only used when the combined test would be unclear
+- hero passive content should have a matching mechanic test
+
+Expected workflow:
+
+1. add or change runtime content
+2. add or update the matching test
+3. run the targeted test
+4. keep the coverage guard green
 
 ## Canonical Shared Coverage
 
@@ -396,46 +417,46 @@ Current runtime Commander X content surface:
 
 ### Phase 1: foundation
 
-- [ ] `mechanic.luck.test.ts`
-- [ ] `mechanic.commander-x-passive.test.ts`
-- [ ] `card.reset-luck.test.ts`
-- [ ] `card.reroll.test.ts`
-- [ ] `card.iron-skin.test.ts`
-- [ ] `card.health-potion.test.ts`
+- [x] `mechanic.luck.test.ts`
+- [x] `mechanic.commander-x-passive.test.ts`
+- [x] `card.reset-luck.test.ts`
+- [x] `card.reroll.test.ts`
+- [x] `card.iron-skin.test.ts`
+- [x] `card.health-potion.test.ts`
 
 ### Phase 2: timed and persistent modifiers
 
-- [ ] `card.hunker-down.test.ts`
-- [ ] `card.bastion-stance.test.ts`
-- [ ] `card.battle-focus.test.ts`
-- [ ] `card.veteran-edge.test.ts`
-- [ ] `card.war-standard.test.ts`
-- [ ] `card.guard-sigil.test.ts`
-- [ ] `card.banner-of-x.test.ts`
-- [ ] `card.healing-fortress.test.ts`
-- [ ] `card.steelbound-effigy.test.ts`
+- [x] `card.hunker-down.test.ts`
+- [x] `card.bastion-stance.test.ts`
+- [x] `card.battle-focus.test.ts`
+- [x] `card.veteran-edge.test.ts`
+- [x] `card.war-standard.test.ts`
+- [x] `card.guard-sigil.test.ts`
+- [x] `card.banner-of-x.test.ts`
+- [x] `card.healing-fortress.test.ts`
+- [x] `card.steelbound-effigy.test.ts`
 
 ### Phase 3: targeted combat rules
 
-- [ ] `card.shield-toss.test.ts`
-- [ ] `card.warcry.test.ts`
-- [ ] `card.shatter-plating.test.ts`
-- [ ] `card.chaaarge.test.ts`
-- [ ] `card.medal-of-honor.test.ts`
-- [ ] `card.reactive-bulwark.test.ts`
+- [x] `card.shield-toss.test.ts`
+- [x] `card.warcry.test.ts`
+- [x] `card.shatter-plating.test.ts`
+- [x] `card.chaaarge.test.ts`
+- [x] `card.medal-of-honor.test.ts`
+- [x] `card.reactive-bulwark.test.ts`
 
 ### Phase 4: summon cards and on-board behaviors
 
-- [ ] `card.corroded-shortsword.test.ts`
-- [ ] `card.defiled-greatsword.test.ts`
-- [ ] `card.glinting-adamantite-blade.test.ts`
-- [ ] `card.shamanic-titanium-pummeler.test.ts`
-- [ ] `card.common-expendable-deadly-man.test.ts`
-- [ ] `card.jaquemin-patrol.test.ts`
-- [ ] `card.merewen-the-shieldmaiden.test.ts`
-- [ ] `card.riquier-the-bear.test.ts`
-- [ ] `card.evergrowth-idol.test.ts`
-- [ ] `card.bulwark-of-fortune.test.ts`
+- [x] `card.corroded-shortsword.test.ts`
+- [x] `card.defiled-greatsword.test.ts`
+- [x] `card.glinting-adamantite-blade.test.ts`
+- [x] `card.shamanic-titanium-pummeler.test.ts`
+- [x] `card.common-expendable-deadly-man.test.ts`
+- [x] `card.jaquemin-patrol.test.ts`
+- [x] `card.merewen-the-shieldmaiden.test.ts`
+- [x] `card.riquier-the-bear.test.ts`
+- [x] `card.evergrowth-idol.test.ts`
+- [x] `card.bulwark-of-fortune.test.ts`
 
 Note: several cards in phases 2 and 4 intentionally overlap. That is correct. The normal expectation is one test per summon card that also covers the summoned entity's defining behavior.
 
@@ -445,55 +466,55 @@ Effect-kind coverage should piggyback on those canonical tests instead of creati
 
 This is the card-by-card expectation list. Each test should only prove the sentence on its row.
 
-- [ ] `Reroll`: playing it draws exactly 1 replacement card.
-- [ ] `Hunker Down`: grants dodge this turn and the bonus disappears on your next turn.
-- [ ] `Reset Luck`: returns luck balance to neutral.
-- [ ] `Iron Skin`: grants 1 armor immediately.
-- [ ] `Health Potion`: heals the hero.
-- [ ] `Bastion Stance`: grants armor and magic resist until next turn only.
-- [ ] `Battle Focus`: the next attack gets bonus damage once, then the bonus is consumed.
-- [ ] `Medal of Honor`: buffs the selected allied companion and grants temporary immune.
-- [ ] `Shatter Plating`: converts your current armor into damage against the target.
-- [ ] `Shield Toss`: deals damage that scales with armor.
-- [ ] `Warcry`: destroys your armor and deals matching damage to the enemy hero.
-- [ ] `Chaaarge!`: is only playable below the HP threshold and refunds move cost when the hit is not dodged.
-- [ ] `Corroded Shortsword`: summons the weapon and it can attack once.
-- [ ] `Defiled Greatsword`: summons the weapon and it can attack once.
-- [ ] `Glinting Adamantite Blade`: summons the weapon and its max damage tracks current HP.
-- [ ] `Shamanic Titanium Pummeler`: summons the heavy weapon and its attack uses sharpness.
-- [ ] `War Standard`: summons the totem and the hero gains attack damage while it remains.
-- [ ] `Guard Sigil`: summons the totem and the hero gains armor and magic resist while it remains.
-- [ ] `Healing Fortress`: summons the totem and attacks heal more while it remains.
-- [ ] `Evergrowth Idol`: summons the totem and its periodic growth triggers on schedule.
-- [ ] `Banner of X`: summons the totem and allies gain move capacity while it remains.
-- [ ] `Jaquemin the Patrol`: summons the companion and it follows up when the hero attacks.
-- [ ] `Reactive Bulwark`: applies the aura and the resistance bonus appears after damage is taken.
-- [ ] `Steelbound Effigy`: summons the totem and its armor equals hero attack damage.
-- [ ] `Bulwark of Fortune`: summons the totem and being attacked grants health to a random ally.
-- [ ] `A Common, Expendable, but Deadly Man`: summons the companion and it can use its active once.
-- [ ] `Merewen the Shieldmaiden`: summons the companion, adjacent allies are buffed/healed, and the next attack is reflected.
-- [ ] `Riquier the Bear`: summons the companion and it retaliates when attacked.
-- [ ] `Veteran Edge`: permanently grants bonus basic-attack damage and sharpness.
+- [x] `Reroll`: playing it spends the card and draws 2 replacements, for net +1 hand size.
+- [x] `Hunker Down`: grants dodge this turn and the bonus disappears on your next turn.
+- [x] `Reset Luck`: returns luck balance to neutral.
+- [x] `Iron Skin`: grants 1 armor immediately.
+- [x] `Health Potion`: heals the hero.
+- [x] `Bastion Stance`: grants armor and magic resist until next turn only.
+- [x] `Battle Focus`: the next attack gets bonus damage once, then the bonus is consumed.
+- [x] `Medal of Honor`: buffs the selected allied companion and grants temporary immune.
+- [x] `Shatter Plating`: converts your current armor into damage against the target.
+- [x] `Shield Toss`: deals damage that scales with armor.
+- [x] `Warcry`: destroys your armor and deals matching damage to the enemy hero.
+- [x] `Chaaarge!`: is only playable below the HP threshold and refunds move cost when the hit is not dodged.
+- [x] `Corroded Shortsword`: summons the weapon and it can attack once.
+- [x] `Defiled Greatsword`: summons the weapon and it can attack once.
+- [x] `Glinting Adamantite Blade`: summons the weapon and its max damage tracks current HP.
+- [x] `Shamanic Titanium Pummeler`: summons the heavy weapon and its attack uses sharpness.
+- [x] `War Standard`: summons the totem and the hero gains attack damage while it remains.
+- [x] `Guard Sigil`: summons the totem and the hero gains armor and magic resist while it remains.
+- [x] `Healing Fortress`: summons the totem and attacks heal more while it remains.
+- [x] `Evergrowth Idol`: summons the totem and its periodic growth triggers on schedule.
+- [x] `Banner of X`: summons the totem and allies gain move capacity while it remains.
+- [x] `Jaquemin the Patrol`: summons the companion and it follows up when the hero attacks.
+- [x] `Reactive Bulwark`: applies the aura and the resistance bonus appears after damage is taken.
+- [x] `Steelbound Effigy`: summons the totem and its armor equals hero attack damage.
+- [x] `Bulwark of Fortune`: summons the totem and being attacked grants health to a random ally.
+- [x] `A Common, Expendable, but Deadly Man`: summons the companion and it can use its active once.
+- [x] `Merewen the Shieldmaiden`: summons the companion, adjacent allies are buffed/healed, and the next attack is reflected.
+- [x] `Riquier the Bear`: summons the companion and it retaliates when attacked.
+- [x] `Veteran Edge`: permanently grants bonus basic-attack damage and sharpness.
 
 ## Existing Summon Checklist
 
 These should usually be covered by the card test that summons them. Separate summon-only tests are the exception, not the default.
 
-- [ ] `Corroded Shortsword`
-- [ ] `Defiled Greatsword`
-- [ ] `Glinting Adamantite Blade`
-- [ ] `Shamanic Titanium Pummeler`
-- [ ] `War Standard`
-- [ ] `Guard Sigil`
-- [ ] `Healing Fortress`
-- [ ] `Evergrowth Idol`
-- [ ] `Banner of X`
-- [ ] `Steelbound Effigy`
-- [ ] `Bulwark of Fortune`
-- [ ] `Jaquemin the Patrol`
-- [ ] `A Common, Expendable, but Deadly Man`
-- [ ] `Merewen the Shieldmaiden`
-- [ ] `Riquier the Bear`
+- [x] `Corroded Shortsword`
+- [x] `Defiled Greatsword`
+- [x] `Glinting Adamantite Blade`
+- [x] `Shamanic Titanium Pummeler`
+- [x] `War Standard`
+- [x] `Guard Sigil`
+- [x] `Healing Fortress`
+- [x] `Evergrowth Idol`
+- [x] `Banner of X`
+- [x] `Steelbound Effigy`
+- [x] `Bulwark of Fortune`
+- [x] `Jaquemin the Patrol`
+- [x] `A Common, Expendable, but Deadly Man`
+- [x] `Merewen the Shieldmaiden`
+- [x] `Riquier the Bear`
 
 ## PR Rule For Future Content
 
