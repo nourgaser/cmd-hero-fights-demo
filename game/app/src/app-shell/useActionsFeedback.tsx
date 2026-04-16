@@ -1,7 +1,8 @@
 import { useCallback, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../../shared/models'
-import type { AppBattleSnapshot } from '../game-client'
+import type { AppBattleSnapshot, AppBattleEventDisplay } from '../game-client'
+import { buildBattleEventDisplays } from '../game-client-session'
 import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from '../utils/render-numeric-text'
 import { ACTION_TOAST_ID, ACTION_TOAST_DURATION_MS, EVENT_TOAST_DURATION_MS, EVENT_TOAST_ID } from './constants'
 
@@ -10,6 +11,43 @@ export type LastActionFeedback = {
   detail: string | null
   isError: boolean
   updatedAt: number
+  eventTrail: AppBattleEventDisplay[]
+}
+
+function buildSuccessLastActionFeedback(message: string, eventTrail: AppBattleEventDisplay[]): LastActionFeedback {
+  const split = splitSummaryAndDetail(message)
+  let detail = split.detail
+  if (eventTrail.length > 0) {
+    const firstTrailDetail = eventTrail.find((entry) => entry.detail !== null)?.detail ?? null
+    detail = firstTrailDetail ?? detail
+  }
+
+  return {
+    summary: split.summary,
+    detail,
+    isError: false,
+    updatedAt: Date.now(),
+    eventTrail,
+  }
+}
+
+function buildErrorLastActionFeedback(message: string): LastActionFeedback {
+  const split = splitSummaryAndDetail(message)
+  return {
+    summary: split.summary,
+    detail: split.detail,
+    isError: true,
+    updatedAt: Date.now(),
+    eventTrail: [],
+  }
+}
+
+export function buildLastActionFeedbackFromSnapshot(snapshot: AppBattleSnapshot): LastActionFeedback {
+  if (!snapshot.success) {
+    return buildErrorLastActionFeedback(snapshot.resultMessage)
+  }
+
+  return buildSuccessLastActionFeedback(snapshot.resultMessage, snapshot.eventTrail)
 }
 
 export function useActionsFeedback(options: {
@@ -35,14 +73,9 @@ export function useActionsFeedback(options: {
   }, [])
 
   const showActionErrorToast = useCallback((message: string) => {
-    const split = splitSummaryAndDetail(message)
-    onLastActionFeedback?.({
-      summary: split.summary,
-      detail: split.detail,
-      isError: true,
-      updatedAt: Date.now(),
-    })
-    announce(split.summary)
+    const feedback = buildErrorLastActionFeedback(message)
+    onLastActionFeedback?.(feedback)
+    announce(feedback.summary)
     toast.error(message, {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
@@ -50,39 +83,11 @@ export function useActionsFeedback(options: {
   }, [announce, onLastActionFeedback])
 
   const showActionSuccessToast = useCallback((message: string, events: BattleEvent[]) => {
-    const split = splitSummaryAndDetail(message)
-    announce(split.summary)
-    const damageEvent = events.find(
-      (event): event is Extract<BattleEvent, { kind: 'damageApplied' }> => event.kind === 'damageApplied',
-    )
-    const luckEvent = events.find(
-      (event): event is Extract<BattleEvent, { kind: 'luckBalanceChanged' }> =>
-        event.kind === 'luckBalanceChanged',
-    )
+    const feedback = buildSuccessLastActionFeedback(message, buildBattleEventDisplays(events))
+    announce(feedback.summary)
+    onLastActionFeedback?.(feedback)
 
-    let detail = split.detail
-    if (damageEvent) {
-      const detailParts = [
-        damageEvent.rngRawRoll !== undefined ? `raw ${damageEvent.rngRawRoll.toFixed(2)}` : null,
-        damageEvent.rngAdjustedRoll !== undefined
-          ? `luck-adjusted ${damageEvent.rngAdjustedRoll.toFixed(2)}`
-          : null,
-        damageEvent.rngFinalRoll !== undefined ? `final ${damageEvent.rngFinalRoll.toFixed(2)}` : null,
-        damageEvent.rngDodgeRoll !== undefined ? `dodge ${damageEvent.rngDodgeRoll.toFixed(2)}` : null,
-      ].filter((part): part is string => !!part)
-      detail = detailParts.length > 0 ? `Roll detail: ${detailParts.join(' -> ')}.` : detail
-    } else if (luckEvent) {
-      detail = `Luck balance ${luckEvent.previousBalance} -> ${luckEvent.nextBalance}.`
-    }
-
-    onLastActionFeedback?.({
-      summary: split.summary,
-      detail,
-      isError: false,
-      updatedAt: Date.now(),
-    })
-
-    toast.success(renderStructuredToast(split.summary, detail, shouldShowDetailedTooltips), {
+    toast.success(renderStructuredToast(feedback.summary, feedback.detail, shouldShowDetailedTooltips), {
       id: ACTION_TOAST_ID,
       duration: ACTION_TOAST_DURATION_MS,
     })

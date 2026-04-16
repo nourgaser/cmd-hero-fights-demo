@@ -1,5 +1,7 @@
+import { useState } from 'react'
 import type { AppActionHistoryEntry, AppBattleSnapshot } from '../../game-client'
 import type { ReplayNavigationDirection } from '../../app-shell/runtime-utils'
+import { renderTextWithHighlightedNumbers } from '../../utils/render-numeric-text'
 
 type HistoryModalProps = {
   isOpen: boolean
@@ -31,6 +33,7 @@ export function HistoryModal(props: HistoryModalProps) {
     renderTimelineControls,
     renderTimelineSnapshotList,
   } = props
+  const [expandedHistoryEntryIds, setExpandedHistoryEntryIds] = useState<Record<number, boolean>>({})
 
   if (!isOpen) return null
 
@@ -43,6 +46,8 @@ export function HistoryModal(props: HistoryModalProps) {
 
   const renderHistoryRow = (entry: AppActionHistoryEntry, index: number) => {
     const isActive = entry.postSnapshotId === activeActionSnapshotId
+    const isExpanded = expandedHistoryEntryIds[entry.id] ?? false
+    const eventDisplays = entry.eventTrail
     const handleJump = () => onJumpToSnapshot(entry.postSnapshotId)
 
     return (
@@ -78,6 +83,30 @@ export function HistoryModal(props: HistoryModalProps) {
           <span>{entry.success ? 'Success' : 'Failed'}</span>
         </div>
         <p className="history-entry-message">{entry.resultMessage}</p>
+        <div className="history-entry-actions">
+          <button
+            type="button"
+            className="history-entry-detail-button"
+            onClick={(event) => {
+              event.stopPropagation()
+              setExpandedHistoryEntryIds((current) => ({ ...current, [entry.id]: !isExpanded }))
+            }}
+            aria-expanded={isExpanded}
+            disabled={eventDisplays.length === 0}
+          >
+            {isExpanded ? 'Hide details' : 'Details'}
+          </button>
+        </div>
+        {isExpanded && eventDisplays.length > 0 ? (
+          <ul className="history-entry-events" aria-label="Action event chain">
+            {eventDisplays.map((event) => (
+              <li key={event.sequence} className="history-entry-event">
+                <strong>{renderTextWithHighlightedNumbers(event.summary, 'history-entry-number')}</strong>
+                {event.detail ? <span>{renderTextWithHighlightedNumbers(event.detail, 'history-entry-number')}</span> : null}
+              </li>
+            ))}
+          </ul>
+        ) : null}
         <div className="history-entry-meta">
           <span>Step: #{activeHistoryLength - index}</span>
           <span>Actor: {entry.actorHeroEntityId}</span>

@@ -62,6 +62,8 @@ export function useAutoplay(options: {
 
   const [isAutoPlayAEnabled, setIsAutoPlayAEnabled] = useState(false)
   const [isAutoPlayBEnabled, setIsAutoPlayBEnabled] = useState(false)
+  const effectiveIsAutoPlayAEnabled = isAutoPlayAEnabled && !runtime?.preview.gameOver
+  const effectiveIsAutoPlayBEnabled = isAutoPlayBEnabled && !runtime?.preview.gameOver
 
   const runAutoPlayStep = useCallback((side: 'a' | 'b') => {
     let failureReason: string | null = null
@@ -267,17 +269,6 @@ export function useAutoplay(options: {
   }, [autoPlayAutoEndTurnWhenNoLegalMoves, autoPlayUseEntityActives, setRuntime, showActionSuccessToast, showBattleEventToast])
 
   useEffect(() => {
-    if (runtime?.preview.gameOver) {
-      if (isAutoPlayAEnabled) {
-        setIsAutoPlayAEnabled(false)
-      }
-      if (isAutoPlayBEnabled) {
-        setIsAutoPlayBEnabled(false)
-      }
-    }
-  }, [runtime?.preview.gameOver, isAutoPlayAEnabled, isAutoPlayBEnabled])
-
-  useEffect(() => {
     if (!runtime || !autoPlayButtonsVisible) {
       return
     }
@@ -288,10 +279,10 @@ export function useAutoplay(options: {
 
     const [currentHeroAId, currentHeroBId] = runtime.preview.heroEntityIds
     const activeHeroEntityId = runtime.preview.activeHeroEntityId
-    if (activeHeroEntityId === currentHeroAId && !isAutoPlayAEnabled) {
+    if (activeHeroEntityId === currentHeroAId && !effectiveIsAutoPlayAEnabled) {
       return
     }
-    if (activeHeroEntityId === currentHeroBId && !isAutoPlayBEnabled) {
+    if (activeHeroEntityId === currentHeroBId && !effectiveIsAutoPlayBEnabled) {
       return
     }
 
@@ -307,12 +298,12 @@ export function useAutoplay(options: {
     return () => {
       window.clearTimeout(timeoutId)
     }
-  }, [autoPlayButtonsVisible, autoPlayDelayMs, isAutoPlayAEnabled, isAutoPlayBEnabled, runAutoPlayStep, runtime])
+  }, [autoPlayButtonsVisible, autoPlayDelayMs, effectiveIsAutoPlayAEnabled, effectiveIsAutoPlayBEnabled, runAutoPlayStep, runtime])
 
   return {
-    isAutoPlayAEnabled,
+    isAutoPlayAEnabled: effectiveIsAutoPlayAEnabled,
     setIsAutoPlayAEnabled,
-    isAutoPlayBEnabled,
+    isAutoPlayBEnabled: effectiveIsAutoPlayBEnabled,
     setIsAutoPlayBEnabled,
     runAutoPlayStep,
   }

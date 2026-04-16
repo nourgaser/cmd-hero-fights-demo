@@ -208,6 +208,57 @@
   color: #eef4ff;
 }
 
+.history-entry-actions {
+  display: flex;
+  justify-content: flex-start;
+}
+
+.history-entry-detail-button {
+  border: 1px solid #5f76ab;
+  border-radius: 999px;
+  min-height: 24px;
+  padding: 2px 9px;
+  color: #dce8ff;
+  font-size: 10px;
+  font-weight: 700;
+  background: color-mix(in srgb, #24395f 86%, #ffffff 14%);
+  cursor: pointer;
+}
+
+.history-entry-detail-button:disabled {
+  opacity: 0.45;
+  cursor: default;
+}
+
+.history-entry-events {
+  margin: 0;
+  padding: 0 0 0 12px;
+  list-style: none;
+  display: grid;
+  gap: 4px;
+  color: #dce8ff;
+}
+
+.history-entry-event {
+  display: grid;
+  gap: 2px;
+  font-size: 11px;
+  line-height: 1.25;
+}
+
+.history-entry-event strong {
+  font-weight: 700;
+}
+
+.history-entry-event span {
+  color: color-mix(in srgb, #dce8ff 82%, #9eb3de 18%);
+}
+
+.history-entry-number {
+  color: #ffd989;
+  font-weight: 700;
+}
+
 .history-entry-meta {
   display: flex;
   flex-wrap: wrap;

@@ -21,6 +21,12 @@ export type AppRngCheckpoint = {
   stepCount: number
 }
 
+export type AppBattleEventDisplay = {
+  sequence: number
+  summary: string
+  detail: string | null
+}
+
 export type AppBattleSnapshot = {
   id: number
   phase: 'pre' | 'post'
@@ -34,6 +40,7 @@ export type AppBattleSnapshot = {
   success: boolean
   failureReason?: string
   events: BattleEvent[]
+  eventTrail: AppBattleEventDisplay[]
   rngCheckpoint: AppRngCheckpoint
 }
 
@@ -46,6 +53,7 @@ export type AppActionHistoryEntry = {
   success: boolean
   failureReason?: string
   eventCount: number
+  eventTrail: AppBattleEventDisplay[]
   preSnapshotId: number
   postSnapshotId: number
 }

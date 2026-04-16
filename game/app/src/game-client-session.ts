@@ -14,8 +14,76 @@ import {
   type AppBattleApi,
   type AppRngCheckpoint,
 } from './game-client'
+import type { AppBattleEventDisplay } from './game-client'
 
 import { type GameBootstrapConfig } from './data/game-bootstrap'
+
+export function buildBattleEventDisplays(events: BattleEvent[]): AppBattleEventDisplay[] {
+  return events.flatMap((event) => {
+    switch (event.kind) {
+      case 'actionResolved':
+        return []
+      case 'cardPlayed':
+        return [{ sequence: event.sequence, summary: `Played ${event.cardDefinitionId}.`, detail: `Card hand ID ${event.handCardId}.` }]
+      case 'cardDrawn':
+        return [{ sequence: event.sequence, summary: `Drew ${event.cardDefinitionId}.`, detail: `Card hand ID ${event.handCardId}.` }]
+      case 'entitySummoned':
+        return [{ sequence: event.sequence, summary: `Summoned ${event.summonedEntityId}.`, detail: `Owner ${event.ownerHeroEntityId} at (${event.position.row}, ${event.position.column}).` }]
+      case 'entityRemoved':
+        return [{ sequence: event.sequence, summary: `Removed ${event.entityId} (${event.reason}).`, detail: `Owner ${event.ownerHeroEntityId}.` }]
+      case 'listenerTriggered': {
+        const summaryEnd = event.message.match(/^[^.!?]+[.!?]/)?.[0]?.trim() ?? event.message.trim()
+        const detail = event.message.length > summaryEnd.length ? event.message.slice(summaryEnd.length).trim() : null
+        return [{ sequence: event.sequence, summary: summaryEnd, detail: detail || `Listener ${event.listenerId}.` }]
+      }
+      case 'damageApplied': {
+        const summary = event.wasDodged
+          ? `${event.damageType} attack was dodged.`
+          : `${event.amount} ${event.damageType} damage applied.`
+        const detailParts = [
+          event.sourceEntityId ? `source ${event.sourceEntityId}` : null,
+          event.rngRawRoll !== undefined ? `raw ${event.rngRawRoll.toFixed(2)}` : null,
+          event.rngAdjustedRoll !== undefined ? `luck-adjusted ${event.rngAdjustedRoll.toFixed(2)}` : null,
+          event.rngFinalRoll !== undefined ? `final ${event.rngFinalRoll.toFixed(2)}` : null,
+          event.rngDodgeRoll !== undefined ? `dodge ${event.rngDodgeRoll.toFixed(2)}` : null,
+        ].filter((part): part is string => !!part)
+        return [{ sequence: event.sequence, summary, detail: detailParts.length > 0 ? `Roll detail: ${detailParts.join(' -> ')}.` : null }]
+      }
+      case 'healApplied':
+        return [{ sequence: event.sequence, summary: `Restored ${event.amount} HP.`, detail: event.sourceEntityId ? `Source ${event.sourceEntityId}.` : null }]
+      case 'armorGained':
+        return [{ sequence: event.sequence, summary: `Gained ${event.amount} armor.`, detail: null }]
+      case 'armorLost':
+        return [{ sequence: event.sequence, summary: `Lost ${event.amount} armor.`, detail: null }]
+      case 'magicResistGained':
+        return [{ sequence: event.sequence, summary: `Gained ${event.amount} magic resist.`, detail: null }]
+      case 'magicResistLost':
+        return [{ sequence: event.sequence, summary: `Lost ${event.amount} magic resist.`, detail: null }]
+      case 'attackDamageGained':
+        return [{ sequence: event.sequence, summary: `Gained ${event.amount} attack damage.`, detail: null }]
+      case 'attackDamageLost':
+        return [{ sequence: event.sequence, summary: `Lost ${event.amount} attack damage.`, detail: null }]
+      case 'turnEnded':
+        return [{ sequence: event.sequence, summary: `Turn ended.`, detail: `Next active hero ${event.nextActiveHeroEntityId}.` }]
+      case 'turnStarted':
+        return [{ sequence: event.sequence, summary: `Turn ${event.turnNumber} started.`, detail: `Active hero ${event.activeHeroEntityId}.` }]
+      case 'luckBalanceChanged':
+        return [{ sequence: event.sequence, summary: `Luck shifted to ${event.nextBalance}.`, detail: `Balance changed from ${event.previousBalance} to ${event.nextBalance}.` }]
+      case 'auraApplied':
+        return [{ sequence: event.sequence, summary: `Aura applied (${event.auraKind}).`, detail: `Stacks: ${event.stackCount}. Expires on turn ${event.expiresOnTurnNumber}.` }]
+      case 'auraExpired':
+        return [{ sequence: event.sequence, summary: `Aura expired (${event.auraKind}).`, detail: `Expired on turn ${event.expiredOnTurnNumber}.` }]
+      case 'numberModifierApplied':
+        return [{ sequence: event.sequence, summary: `Modifier applied: ${event.label}.`, detail: `Target ${event.targetEntityId}. ${event.sourceEntityId ? `Source ${event.sourceEntityId}.` : ''} Path ${event.propertyPath}.`.trim() }]
+      case 'numberModifierExpired':
+        return [{ sequence: event.sequence, summary: `Modifier expired (${event.reason}).`, detail: `Target ${event.targetEntityId}.` }]
+      case 'numberExplanationUpdated':
+        return [{ sequence: event.sequence, summary: `Number explanation updated.`, detail: `Target ${event.targetEntityId}.` }]
+      default:
+        return []
+    }
+  })
+}
 
 function cloneSerializable<T>(value: T): T {
   if (typeof structuredClone === 'function') {
@@ -48,6 +116,7 @@ function buildInitialSnapshot(options: {
     resultMessage: 'Battle started.',
     success: true,
     events: [],
+    eventTrail: [],
     rngCheckpoint: {
       seed: config.seed,
       stepCount: 0,
@@ -203,7 +272,7 @@ export function createInitialBattleSession(options: {
 }
 
 export type SessionResolutionResult =
-  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; events: BattleEvent[]; resultMessage: string }
+  | { ok: true; session: AppBattleSession; preview: AppBattlePreview; events: BattleEvent[]; eventTrail: AppBattleEventDisplay[]; resultMessage: string }
   | { ok: false; reason: string; session: AppBattleSession; preview: AppBattlePreview }
 
 export function resolveSessionAction(options: {
@@ -243,6 +312,7 @@ export function resolveSessionAction(options: {
     success: result.ok,
     failureReason: !result.ok ? result.reason : undefined,
     eventCount: result.ok ? result.events.length : 0,
+    eventTrail: result.ok ? buildBattleEventDisplays(result.events) : [],
     preSnapshotId,
     postSnapshotId,
   }
@@ -260,6 +330,7 @@ export function resolveSessionAction(options: {
     success: historyEntry.success,
     failureReason: historyEntry.failureReason,
     events: [],
+    eventTrail: [],
     rngCheckpoint: preRngCheckpoint,
   }
 
@@ -277,6 +348,7 @@ export function resolveSessionAction(options: {
       success: false,
       failureReason: result.reason,
       events: [],
+      eventTrail: [],
       rngCheckpoint: {
         seed: workingBattleRng.seed,
         stepCount: workingBattleRng.stepCount,
@@ -314,6 +386,7 @@ export function resolveSessionAction(options: {
     resultMessage: result.resultMessage,
     success: true,
     events: cloneSerializable(result.events),
+    eventTrail: buildBattleEventDisplays(result.events),
     rngCheckpoint: {
       seed: workingBattleRng.seed,
       stepCount: workingBattleRng.stepCount,
@@ -337,6 +410,7 @@ export function resolveSessionAction(options: {
     session: nextSession,
     preview: buildPreview(nextSession),
     events: result.events,
+    eventTrail: buildBattleEventDisplays(result.events),
     resultMessage: result.resultMessage,
   }
 }

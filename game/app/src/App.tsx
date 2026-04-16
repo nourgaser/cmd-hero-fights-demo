@@ -1,5 +1,5 @@
 import './App.css'
-import { useCallback, useEffect, useMemo, useRef, useState } from 'react'
+import { useCallback, useEffect, useLayoutEffect, useMemo, useRef, useState } from 'react'
 import { Toaster, toast } from 'react-hot-toast'
 import {
   type AppRuntime,
@@ -33,7 +33,7 @@ import {
   SETTINGS_SEED_STORAGE_KEY,
 } from './app-shell/constants'
 import { useSettings } from './app-shell/useSettings'
-import { type LastActionFeedback, useActionsFeedback } from './app-shell/useActionsFeedback'
+import { buildLastActionFeedbackFromSnapshot, type LastActionFeedback, useActionsFeedback } from './app-shell/useActionsFeedback'
 import { useAutoplay } from './app-shell/useAutoplay'
 import { useReplayHistory } from './app-shell/useReplayHistory'
 import { useAppActions } from './app-shell/useAppActions'
@@ -203,6 +203,19 @@ function App() {
   const { suppressReplayToastSyncRef } = useReplayHistory({
     bootstrapConfig, setBootstrapConfig, runtime, setRuntime, setResetEpoch, showReplaySnapshotToasts,
   })
+
+  useLayoutEffect(() => {
+    if (!initialReplayPayload || runtime === null || lastActionFeedback !== null) {
+      return
+    }
+
+    const activeReplaySnapshot = getReplayModeActiveSnapshot(runtime.session)
+    if (!activeReplaySnapshot || activeReplaySnapshot.phase !== 'post') {
+      return
+    }
+
+    setLastActionFeedback(buildLastActionFeedbackFromSnapshot(activeReplaySnapshot))
+  }, [initialReplayPayload, lastActionFeedback, runtime])
 
   const { queueReplayTimelineStep, replayPlaybackSpeed, replayNavigationFrameRef } = useTimeline({
     setRuntime, replayPlaybackSpeedIndex,

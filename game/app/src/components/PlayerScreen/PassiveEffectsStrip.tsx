@@ -15,6 +15,7 @@ export function PassiveEffectsStrip(props: PassiveEffectsStripProps) {
   const [selectedPassiveEffectId, setSelectedPassiveEffectId] = useState<string | null>(null)
   const [showAllPassiveEffects, setShowAllPassiveEffects] = useState(false)
   const [activeView, setActiveView] = useState<'lastAction' | 'passives'>('lastAction')
+  const [isLastActionExpanded, setIsLastActionExpanded] = useState(false)
 
   const sortedPassiveEffects = useMemo(
     () =>
@@ -46,6 +47,7 @@ export function PassiveEffectsStrip(props: PassiveEffectsStripProps) {
       ? sortedPassiveEffects.slice(0, passiveChipLimit)
       : sortedPassiveEffects
   const hiddenPassiveCount = sortedPassiveEffects.length - visiblePassiveEffects.length
+  const lastActionEventDisplays = lastActionFeedback?.eventTrail ?? []
 
   return (
     <section className="passive-effects-strip" aria-label="Active passive effects">
@@ -83,6 +85,19 @@ export function PassiveEffectsStrip(props: PassiveEffectsStripProps) {
         {activeView === 'lastAction' ? (
           lastActionFeedback ? (
             <div className={`passive-last-action ${lastActionFeedback.isError ? 'passive-last-action-error' : ''}`.trim()}>
+              <div className="passive-last-action-head">
+                <span className="passive-last-action-eyebrow">{lastActionFeedback.isError ? 'Action failed' : 'Last action'}</span>
+                <button
+                  type="button"
+                  className="passive-last-action-expand-button"
+                  onClick={() => setIsLastActionExpanded((current) => !current)}
+                  aria-expanded={isLastActionExpanded}
+                  aria-label={isLastActionExpanded ? 'Collapse last action details' : 'Expand last action details'}
+                  disabled={lastActionEventDisplays.length === 0}
+                >
+                  {isLastActionExpanded ? 'Hide' : 'Expand'}
+                </button>
+              </div>
               <p className="passive-last-action-summary">
                 {renderTextWithHighlightedNumbers(lastActionFeedback.summary, 'passive-last-action-number')}
               </p>
@@ -90,6 +105,18 @@ export function PassiveEffectsStrip(props: PassiveEffectsStripProps) {
                 <p className="passive-last-action-detail">
                   {renderTextWithHighlightedNumbers(lastActionFeedback.detail, 'passive-last-action-number')}
                 </p>
+              ) : null}
+              {isLastActionExpanded && lastActionEventDisplays.length > 0 ? (
+                <ul className="passive-last-action-events" aria-label="Last action event chain">
+                  {lastActionEventDisplays.map((event) => (
+                    <li key={event.sequence} className="passive-last-action-event">
+                      <strong>{renderTextWithHighlightedNumbers(event.summary, 'passive-last-action-number')}</strong>
+                      {event.detail ? (
+                        <span>{renderTextWithHighlightedNumbers(event.detail, 'passive-last-action-number')}</span>
+                      ) : null}
+                    </li>
+                  ))}
+                </ul>
               ) : null}
             </div>
           ) : (
