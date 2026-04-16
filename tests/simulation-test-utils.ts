@@ -386,9 +386,9 @@ function expectActiveAura(sim: Sim, auraKind: string): void {
 }
 
 function expectHandSize(sim: Sim, heroEntityId: string, expected: number): void {
-  const counts = sim.preview.heroHandCounts.find((h) => h.heroEntityId === heroEntityId)
-  expect(counts).toBeDefined()
-  expect(counts!.handSize).toBe(expected)
+  const counts = sim.preview.heroHandCounts.filter((h) => h.heroEntityId === heroEntityId)
+  expect(counts.length).toBeGreaterThan(0)
+  expect(counts.reduce((sum, c) => sum + c.handSize, 0)).toBe(expected)
 }
 
 function expectTurn(
