@@ -18,30 +18,69 @@ import type { AppBattleEventDisplay } from './game-client'
 
 import { type GameBootstrapConfig } from './data/game-bootstrap'
 
-export function buildBattleEventDisplays(events: BattleEvent[]): AppBattleEventDisplay[] {
+function buildHeroNameMap(session: AppBattleSession): Record<string, string> {
+  const heroesById = session.gameApi.GAME_CONTENT_REGISTRY.heroesById
+  const heroNameMap: Record<string, string> = {}
+
+  for (const heroEntityId of session.state.heroEntityIds) {
+    const entity = session.state.entitiesById[heroEntityId]
+    if (!entity || entity.kind !== 'hero') {
+      continue
+    }
+
+    heroNameMap[heroEntityId] = heroesById[entity.heroDefinitionId]?.name ?? entity.heroDefinitionId
+  }
+
+  return heroNameMap
+}
+
+function getHeroNameForEntity(session: AppBattleSession, heroEntityId: string): string {
+  const entity = session.state.entitiesById[heroEntityId]
+  if (!entity || entity.kind !== 'hero') {
+    return heroEntityId
+  }
+
+  const heroDef = session.gameApi.GAME_CONTENT_REGISTRY.heroesById[entity.heroDefinitionId]
+  return heroDef?.name ?? heroEntityId
+}
+
+function replaceHeroEntityIds(text: string, heroAName: string, heroBName: string): string {
+  return text
+    .replace(/\bhero-a\b/g, heroAName)
+    .replace(/\bhero-b\b/g, heroBName)
+}
+
+export function buildBattleEventDisplays(session: AppBattleSession, events: BattleEvent[]): AppBattleEventDisplay[] {
+  const heroNameMap = buildHeroNameMap(session)
+  const [heroAEntityId, heroBEntityId] = session.state.heroEntityIds
+  const heroAName = heroNameMap[heroAEntityId] ?? 'Hero A'
+  const heroBName = heroNameMap[heroBEntityId] ?? 'Hero B'
+
   return events.flatMap((event) => {
     switch (event.kind) {
       case 'actionResolved':
         return []
       case 'cardPlayed':
-        return [{ sequence: event.sequence, summary: `Played ${event.cardDefinitionId}.`, detail: `Card hand ID ${event.handCardId}.` }]
+        return [{ sequence: event.sequence, summary: 'Played a card.', detail: null }]
       case 'cardDrawn':
-        return [{ sequence: event.sequence, summary: `Drew ${event.cardDefinitionId}.`, detail: `Card hand ID ${event.handCardId}.` }]
+        return [{ sequence: event.sequence, summary: 'Drew a card.', detail: null }]
       case 'entitySummoned':
-        return [{ sequence: event.sequence, summary: `Summoned ${event.summonedEntityId}.`, detail: `Owner ${event.ownerHeroEntityId} at (${event.position.row}, ${event.position.column}).` }]
+        return [{ sequence: event.sequence, summary: 'A unit joined the battle.', detail: null }]
       case 'entityRemoved':
-        return [{ sequence: event.sequence, summary: `Removed ${event.entityId} (${event.reason}).`, detail: `Owner ${event.ownerHeroEntityId}.` }]
+        return [{ sequence: event.sequence, summary: 'A unit was defeated.', detail: null }]
       case 'listenerTriggered': {
-        const summaryEnd = event.message.match(/^[^.!?]+[.!?]/)?.[0]?.trim() ?? event.message.trim()
-        const detail = event.message.length > summaryEnd.length ? event.message.slice(summaryEnd.length).trim() : null
-        return [{ sequence: event.sequence, summary: summaryEnd, detail: detail || `Listener ${event.listenerId}.` }]
+        const summaryEnd = replaceHeroEntityIds(
+          event.message.match(/^[^.!?]+[.!?]/)?.[0]?.trim() ?? event.message.trim(),
+          heroAName,
+          heroBName,
+        )
+        return [{ sequence: event.sequence, summary: summaryEnd, detail: null }]
       }
       case 'damageApplied': {
         const summary = event.wasDodged
           ? `${event.damageType} attack was dodged.`
           : `${event.amount} ${event.damageType} damage applied.`
         const detailParts = [
-          event.sourceEntityId ? `source ${event.sourceEntityId}` : null,
           event.rngRawRoll !== undefined ? `raw ${event.rngRawRoll.toFixed(2)}` : null,
           event.rngAdjustedRoll !== undefined ? `luck-adjusted ${event.rngAdjustedRoll.toFixed(2)}` : null,
           event.rngFinalRoll !== undefined ? `final ${event.rngFinalRoll.toFixed(2)}` : null,
@@ -50,7 +89,7 @@ export function buildBattleEventDisplays(events: BattleEvent[]): AppBattleEventD
         return [{ sequence: event.sequence, summary, detail: detailParts.length > 0 ? `Roll detail: ${detailParts.join(' -> ')}.` : null }]
       }
       case 'healApplied':
-        return [{ sequence: event.sequence, summary: `Restored ${event.amount} HP.`, detail: event.sourceEntityId ? `Source ${event.sourceEntityId}.` : null }]
+        return [{ sequence: event.sequence, summary: `Restored ${event.amount} HP.`, detail: null }]
       case 'armorGained':
         return [{ sequence: event.sequence, summary: `Gained ${event.amount} armor.`, detail: null }]
       case 'armorLost':
@@ -64,21 +103,21 @@ export function buildBattleEventDisplays(events: BattleEvent[]): AppBattleEventD
       case 'attackDamageLost':
         return [{ sequence: event.sequence, summary: `Lost ${event.amount} attack damage.`, detail: null }]
       case 'turnEnded':
-        return [{ sequence: event.sequence, summary: `Turn ended.`, detail: `Next active hero ${event.nextActiveHeroEntityId}.` }]
+        return [{ sequence: event.sequence, summary: 'Turn ended.', detail: null }]
       case 'turnStarted':
-        return [{ sequence: event.sequence, summary: `Turn ${event.turnNumber} started.`, detail: `Active hero ${event.activeHeroEntityId}.` }]
+        return [{ sequence: event.sequence, summary: `Turn ${event.turnNumber} started.`, detail: null }]
       case 'luckBalanceChanged':
-        return [{ sequence: event.sequence, summary: `Luck shifted to ${event.nextBalance}.`, detail: `Balance changed from ${event.previousBalance} to ${event.nextBalance}.` }]
+        return [{ sequence: event.sequence, summary: 'Luck shifted.', detail: null }]
       case 'auraApplied':
         return [{ sequence: event.sequence, summary: `Aura applied (${event.auraKind}).`, detail: `Stacks: ${event.stackCount}. Expires on turn ${event.expiresOnTurnNumber}.` }]
       case 'auraExpired':
-        return [{ sequence: event.sequence, summary: `Aura expired (${event.auraKind}).`, detail: `Expired on turn ${event.expiredOnTurnNumber}.` }]
+        return [{ sequence: event.sequence, summary: `Aura expired (${event.auraKind}).`, detail: null }]
       case 'numberModifierApplied':
-        return [{ sequence: event.sequence, summary: `Modifier applied: ${event.label}.`, detail: `Target ${event.targetEntityId}. ${event.sourceEntityId ? `Source ${event.sourceEntityId}.` : ''} Path ${event.propertyPath}.`.trim() }]
+        return [{ sequence: event.sequence, summary: `Modifier applied: ${event.label}.`, detail: null }]
       case 'numberModifierExpired':
-        return [{ sequence: event.sequence, summary: `Modifier expired (${event.reason}).`, detail: `Target ${event.targetEntityId}.` }]
+        return [{ sequence: event.sequence, summary: `Modifier expired (${event.reason}).`, detail: null }]
       case 'numberExplanationUpdated':
-        return [{ sequence: event.sequence, summary: `Number explanation updated.`, detail: `Target ${event.targetEntityId}.` }]
+        return [{ sequence: event.sequence, summary: `Numbers changed.`, detail: null }]
       default:
         return []
     }
@@ -307,12 +346,13 @@ export function resolveSessionAction(options: {
     id: session.nextHistoryEntryId,
     turnNumber,
     actorHeroEntityId: action.actorHeroEntityId,
+    actorHeroName: getHeroNameForEntity(session, action.actorHeroEntityId),
     actionKind: action.kind,
     resultMessage: result.ok ? result.resultMessage : result.reason,
     success: result.ok,
     failureReason: !result.ok ? result.reason : undefined,
     eventCount: result.ok ? result.events.length : 0,
-    eventTrail: result.ok ? buildBattleEventDisplays(result.events) : [],
+    eventTrail: result.ok ? buildBattleEventDisplays(session, result.events) : [],
     preSnapshotId,
     postSnapshotId,
   }
@@ -386,7 +426,7 @@ export function resolveSessionAction(options: {
     resultMessage: result.resultMessage,
     success: true,
     events: cloneSerializable(result.events),
-    eventTrail: buildBattleEventDisplays(result.events),
+    eventTrail: buildBattleEventDisplays(session, result.events),
     rngCheckpoint: {
       seed: workingBattleRng.seed,
       stepCount: workingBattleRng.stepCount,
@@ -410,7 +450,7 @@ export function resolveSessionAction(options: {
     session: nextSession,
     preview: buildPreview(nextSession),
     events: result.events,
-    eventTrail: buildBattleEventDisplays(result.events),
+    eventTrail: buildBattleEventDisplays(session, result.events),
     resultMessage: result.resultMessage,
   }
 }

@@ -48,6 +48,7 @@ export type AppActionHistoryEntry = {
   id: number
   turnNumber: number
   actorHeroEntityId: string
+  actorHeroName: string
   actionKind: BattleAction['kind']
   resultMessage: string
   success: boolean

@@ -109,7 +109,7 @@ export function HistoryModal(props: HistoryModalProps) {
         ) : null}
         <div className="history-entry-meta">
           <span>Step: #{activeHistoryLength - index}</span>
-          <span>Actor: {entry.actorHeroEntityId}</span>
+          <span>Actor: {entry.actorHeroName}</span>
           <span>Events: {entry.eventCount}</span>
         </div>
       </li>

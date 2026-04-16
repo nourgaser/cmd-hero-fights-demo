@@ -2,7 +2,6 @@ import { useCallback, useRef } from 'react'
 import { toast } from 'react-hot-toast'
 import type { BattleEvent } from '../../../shared/models'
 import type { AppBattleSnapshot, AppBattleEventDisplay } from '../game-client'
-import { buildBattleEventDisplays } from '../game-client-session'
 import { renderTextWithHighlightedNumbers, splitSummaryAndDetail } from '../utils/render-numeric-text'
 import { ACTION_TOAST_ID, ACTION_TOAST_DURATION_MS, EVENT_TOAST_DURATION_MS, EVENT_TOAST_ID } from './constants'
 
@@ -82,8 +81,8 @@ export function useActionsFeedback(options: {
     })
   }, [announce, onLastActionFeedback])
 
-  const showActionSuccessToast = useCallback((message: string, events: BattleEvent[]) => {
-    const feedback = buildSuccessLastActionFeedback(message, buildBattleEventDisplays(events))
+  const showActionSuccessToast = useCallback((message: string, eventTrail: AppBattleEventDisplay[]) => {
+    const feedback = buildSuccessLastActionFeedback(message, eventTrail)
     announce(feedback.summary)
     onLastActionFeedback?.(feedback)
 
@@ -154,7 +153,7 @@ export function useActionsFeedback(options: {
       return
     }
 
-    showActionSuccessToast(snapshot.resultMessage, snapshot.events)
+    showActionSuccessToast(snapshot.resultMessage, snapshot.eventTrail)
     for (const event of snapshot.events) {
       showBattleEventToast(event)
     }
