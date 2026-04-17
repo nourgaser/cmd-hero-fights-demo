@@ -38,10 +38,10 @@ html {
 
 .dual-screens {
   display: grid;
-  gap: 36px;
-  grid-template-columns: repeat(2, minmax(0, 1fr));
+  gap: 16px;
+  grid-template-columns: minmax(0, 1fr);
   align-items: start;
-  padding: 24px;
+  padding: 16px;
   width: 100%;
   box-sizing: border-box;
 }

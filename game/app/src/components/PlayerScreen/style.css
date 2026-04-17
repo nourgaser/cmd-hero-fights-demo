@@ -634,3 +634,119 @@
     justify-self: center;
   }
 }
+
+@media (min-width: 1024px) {
+  .screen {
+    /* 24px accounts for the 12px top/bottom padding on .dual-screens */
+    height: calc(100vh - 24px);
+    grid-template-columns: 320px minmax(0, 1fr) 320px;
+    grid-template-rows: auto minmax(0, 1fr) auto;
+    grid-template-areas:
+      "header header header"
+      "left middle right"
+      "left middle inspect";
+    overflow: hidden;
+    padding: 8px; /* Further reduced */
+    gap: 8px;
+    overscroll-behavior: none;
+  }
+  
+  .inspect-panel {
+    grid-area: inspect;
+    margin-top: 0;
+    max-height: 400px; /* Increased to provide more vertical room */
+    display: flex;
+    flex-direction: column;
+    overflow: hidden;
+  }
+  
+  .screen-head {
+    grid-area: header;
+    justify-self: stretch;
+    width: 100%;
+    min-height: 52px;
+    padding: 4px 12px;
+    box-sizing: border-box;
+    display: flex; /* Switch to flex for better horizontal use */
+    justify-content: space-between;
+    align-items: center;
+  }
+
+  .screen-head-brand {
+    min-height: unset;
+    width: auto;
+  }
+
+  .screen-head h1 {
+    font-size: 24px;
+  }
+
+  .screen-head p {
+    font-size: 15px;
+    margin-top: 0;
+  }
+
+  .screen-head-logo {
+    width: 42px;
+    height: 42px;
+    border-radius: 10px;
+  }
+  
+  .passive-effects-strip {
+    grid-area: left;
+    height: 100%;
+    min-height: 0;
+    overflow: visible;
+    padding: 8px;
+    display: flex;
+    flex-direction: column;
+    gap: 8px;
+    border: 1px solid var(--border);
+    background: color-mix(in srgb, var(--panel) 95%, #ffffff 5%);
+    align-items: stretch;
+  }
+
+  .passive-effects-body {
+    flex: 1;
+    min-height: 0;
+    overflow-y: auto;
+    display: flex;
+    flex-direction: column;
+    justify-content: flex-start;
+    overscroll-behavior: contain;
+    scrollbar-width: thin;
+  }
+
+  .passive-effects-body-last-action {
+    min-height: unset;
+    height: auto;
+    display: flex;
+    flex-direction: column;
+  }
+  
+  .battle-overlay-layer {
+    grid-area: middle;
+    display: grid;
+    place-items: center;
+    overflow: auto;
+    padding: 4px;
+    height: 100%;
+    min-height: 0;
+    overscroll-behavior: contain;
+  }
+
+  .battle-grid {
+    /* Responsive cell size to ensure it fits vertically */
+    --battle-cell-size: clamp(70px, 11vh, 108px);
+    margin-top: 0;
+    padding: 8px;
+  }
+  
+  .hand-bar {
+    grid-area: right;
+    height: 100%;
+    min-height: 0;
+    overflow: visible; /* Prevent tooltip clipping */
+    padding: 8px;
+  }
+}

@@ -925,3 +925,159 @@
     margin-top: 2px;
   }
 }
+
+@media (min-width: 1024px) {
+  .hand-bar {
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+    margin-top: 0;
+    padding: 8px;
+    box-sizing: border-box;
+    overflow: visible; /* Prevent tooltip clipping */
+    gap: 8px;
+  }
+  
+  .hand-bar-header {
+    margin-bottom: 0;
+    flex-wrap: wrap;
+    gap: 6px;
+  }
+
+  .hand-header-actions {
+    width: 100%;
+    display: flex;
+    justify-content: space-between;
+    align-items: stretch; /* Force same height */
+    gap: 6px;
+  }
+
+  .hand-pill {
+    flex: 0 1 auto; /* Varying width based on content */
+    min-width: 0;
+    padding: 2px 10px;
+    font-size: 13px;
+    min-height: 32px;
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    white-space: nowrap;
+    text-align: center;
+    box-sizing: border-box;
+  }
+
+  .hand-pill-button {
+    min-width: unset;
+    padding: 0 10px;
+    width: auto;
+    display: flex;
+    justify-content: center;
+    align-items: center;
+  }
+
+  .hand-deck-chip {
+    flex: 0 0 auto;
+    gap: 6px;
+  }
+
+  .hand-deck-chip-icon {
+    width: 16px;
+    height: 16px;
+  }
+
+  .hand-deck-chip-count {
+    font-size: 15px;
+  }
+  
+  .hand-content-row {
+    flex-direction: column;
+    flex: 1;
+    min-height: 0;
+    margin: 4px 0 0 0;
+    overflow: visible; /* Prevent tooltip clipping */
+    gap: 8px;
+  }
+  
+  .hand-scroll-wrap {
+    flex: 1;
+    height: 100%;
+    min-height: 0;
+    display: flex;
+    flex-direction: column;
+  }
+
+  .hand-cards {
+    display: grid;
+    grid-template-columns: 1fr 1fr;
+    justify-items: center;
+    overflow-y: auto;
+    overflow-x: hidden;
+    height: 100%;
+    min-height: 0;
+    padding: 8px 4px; /* Slight horizontal padding so hover effect is not totally clipped */
+    gap: 8px;
+    scrollbar-width: thin;
+    width: 100%;
+    box-sizing: border-box;
+    align-content: start; /* Don't stretch rows */
+    overscroll-behavior: contain;
+  }
+
+  .hand-cards > li {
+    margin-bottom: 0;
+    flex-shrink: 0;
+    width: 90px;
+    height: 105px;
+  }
+
+  .hand-card {
+    width: 90px;
+    height: 105px;
+    padding: 6px;
+    gap: 4px;
+    transition: transform 150ms ease, box-shadow 150ms ease;
+  }
+
+  /* Cards in vertical mode should pop out horizontally on hover */
+  .hand-card:not(.unplayable):hover,
+  .hand-card:not(.unplayable):focus-visible,
+  .hand-card:not(.unplayable).focused {
+    transform: translateX(-20px) scale(1.1);
+    z-index: var(--layer-card-hover);
+  }
+
+  .hand-card-name {
+    font-size: 14px;
+  }
+
+  .hand-side-rail {
+    flex-direction: row; /* Horizontal luck cluster in sidebar */
+    margin-left: 0;
+    margin-top: auto;
+    gap: 12px;
+    padding: 6px 0 0 0;
+    border-top: 1px dashed var(--border);
+    justify-content: space-around;
+    width: 100%;
+    flex-shrink: 0;
+  }
+
+  .hand-side-divider {
+    display: none;
+  }
+
+  .hand-luck-orb {
+    width: 52px;
+    height: 52px;
+  }
+
+  .hand-luck-orb-icon {
+    width: 28px;
+    height: 28px;
+  }
+
+  .hand-luck-moves {
+    font-size: 18px;
+  }
+}
